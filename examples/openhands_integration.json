@@ -1,0 +1,28 @@
+{
+  "mcp_servers": {
+    "taptap-minigame": {
+      "command": "python",
+      "args": ["/path/to/taptap-minigame-mcp-server/server.py"],
+      "env": {
+        "TAPTAP_API_KEY": "${TAPTAP_API_KEY}",
+        "TAPTAP_ENVIRONMENT": "${TAPTAP_ENV:-production}",
+        "TAPTAP_LOG_LEVEL": "INFO"
+      },
+      "enabled": true,
+      "description": "TapTap 小游戏生态能力服务器"
+    }
+  },
+  "tool_configs": {
+    "taptap_minigame_tools": {
+      "enabled": true,
+      "rate_limit": {
+        "requests_per_minute": 100,
+        "requests_per_hour": 1000
+      },
+      "cache": {
+        "enabled": true,
+        "ttl": 300
+      }
+    }
+  }
+}
