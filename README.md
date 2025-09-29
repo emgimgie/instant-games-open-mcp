@@ -1,199 +1,245 @@
-# TapTap 小游戏 MCP 服务器
+# TapTap 小游戏开发文档 MCP 服务器
 
-基于 Model Context Protocol (MCP) 的 TapTap 小游戏生态能力 API 服务器。
+> 基于 Model Context Protocol (MCP) 的 TapTap 小游戏开发文档服务器（Node.js 版本）
+>
+> 🚀 零配置部署 | 📚 完整文档 | 🔧 即开即用
 
-## 功能特性
+## 🌟 功能特性
 
-### 🎮 小游戏管理
-- 小游戏搜索和发现
-- 游戏详情和元数据
-- 游戏评分和评论
-- 游戏分类和标签
+### 🔐 认证和授权
+- OAuth 2.0 授权流程完整指南
+- API Key 认证最佳实践
+- 令牌管理和刷新机制
+- 安全认证代码示例
 
-### 👤 用户系统
-- 用户资料管理
-- 游戏库和收藏
-- 成就和进度
-- 好友和社交
+### ☁️ 云存档系统
+- 跨设备存档同步方案
+- 版本冲突智能处理
+- 多槽位存档管理
+- 数据安全和备份
 
 ### 🏆 排行榜系统
-- 实时排行榜
-- 历史最佳成绩
-- 多维度排名
-- 竞赛和活动
+- 分数提交和批量操作
+- 排名查询和实时更新
+- 排行榜界面集成
+- 竞技系统设计模式
 
-### 📊 数据分析
-- 游戏数据统计
-- 用户行为分析
-- 市场趋势洞察
-- 性能监控
+### 🔧 SDK 集成指南
+- Unity 引擎完整集成
+- Cocos Creator 详细指南
+- Web 平台 SDK 使用
+- 多平台最佳实践
 
-### 🛠️ 开发者工具
-- 游戏发布管理
-- 数据分析仪表板
-- A/B 测试支持
-- 版本管理
+### ✨ 核心优势
+- **零配置启动** - 无需 API 密钥或外部依赖
+- **完整代码示例** - 可直接复制使用的代码
+- **模块化设计** - 按功能分离，便于查找
+- **即开即用** - 通过 npx 一键启动
 
-### 📚 API 文档支持
-- 智能文档搜索
-- 代码示例生成
-- 最佳实践指导
-- SDK 集成指南
+## 🚀 快速开始
 
-## 快速开始
-
-### 安装依赖
+### 通过 NPX 直接使用（推荐）
 ```bash
-pip install -r requirements.txt
+# 无需安装，直接运行
+npx @taptap/minigame-docs-mcp
 ```
 
-### 配置环境
+### 全局安装
 ```bash
-cp .env.example .env
-# 编辑 .env 文件，添加 TapTap API 密钥
+# 全局安装
+npm install -g @taptap/minigame-docs-mcp
+
+# 运行
+taptap-docs-mcp
 ```
 
-### 启动服务器
+### 本地开发
 ```bash
-python server.py
+# 克隆项目
+git clone <repository-url>
+cd taptap-minigame-mcp-server
+
+# 安装依赖
+npm install
+
+# 开发模式运行
+npm run dev
+
+# 或使用启动脚本
+./start-node-mcp.sh
 ```
 
-## 集成到 Claude Desktop
+## 🔗 AI Agent 集成
 
-在 Claude Desktop 的配置文件中添加：
-
+### Claude Desktop 集成
+在 Claude Desktop 配置文件中添加：
 ```json
 {
   "mcpServers": {
-    "taptap-minigame": {
-      "command": "python",
-      "args": ["/path/to/taptap-minigame-mcp-server/server.py"],
-      "env": {
-        "TAPTAP_API_KEY": "your-api-key"
-      }
+    "taptap-docs": {
+      "command": "npx",
+      "args": ["@taptap/minigame-docs-mcp"]
     }
   }
 }
 ```
 
-## API 工具
-
-### 小游戏相关
-- `search_minigames` - 搜索小游戏
-- `get_minigame_details` - 获取游戏详情
-- `get_minigame_reviews` - 获取游戏评论
-- `get_featured_minigames` - 获取精选游戏
-
-### 用户相关
-- `get_user_profile` - 获取用户资料
-- `get_user_minigames` - 获取用户游戏库
-- `get_user_achievements` - 获取用户成就
-- `update_user_progress` - 更新游戏进度
-
-### 排行榜相关
-- `get_leaderboards` - 获取排行榜
-- `submit_score` - 提交分数
-- `get_user_rank` - 获取用户排名
-
-### 数据分析
-- `get_game_analytics` - 获取游戏分析数据
-- `get_market_trends` - 获取市场趋势
-- `get_user_behavior` - 获取用户行为数据
-
-### API 文档工具
-- `search_api_docs` - 搜索 API 文档
-- `get_api_categories` - 获取文档分类
-- `get_code_examples` - 获取代码示例
-- `get_api_best_practices` - 获取最佳实践
-
-### 排行榜 API 工具
-- `search_leaderboard_docs` - 搜索排行榜文档
-- `get_leaderboard_methods` - 获取排行榜方法概览
-- `get_leaderboard_method_docs` - 获取具体方法详细文档
-- `get_leaderboard_patterns` - 获取开发模式和完整示例
-- `get_leaderboard_best_practices` - 获取最佳实践和错误处理
-
-## 使用示例
-
-### 搜索 API 文档
-```
-AI: 我想了解如何在游戏中集成 TapTap 登录功能
-
-MCP Server (使用 search_api_docs):
-- query: "登录"
-→ 返回认证相关的 API 文档和代码示例
+### OpenHands 集成
+在 OpenHands 的 `config.toml` 中添加：
+```toml
+[mcp]
+stdio_servers = [
+    {
+        name = "taptap-docs",
+        command = "npx",
+        args = ["@taptap/minigame-docs-mcp"]
+    }
+]
 ```
 
-### 获取具体代码示例
-```
-AI: 请给我 Unity 集成 TapTap SDK 的详细步骤
+### 其他 AI Agent
+使用标准 MCP 客户端库连接：
+```javascript
+import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
 
-MCP Server (使用 get_code_examples):
-- category: "sdk_integration"
-- platform: "unity"
-→ 返回完整的 Unity 集成代码和最佳实践
-```
-
-### 查看最佳实践
-```
-AI: 在使用 TapTap API 时有什么需要注意的吗？
-
-MCP Server (使用 get_api_best_practices):
-→ 返回安全、性能、用户体验等方面的最佳实践指南
+const transport = new StdioClientTransport({
+    command: 'npx',
+    args: ['@taptap/minigame-docs-mcp']
+});
 ```
 
-### 排行榜功能开发
+## 📖 可用工具
+
+### 🔐 认证和授权工具
+- `search_auth_docs` - 搜索认证相关文档（OAuth、API Key、令牌管理）
+- `get_auth_methods` - 获取所有认证方式概览
+- `get_auth_category_docs` - 获取指定认证分类的详细文档和代码示例
+
+### ☁️ 云存档功能工具
+- `search_cloud_save_docs` - 搜索云存档相关文档（同步、备份、冲突处理）
+- `get_cloud_save_overview` - 获取云存档功能概览
+- `get_cloud_save_category_docs` - 获取指定云存档分类的详细文档和 API 示例
+
+### 🏆 排行榜系统工具
+- `search_leaderboard_docs` - 搜索排行榜相关文档（分数提交、排名查询、界面显示）
+- `get_leaderboard_overview` - 获取排行榜功能概览
+- `get_leaderboard_category_docs` - 获取指定排行榜分类的详细文档
+- `get_leaderboard_patterns` - 获取排行榜集成模式和最佳实践
+
+### 🔧 SDK 集成工具
+- `search_sdk_docs` - 搜索 SDK 集成相关文档（Unity、Cocos、Web）
+- `get_sdk_platforms` - 获取支持的 SDK 平台列表
+- `get_sdk_platform_docs` - 获取指定平台的 SDK 集成指南
+- `get_sdk_best_practices` - 获取 SDK 集成的最佳实践
+
+## 💡 使用示例
+
+### 认证相关查询
 ```
-AI: 我想在游戏中添加排行榜功能，怎么实现？
+开发者: 我想了解 TapTap 的 OAuth 登录流程
 
-MCP Server (使用 get_leaderboard_methods):
-→ 返回所有排行榜方法概览和核心功能介绍
-
-AI: submitScores 方法怎么使用？
-
-MCP Server (使用 get_leaderboard_method_docs):
-- method: "submitScores"
-→ 返回详细的参数说明、代码示例和最佳实践
+MCP 工具: search_auth_docs
+参数: { "query": "OAuth", "category": "oauth" }
+→ 返回完整的 OAuth 2.0 授权流程和代码示例
 ```
 
-### 完整开发模式
+### SDK 集成指南
 ```
-AI: 给我一个完整的排行榜集成示例
+开发者: 请给我 Unity 集成 TapTap SDK 的详细步骤
 
-MCP Server (使用 get_leaderboard_patterns):
-- pattern: "leaderboard_integration"
-→ 返回完整的 GameLeaderboard 类实现和使用方法
+MCP 工具: get_sdk_platform_docs
+参数: { "platform": "unity" }
+→ 返回完整的 Unity 集成代码和配置步骤
 ```
 
-## AI Agent 集成方案
+### 云存档开发
+```
+开发者: 如何实现游戏的云存档同步功能？
 
-### 方案一：MCP 工具集成 (推荐)
-- AI agent 通过 MCP 协议调用文档工具
-- 实时获取最新的 API 文档和代码示例
-- 支持智能搜索和上下文感知
+MCP 工具: get_cloud_save_category_docs
+参数: { "category": "advanced_features" }
+→ 返回版本冲突处理、自动同步等高级功能的实现代码
+```
 
-### 方案二：知识库注入
-- 将 API 文档内容注入到 AI 模型的上下文中
-- 适合需要离线使用的场景
-- 可以通过 `get_api_categories` 导出完整文档
+### 排行榜系统
+```
+开发者: 我想在游戏中添加排行榜功能
 
-### 方案三：混合模式
-- 核心 API 文档预加载到 AI 上下文
-- 详细代码示例通过 MCP 工具动态获取
-- 平衡响应速度和内容完整性
+MCP 工具: get_leaderboard_patterns
+→ 返回完整的排行榜集成模式和游戏结束提交分数的完整代码示例
+```
 
-## 开发和测试
+### 最佳实践查询
+```
+开发者: TapTap SDK 集成有什么最佳实践？
 
-### 运行测试
+MCP 工具: get_sdk_best_practices
+→ 返回初始化、用户登录、错误处理、性能优化等各方面的最佳实践
+```
+
+## 🔧 开发和构建
+
+### 本地开发
 ```bash
-python -m pytest tests/
+# 安装依赖
+npm install
+
+# 开发模式（热重载）
+npm run dev
+
+# 构建项目
+npm run build
+
+# 运行测试
+npm test
+
+# 代码检查
+npm run lint
+
+# 格式化代码
+npm run format
 ```
 
-### 开发模式
+### 发布到 NPM
 ```bash
-python server.py --dev
+# 构建项目
+npm run build
+
+# 发布到 NPM
+npm publish
+
+# 发布到私有仓库
+npm publish --registry https://npm.taptap.com/
 ```
 
-## 许可证
+## 📁 项目结构
+
+```
+├── src/                          # TypeScript 源码
+│   ├── server.ts                 # 主服务器入口
+│   ├── data/                     # 静态文档数据
+│   │   ├── authDocs.ts          # 认证文档
+│   │   ├── cloudSaveDocs.ts     # 云存档文档
+│   │   ├── leaderboardDocs.ts   # 排行榜文档
+│   │   └── sdkDocs.ts           # SDK 文档
+│   └── tools/                   # 工具处理函数
+│       ├── authTools.ts         # 认证工具
+│       ├── cloudSaveTools.ts    # 云存档工具
+│       ├── leaderboardTools.ts  # 排行榜工具
+│       └── sdkTools.ts          # SDK 工具
+├── bin/                         # 可执行文件
+│   └── taptap-docs-mcp          # NPM 启动脚本
+├── dist/                        # 编译输出（自动生成）
+├── examples/                    # 集成配置示例
+├── package.json                 # NPM 包配置
+├── tsconfig.json               # TypeScript 配置
+└── README.md                   # 项目文档
+```
+
+## 📄 许可证
 
 MIT License
+
+---
+
+> **注意**: 本项目现在完全基于 Node.js，无需 Python 环境，通过 `npx` 即可零配置使用。

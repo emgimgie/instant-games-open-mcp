@@ -1,0 +1,34 @@
+#!/usr/bin/env node
+
+/**
+ * TapTap 文档 MCP 服务器启动脚本
+ */
+
+const path = require('path');
+const fs = require('fs');
+
+// 获取包的根目录
+const packageRoot = path.join(__dirname, '..');
+
+// 检查是否已编译
+const distPath = path.join(packageRoot, 'dist', 'server.js');
+const srcPath = path.join(packageRoot, 'src', 'server.ts');
+
+if (fs.existsSync(distPath)) {
+    // 使用编译后的版本
+    require(distPath);
+} else if (fs.existsSync(srcPath)) {
+    // 开发模式，使用 ts-node
+    try {
+        require('ts-node/register');
+        require(srcPath);
+    } catch (error) {
+        console.error('❌ 请先安装开发依赖或编译项目：');
+        console.error('   npm install');
+        console.error('   npm run build');
+        process.exit(1);
+    }
+} else {
+    console.error('❌ 未找到服务器文件');
+    process.exit(1);
+}

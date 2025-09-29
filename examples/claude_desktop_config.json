@@ -1,13 +1,8 @@
 {
   "mcpServers": {
-    "taptap-minigame": {
-      "command": "python",
-      "args": ["/path/to/taptap-minigame-mcp-server/server.py"],
-      "env": {
-        "TAPTAP_API_KEY": "your-taptap-api-key-here",
-        "TAPTAP_ENVIRONMENT": "production",
-        "TAPTAP_LOG_LEVEL": "INFO"
-      }
+    "taptap-docs": {
+      "command": "npx",
+      "args": ["@taptap/minigame-docs-mcp"]
     }
   }
 }

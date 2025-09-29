@@ -1,0 +1,52 @@
+{
+  "name": "@taptap/minigame-docs-mcp",
+  "version": "1.0.0",
+  "description": "TapTap 小游戏开发文档 MCP 服务器 - Node.js 版本",
+  "main": "dist/server.js",
+  "bin": {
+    "taptap-docs-mcp": "bin/taptap-docs-mcp"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "dev": "ts-node src/server.ts",
+    "test": "jest",
+    "lint": "eslint src/**/*.ts",
+    "format": "prettier --write src/**/*.ts"
+  },
+  "keywords": [
+    "mcp",
+    "taptap",
+    "documentation",
+    "ai-agent",
+    "minigame"
+  ],
+  "author": "TapTap Team",
+  "license": "MIT",
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.0",
+    "jest": "^29.0.0",
+    "@types/jest": "^29.0.0",
+    "eslint": "^8.0.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "prettier": "^3.0.0"
+  },
+  "files": [
+    "dist/",
+    "bin/",
+    "data/"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/taptap/taptap-minigame-mcp-server.git"
+  }
+}
