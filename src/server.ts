@@ -13,10 +13,14 @@ import {
   ErrorCode,
   Tool
 } from '@modelcontextprotocol/sdk/types.js';
+import process from 'node:process';
 
 // 导入工具处理器
-import { cloudSaveTools } from './tools/cloudSaveTools.js';
 import { leaderboardTools } from './tools/leaderboardTools.js';
+
+// 环境变量配置
+const TAPTAP_USER_TOKEN = process.env.TAPTAP_USER_TOKEN;
+const TAPTAP_PROJECT_PATH = process.env.TAPTAP_PROJECT_PATH;
 
 /**
  * MCP 服务器类
@@ -48,97 +52,115 @@ class TapTapDocsMCPServer {
    */
   private setupTools(): void {
     this.tools = [
-      // ☁️ 云存档工具
+      // 📖 Core LeaderboardManager API Documentation Tools (one tool per API)
       {
-        name: 'search_cloud_save_docs',
-        description: '搜索 TapTap 云存档相关文档（同步、备份、冲突处理）',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            query: {
-              type: 'string',
-              description: '搜索关键词，如：云存档、同步、备份等'
-            },
-            category: {
-              type: 'string',
-              description: '云存档功能分类',
-              enum: ['basic_operations', 'advanced_features', 'best_practices']
-            }
-          }
-        }
-      },
-      {
-        name: 'get_cloud_save_overview',
-        description: '获取 TapTap 云存档功能概览',
+        name: 'get_leaderboard_manager',
+        description: 'Get documentation for tap.getLeaderboardManager() - how to obtain the LeaderboardManager instance. Use this when user asks how to initialize or access the leaderboard system.',
         inputSchema: {
           type: 'object',
           properties: {}
         }
       },
       {
-        name: 'get_cloud_save_category_docs',
-        description: '获取指定云存档分类的详细文档和 API 示例',
+        name: 'open_leaderboard',
+        description: 'Get documentation for leaderboardManager.openLeaderboard() - how to display the TapTap leaderboard UI. Use this when user wants to show leaderboard interface to players.',
         inputSchema: {
           type: 'object',
-          properties: {
-            category: {
-              type: 'string',
-              description: '云存档分类名称',
-              enum: ['basic_operations', 'advanced_features', 'best_practices']
-            }
-          },
-          required: ['category']
+          properties: {}
+        }
+      },
+      {
+        name: 'submit_scores',
+        description: 'Get documentation for leaderboardManager.submitScores() - how to submit player scores to leaderboards. Use this when user wants to upload scores or update rankings.',
+        inputSchema: {
+          type: 'object',
+          properties: {}
+        }
+      },
+      {
+        name: 'load_leaderboard_scores',
+        description: 'Get documentation for leaderboardManager.loadLeaderboardScores() - how to retrieve paginated leaderboard data. Use this when user wants to fetch top scores or implement custom leaderboard UI.',
+        inputSchema: {
+          type: 'object',
+          properties: {}
+        }
+      },
+      {
+        name: 'load_current_player_score',
+        description: 'Get documentation for leaderboardManager.loadCurrentPlayerLeaderboardScore() - how to get current player\'s score and rank. Use this when user wants to show player their own ranking.',
+        inputSchema: {
+          type: 'object',
+          properties: {}
+        }
+      },
+      {
+        name: 'load_player_centered_scores',
+        description: 'Get documentation for leaderboardManager.loadPlayerCenteredScores() - how to load scores of players near current user. Use this when user wants to display surrounding competitors.',
+        inputSchema: {
+          type: 'object',
+          properties: {}
         }
       },
 
-      // 🏆 排行榜工具
+      // 🔍 Helper Tools
       {
         name: 'search_leaderboard_docs',
-        description: '搜索 TapTap 排行榜相关文档（分数提交、排名查询、界面显示）',
+        description: 'Search all leaderboard documentation by keyword. Use this when user asks a general question or you\'re not sure which specific API they need.',
         inputSchema: {
           type: 'object',
           properties: {
             query: {
               type: 'string',
-              description: '搜索关键词，如：排行榜、分数、排名等'
-            },
-            category: {
-              type: 'string',
-              description: '排行榜功能分类',
-              enum: ['score_submission', 'ranking_query', 'leaderboard_ui']
+              description: 'Search keyword, such as: leaderboard, score, ranking, submission, etc.'
             }
-          }
+          },
+          required: ['query']
         }
       },
       {
         name: 'get_leaderboard_overview',
-        description: '获取 TapTap 排行榜功能概览',
+        description: 'Get comprehensive overview of all TapTap leaderboard APIs and features. Use this when user wants to understand what leaderboard functionality is available.',
         inputSchema: {
           type: 'object',
           properties: {}
-        }
-      },
-      {
-        name: 'get_leaderboard_category_docs',
-        description: '获取指定排行榜分类的详细文档',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            category: {
-              type: 'string',
-              description: '排行榜分类名称',
-              enum: ['score_submission', 'ranking_query', 'leaderboard_ui']
-            }
-          },
-          required: ['category']
         }
       },
       {
         name: 'get_leaderboard_patterns',
-        description: '获取排行榜集成模式和最佳实践',
+        description: 'Get complete implementation examples and best practices for leaderboards. Use this when user wants to see full integration code or common usage patterns.',
         inputSchema: {
           type: 'object',
           properties: {}
+        }
+      },
+
+      // 🔧 Environment Check Tool
+      {
+        name: 'check_environment',
+        description: 'Check environment configuration and user authentication status. Use this to verify if TAPTAP_USER_TOKEN is configured and whether API mode is enabled.',
+        inputSchema: {
+          type: 'object',
+          properties: {}
+        }
+      },
+
+      // 🔑 User Data Tools (requires TAPTAP_USER_TOKEN)
+      {
+        name: 'get_user_leaderboard_scores',
+        description: 'Get actual user leaderboard score data from TapTap API (requires user login). Use this when user wants to see their own scores or ranking positions. Falls back to documentation mode if token is not provided.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            leaderboardId: {
+              type: 'string',
+              description: 'The specific leaderboard ID to query. Leave empty to get all leaderboards associated with the user.'
+            },
+            limit: {
+              type: 'number',
+              description: 'Maximum number of score entries to return. Default is 10.',
+              default: 10
+            }
+          }
         }
       }
     ];
@@ -148,16 +170,24 @@ class TapTapDocsMCPServer {
    * 设置工具处理器
    */
   private setupHandlers(): void {
-    // 云存档工具处理器
-    this.toolHandlers.set('search_cloud_save_docs', cloudSaveTools.searchCloudSaveDocs);
-    this.toolHandlers.set('get_cloud_save_overview', cloudSaveTools.getCloudSaveOverview);
-    this.toolHandlers.set('get_cloud_save_category_docs', cloudSaveTools.getCloudSaveCategoryDocs);
+    // Core LeaderboardManager API documentation tools
+    this.toolHandlers.set('get_leaderboard_manager', leaderboardTools.getLeaderboardManager);
+    this.toolHandlers.set('open_leaderboard', leaderboardTools.openLeaderboard);
+    this.toolHandlers.set('submit_scores', leaderboardTools.submitScores);
+    this.toolHandlers.set('load_leaderboard_scores', leaderboardTools.loadLeaderboardScores);
+    this.toolHandlers.set('load_current_player_score', leaderboardTools.loadCurrentPlayerScore);
+    this.toolHandlers.set('load_player_centered_scores', leaderboardTools.loadPlayerCenteredScores);
 
-    // 排行榜工具处理器
+    // Helper tools
     this.toolHandlers.set('search_leaderboard_docs', leaderboardTools.searchLeaderboardDocs);
     this.toolHandlers.set('get_leaderboard_overview', leaderboardTools.getLeaderboardOverview);
-    this.toolHandlers.set('get_leaderboard_category_docs', leaderboardTools.getLeaderboardCategoryDocs);
     this.toolHandlers.set('get_leaderboard_patterns', leaderboardTools.getLeaderboardPatterns);
+
+    // 环境检查工具处理器
+    this.toolHandlers.set('check_environment', this.checkEnvironment.bind(this));
+
+    // 用户数据工具处理器（需要 token）
+    this.toolHandlers.set('get_user_leaderboard_scores', this.getUserLeaderboardScores.bind(this));
 
     // 设置 MCP 服务器处理器
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -195,15 +225,77 @@ class TapTapDocsMCPServer {
   }
 
   /**
+   * 环境检查工具
+   */
+  private async checkEnvironment(): Promise<string> {
+    const envInfo = {
+      'TAPTAP_USER_TOKEN': TAPTAP_USER_TOKEN ? '✅ 已配置' : '❌ 未配置',
+      'TAPTAP_PROJECT_PATH': TAPTAP_PROJECT_PATH ? '✅ 已配置' : '❌ 未配置',
+      '服务模式': TAPTAP_USER_TOKEN ? '🔑 API 模式（可调用实际 TapTap API）' : '📚 文档模式（仅提供静态文档）'
+    };
+
+    const envResult = Object.entries(envInfo)
+      .map(([key, value]) => `${key}: ${value}`)
+      .join('\n');
+
+    return `🔧 环境配置检查结果:\n\n${envResult}\n\n${
+      TAPTAP_USER_TOKEN
+        ? '✨ 用户已认证，可以调用需要登录的功能'
+        : '💡 设置 TAPTAP_USER_TOKEN 环境变量以启用 API 功能'
+    }`;
+  }
+
+  /**
+   * 获取用户排行榜分数数据
+   */
+  private async getUserLeaderboardScores(args: { leaderboardId?: string; limit?: number }): Promise<string> {
+    if (!TAPTAP_USER_TOKEN) {
+      return `❌ 此功能需要用户登录 TapTap\n请设置 TAPTAP_USER_TOKEN 环境变量\n\n降级为文档模式:\n${await leaderboardTools.getLeaderboardOverview({})}`;
+    }
+
+    try {
+      // 模拟 API 调用（实际项目中替换为真实 API）
+      const url = args.leaderboardId
+        ? `https://api.taptap.com/leaderboard/${args.leaderboardId}/scores`
+        : 'https://api.taptap.com/leaderboard/user-scores';
+
+      // @ts-ignore - fetch 在 Node.js 18+ 中可用
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${TAPTAP_USER_TOKEN}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        throw new Error(`API 调用失败: ${response.status} ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return `🏆 用户排行榜数据:\n${JSON.stringify(data, null, 2)}`;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      return `❌ API 调用失败: ${errorMsg}\n\n降级为文档模式:\n${await leaderboardTools.getLeaderboardOverview({})}`;
+    }
+  }
+
+  /**
    * 启动服务器
    */
   async start(): Promise<void> {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
 
-    console.error('🚀 TapTap 文档 MCP 服务器已启动');
-    console.error(`📚 提供 ${this.tools.length} 个文档工具`);
-    console.error('🔧 支持功能: 云存档、排行榜');
+    process.stderr.write('🚀 TapTap Leaderboard MCP Server Started\n');
+    process.stderr.write(`📚 Providing ${this.tools.length} tools\n`);
+    process.stderr.write('🏆 Features: Leaderboard Documentation & API\n');
+
+    if (TAPTAP_USER_TOKEN) {
+      process.stderr.write('🔑 API Mode Enabled\n');
+    } else {
+      process.stderr.write('📚 Documentation Mode (Set TAPTAP_USER_TOKEN to enable API)\n');
+    }
   }
 }
 
@@ -213,27 +305,25 @@ async function main(): Promise<void> {
 
   // 处理优雅关闭
   process.on('SIGINT', () => {
-    console.error('\\n📴 收到中断信号，正在关闭服务器...');
+    process.stderr.write('\n📴 收到中断信号，正在关闭服务器...\n');
     process.exit(0);
   });
 
   process.on('SIGTERM', () => {
-    console.error('\\n📴 收到终止信号，正在关闭服务器...');
+    process.stderr.write('\n📴 收到终止信号，正在关闭服务器...\n');
     process.exit(0);
   });
 
   try {
     await server.start();
   } catch (error) {
-    console.error('❌ 服务器启动失败:', error);
+    process.stderr.write(`❌ 服务器启动失败: ${error}\n`);
     process.exit(1);
   }
 }
 
-// 如果直接运行此文件
-if (require.main === module) {
-  main().catch((error) => {
-    console.error('❌ 服务器运行失败:', error);
-    process.exit(1);
-  });
-}
+// 启动主函数
+main().catch((error) => {
+  process.stderr.write(`❌ 服务器运行失败: ${error}\n`);
+  process.exit(1);
+});

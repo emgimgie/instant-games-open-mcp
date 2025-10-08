@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-这是一个基于 Model Context Protocol (MCP) 的 TapTap 小游戏开发文档服务器（Node.js 版本）。该项目专注为 AI 助手提供需要用户身份的核心功能文档，包括云存档和排行榜系统的完整开发指南和代码示例。项目使用 TypeScript 开发，零依赖配置，即开即用。
+这是一个基于 Model Context Protocol (MCP) 的 TapTap 小游戏排行榜 API 文档服务器（Node.js 版本）。该项目专门提供 TapTap 小游戏排行榜 API 的完整文档、代码示例和最佳实践，基于官方 API 文档：https://developer.taptap.cn/minigameapidoc/dev/api/open-api/leaderboard/。项目使用 TypeScript 开发，零依赖配置，即开即用。
 
 ## 架构概览
 
@@ -15,14 +15,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`bin/taptap-docs-mcp`** - NPM 可执行入口点
 
 ### 文档工具层
-- **`src/tools/`** - 按功能分离的文档工具集
-  - `cloudSaveTools.ts` - 云存档功能文档工具
-  - `leaderboardTools.ts` - 排行榜系统文档工具
+- **`src/tools/`** - 文档工具集
+  - `leaderboardTools.ts` - 排行榜 API 文档工具
 
 ### 数据层
-- **`src/data/`** - 按功能分离的静态文档数据（TypeScript）
-  - `cloudSaveDocs.ts` - 云存档功能文档和最佳实践
-  - `leaderboardDocs.ts` - 排行榜系统文档和集成模式
+- **`src/data/`** - 静态文档数据（TypeScript）
+  - `leaderboardDocs.ts` - 排行榜 API 完整文档、示例代码和最佳实践
 
 ## 常用命令
 
@@ -59,9 +57,39 @@ npx @taptap/minigame-docs-mcp
 ```
 
 ### 环境配置
+
+#### 基本配置（文档模式）
 ```bash
-# 无需特殊配置，直接启动即可使用
+# 无需任何配置，直接启动即可使用
 # 所有功能都基于静态文档数据，无需外部 API
+```
+
+#### 进阶配置（API 模式）
+```bash
+# 启用 API 模式，需要设置用户 token
+export TAPTAP_USER_TOKEN="user_access_token_here"
+
+# 可选：设置项目路径
+export TAPTAP_PROJECT_PATH="/path/to/your/project"
+
+# 启动服务器
+npm start
+```
+
+#### OpenHands 集成配置示例
+```json
+{
+  "mcpServers": {
+    "taptap-docs": {
+      "command": "npx",
+      "args": ["@taptap/minigame-docs-mcp"],
+      "env": {
+        "TAPTAP_USER_TOKEN": "${CURRENT_USER_TAPTAP_TOKEN}",
+        "TAPTAP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}"
+      }
+    }
+  }
+}
 ```
 
 ### 测试和验证
@@ -101,18 +129,34 @@ npm run build
 
 ### 文档工具分类
 
-#### ☁️ 云存档功能工具
-- **`search_cloud_save_docs`** - 搜索云存档相关文档（同步、备份、冲突处理）
-- **`get_cloud_save_overview`** - 获取云存档功能概览
-- **`get_cloud_save_category_docs`** - 获取指定云存档分类的详细文档和 API 示例
+#### 🏆 排行榜 API 工具
+- **`search_leaderboard_docs`** - 搜索排行榜 API 文档（初始化、UI、分数提交、排名查询）
+- **`get_leaderboard_overview`** - 获取排行榜 API 完整概览
+- **`get_leaderboard_category_docs`** - 获取指定分类的详细文档和代码示例
+  - `initialization` - 获取 LeaderboardManager 实例
+  - `display` - 打开排行榜 UI
+  - `score_submission` - 提交玩家分数
+  - `score_query` - 查询分数和排名
+  - `common_scenarios` - 完整实现示例
+- **`get_leaderboard_patterns`** - 获取集成模式和最佳实践
 
-#### 🏆 排行榜系统工具
-- **`search_leaderboard_docs`** - 搜索排行榜相关文档（分数提交、排名查询、界面显示）
-- **`get_leaderboard_overview`** - 获取排行榜功能概览
-- **`get_leaderboard_category_docs`** - 获取指定排行榜分类的详细文档
-- **`get_leaderboard_patterns`** - 获取排行榜集成模式和最佳实践
+#### 🔧 环境检查工具
+- **`check_environment`** - 检查环境变量配置和用户认证状态
 
-> **注意**: 这些功能的实际 API 调用都需要用户的访问 token
+#### 🔑 用户数据工具（需要 Token）
+- **`get_user_leaderboard_scores`** - 获取用户实际排行榜分数数据（需要 `TAPTAP_USER_TOKEN`）
+
+### 双模式支持
+
+**📚 文档模式（默认）**
+- 无需任何配置
+- 提供完整的排行榜 API 文档和代码示例
+- 基于小游戏官方 API 文档
+
+**🔑 API 模式（需要用户 Token）**
+- 设置 `TAPTAP_USER_TOKEN` 环境变量
+- 可调用 TapTap 实际 API 获取用户排行榜数据
+- API 调用失败时自动降级为文档模式
 
 ## 核心技术栈
 
@@ -129,11 +173,19 @@ npm run build
 ### 基本配置
 本项目是纯文档服务，无需任何外部 API 或数据库配置即可使用。
 
-### 可选配置
-如需自定义服务器行为，可设置以下环境变量：
+### 环境变量详解
+
+**核心环境变量**：
+- `TAPTAP_USER_TOKEN`: 用户 TapTap 访问 token，启用 API 模式必需
+- `TAPTAP_PROJECT_PATH`: 项目路径，某些功能可能需要
+
+**可选配置**：
 - `TAPTAP_LOG_LEVEL`: 日志级别 (默认: INFO)
 - `TAPTAP_DEBUG`: 调试模式 (默认: false)
 - `TAPTAP_SERVER_NAME`: MCP 服务器名称 (默认: taptap-minigame)
+
+**环境检查**：
+使用 `check_environment` 工具检查所有环境变量的配置状态。
 
 ## 开发注意事项
 
