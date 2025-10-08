@@ -66,6 +66,21 @@ class TapTapDocsMCPServer {
    */
   private setupTools(): void {
     this.tools = [
+      // 🎯 Workflow Guidance Tool
+      {
+        name: 'start_leaderboard_integration',
+        description: 'START HERE when user asks about integrating leaderboards, implementing rankings, or "接入排行榜". This tool guides the complete workflow: check existing leaderboards, create if needed, then provide implementation docs. Use this as the first step for any leaderboard integration request.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            purpose: {
+              type: 'string',
+              description: 'What the user wants to do with leaderboards (optional, for context)'
+            }
+          }
+        }
+      },
+
       // 📖 Core LeaderboardManager API Documentation Tools (one tool per API)
       {
         name: 'get_leaderboard_manager',
@@ -161,7 +176,7 @@ class TapTapDocsMCPServer {
       // ⚙️ Leaderboard Management Tools (requires TAPTAP_USER_TOKEN and TAPTAP_CLIENT_ID)
       {
         name: 'create_leaderboard',
-        description: 'Create a new leaderboard on TapTap server. Use this when user needs to create a leaderboard before using it in their minigame. If developer_id and app_id are not provided, they will be automatically fetched and cached.',
+        description: 'Create a new leaderboard on TapTap server. Use this AFTER checking existing leaderboards with list_leaderboards or start_leaderboard_integration. Auto-fetches developer_id and app_id if not provided. Returns the leaderboard_id needed for client-side APIs.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -215,7 +230,7 @@ class TapTapDocsMCPServer {
       },
       {
         name: 'list_leaderboards',
-        description: 'List all leaderboards created for the current app/game. Use this when user wants to see existing leaderboards, check leaderboard IDs, or manage their leaderboards. Auto-fetches developer_id and app_id if not provided.',
+        description: 'List all leaderboards created for the current app/game. Use this to check existing leaderboards before creating new ones or when user asks "我有哪些排行榜" or wants to see leaderboard IDs. Auto-fetches developer_id and app_id if not provided.',
         inputSchema: {
           type: 'object',
           properties: {
@@ -265,6 +280,9 @@ class TapTapDocsMCPServer {
    * 设置工具处理器
    */
   private setupHandlers(): void {
+    // Workflow guidance tool
+    this.toolHandlers.set('start_leaderboard_integration', this.startLeaderboardIntegration.bind(this));
+
     // Core LeaderboardManager API documentation tools
     this.toolHandlers.set('get_leaderboard_manager', leaderboardTools.getLeaderboardManager);
     this.toolHandlers.set('open_leaderboard', leaderboardTools.openLeaderboard);
@@ -321,6 +339,79 @@ class TapTapDocsMCPServer {
         );
       }
     });
+  }
+
+  /**
+   * 排行榜接入工作流引导
+   */
+  private async startLeaderboardIntegration(args: { purpose?: string }): Promise<string> {
+    try {
+      // Step 1: Check existing leaderboards
+      const leaderboardsResult = await listLeaderboards({}, TAPTAP_PROJECT_PATH);
+
+      if (!leaderboardsResult.list || leaderboardsResult.list.length === 0) {
+        // No leaderboards exist - guide to create one
+        return `🎯 排行榜接入流程\n\n` +
+               `📋 **当前状态：** 暂无排行榜\n\n` +
+               `**下一步操作：**\n` +
+               `您需要先创建一个排行榜。请使用 create_leaderboard 工具创建排行榜。\n\n` +
+               `**创建排行榜需要配置：**\n` +
+               `1. title - 排行榜名称（如 "每周高分榜"）\n` +
+               `2. period_type - 周期类型：0=每日, 1=每周, 2=每月, 3=永久\n` +
+               `3. score_type - 分数类型：0=整数, 1=浮点数, 2=时间\n` +
+               `4. score_order - 排序：0=升序（越低越好）, 1=降序（越高越好）\n` +
+               `5. calc_type - 计算方式：0=最佳, 1=最新, 2=累计, 3=首次\n\n` +
+               `💡 **建议配置示例（每周高分榜）：**\n` +
+               `\`\`\`\n` +
+               `title: "每周高分榜"\n` +
+               `period_type: 1 (每周)\n` +
+               `score_type: 0 (整数)\n` +
+               `score_order: 1 (降序，分数越高越好)\n` +
+               `calc_type: 0 (保留最佳成绩)\n` +
+               `\`\`\``;
+      }
+
+      // Leaderboards exist - present options
+      let output = `🎯 排行榜接入流程\n\n`;
+      output += `📋 **当前状态：** 已有 ${leaderboardsResult.total} 个排行榜\n\n`;
+
+      if (leaderboardsResult.list.length === 1) {
+        // Only one leaderboard - recommend using it
+        const lb = leaderboardsResult.list[0];
+        output += `**推荐使用现有排行榜：**\n`;
+        output += `- 名称: ${lb.title}\n`;
+        output += `- ID: ${lb.leaderboard_open_id}\n`;
+        output += `- 周期: ${lb.period}\n\n`;
+        output += `**下一步：选择要实现的功能**\n`;
+        output += `请告诉我您想实现以下哪个功能，我会提供相应的代码示例：\n\n`;
+      } else {
+        // Multiple leaderboards - let AI/user choose
+        output += `**现有排行榜列表：**\n\n`;
+        leaderboardsResult.list.forEach((lb, index) => {
+          output += `${index + 1}. **${lb.title}** (ID: ${lb.leaderboard_open_id})\n`;
+          output += `   - 周期: ${lb.period}\n`;
+          output += `   - 默认: ${lb.is_default ? '是' : '否'}\n\n`;
+        });
+        output += `**下一步：**\n`;
+        output += `请选择要使用的排行榜，或者告诉我您想创建新的排行榜。\n\n`;
+      }
+
+      output += `**可实现的功能：**\n`;
+      output += `1. 📊 **打开排行榜界面** - 使用 open_leaderboard 工具查看文档\n`;
+      output += `2. 📤 **提交玩家分数** - 使用 submit_scores 工具查看文档\n`;
+      output += `3. 📥 **查询排行榜数据** - 使用 load_leaderboard_scores 工具查看文档\n`;
+      output += `4. 🎯 **查询玩家排名** - 使用 load_current_player_score 工具查看文档\n`;
+      output += `5. 👥 **查询周围玩家** - 使用 load_player_centered_scores 工具查看文档\n`;
+
+      return output;
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      return `❌ 无法获取排行榜信息:\n${errorMsg}\n\n` +
+             `这可能是因为：\n` +
+             `1. 用户还没有创建应用/游戏\n` +
+             `2. 环境变量配置不正确\n\n` +
+             `请先确保用户已在 TapTap 平台创建了应用。`;
+    }
   }
 
   /**
