@@ -111,37 +111,89 @@ export class Logger {
   logRequest(method: string, url: string, headers: Record<string, string>, body?: string): void {
     if (!this.verbose) return;
 
-    process.stderr.write(`\n${'='.repeat(80)}\n`);
-    process.stderr.write(`[${getTimestamp()}] [HTTP REQUEST] ${method} ${url}\n`);
-    process.stderr.write(`${'='.repeat(80)}\n`);
+    process.stderr.write(`\n${'='.repeat(100)}\n`);
+    process.stderr.write(`[${getTimestamp()}] [HTTP REQUEST]\n`);
+    process.stderr.write(`${'='.repeat(100)}\n`);
+
+    // 请求基本信息
+    process.stderr.write(`📤 Method: ${method}\n`);
+    process.stderr.write(`📤 URL: ${url}\n`);
+    process.stderr.write(`\n`);
 
     // 过滤敏感信息
     const safeHeaders = { ...headers };
     if (safeHeaders['Authorization']) {
-      safeHeaders['Authorization'] = safeHeaders['Authorization'].replace(/mac="[^"]+"/g, 'mac="***"');
+      const authHeader = safeHeaders['Authorization'];
+      // 保留完整的 Authorization header 结构，只隐藏 mac 签名
+      safeHeaders['Authorization'] = authHeader.replace(/mac="[^"]+"/g, 'mac="***REDACTED***"');
+      // 显示原始的 Authorization（脱敏后）
+      process.stderr.write(`🔐 Authorization:\n${safeHeaders['Authorization']}\n\n`);
     }
     if (safeHeaders['X-Tap-Sign']) {
-      safeHeaders['X-Tap-Sign'] = '***';
+      safeHeaders['X-Tap-Sign'] = '***REDACTED***';
     }
 
-    process.stderr.write(`📤 Headers:\n${formatObject(safeHeaders)}\n`);
+    // 完整的 Headers
+    process.stderr.write(`📋 Headers (${Object.keys(headers).length} total):\n`);
+    process.stderr.write(`${formatObject(safeHeaders)}\n`);
 
+    // Body 内容
     if (body) {
-      process.stderr.write(`📤 Body:\n${body}\n`);
+      let parsedBody: any;
+      try {
+        parsedBody = JSON.parse(body);
+        process.stderr.write(`\n📦 Request Body (JSON):\n`);
+        process.stderr.write(`${formatObject(parsedBody)}\n`);
+      } catch {
+        process.stderr.write(`\n📦 Request Body (Raw):\n`);
+        process.stderr.write(`${body}\n`);
+      }
+    } else {
+      process.stderr.write(`\n📦 Request Body: (empty)\n`);
     }
   }
 
   /**
    * Log HTTP response
    */
-  logResponse(method: string, url: string, status: number, statusText: string, body: any, success: boolean = true): void {
+  logResponse(method: string, url: string, status: number, statusText: string, body: any, success: boolean = true, responseHeaders?: Record<string, string>): void {
     if (!this.verbose) return;
 
-    process.stderr.write(`\n${'-'.repeat(80)}\n`);
-    process.stderr.write(`[${getTimestamp()}] [HTTP RESPONSE] ${method} ${url} - ${status} ${statusText} ${success ? '✅' : '❌'}\n`);
-    process.stderr.write(`${'-'.repeat(80)}\n`);
-    process.stderr.write(`📥 Response:\n${typeof body === 'string' ? body : formatObject(body)}\n`);
-    process.stderr.write(`${'='.repeat(80)}\n\n`);
+    process.stderr.write(`\n${'-'.repeat(100)}\n`);
+    process.stderr.write(`[${getTimestamp()}] [HTTP RESPONSE] ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
+    process.stderr.write(`${'-'.repeat(100)}\n`);
+
+    // 响应基本信息
+    process.stderr.write(`📥 Method: ${method}\n`);
+    process.stderr.write(`📥 URL: ${url}\n`);
+    process.stderr.write(`📥 Status: ${status} ${statusText}\n`);
+    process.stderr.write(`\n`);
+
+    // 响应头（如果提供）
+    if (responseHeaders && Object.keys(responseHeaders).length > 0) {
+      process.stderr.write(`📋 Response Headers (${Object.keys(responseHeaders).length} total):\n`);
+      process.stderr.write(`${formatObject(responseHeaders)}\n\n`);
+    }
+
+    // 响应体
+    if (typeof body === 'string') {
+      // 尝试解析为 JSON
+      try {
+        const parsedBody = JSON.parse(body);
+        process.stderr.write(`📦 Response Body (JSON):\n`);
+        process.stderr.write(`${formatObject(parsedBody)}\n`);
+      } catch {
+        process.stderr.write(`📦 Response Body (Text):\n`);
+        process.stderr.write(`${body}\n`);
+      }
+    } else if (body !== undefined && body !== null) {
+      process.stderr.write(`📦 Response Body (Object):\n`);
+      process.stderr.write(`${formatObject(body)}\n`);
+    } else {
+      process.stderr.write(`📦 Response Body: (empty)\n`);
+    }
+
+    process.stderr.write(`${'='.repeat(100)}\n\n`);
   }
 
   /**

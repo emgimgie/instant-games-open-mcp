@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Enhanced
+- 🔍 **Significantly improved verbose logging** - More detailed HTTP request/response logs
+  - Request logs now show:
+    - Separate method and URL display
+    - Authorization header highlighted independently (with MAC signature redacted)
+    - Header count display (e.g., "6 total")
+    - JSON request body auto-parsing and formatting
+    - Clear empty body indication
+  - Response logs now show:
+    - Full response headers with count
+    - Smart JSON/text detection and formatting
+    - Clear empty body indication
+  - Enhanced log format with 100-character separators for better readability
+  - Added VERBOSE-LOG-EXAMPLE.md with comprehensive logging examples
+
+### Changed
+- Updated logger separator width from 80 to 100 characters
+- Enhanced security: MAC signatures now show as `***REDACTED***`
+
 ## [1.0.3] - 2025-10-09
 
 ### Added

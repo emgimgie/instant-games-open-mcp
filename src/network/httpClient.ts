@@ -215,6 +215,12 @@ export class HttpClient {
 
       clearTimeout(timeoutId);
 
+      // Extract response headers
+      const responseHeaders: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+
       // Handle non-OK responses
       if (!response.ok) {
         const contentType = response.headers.get('content-type');
@@ -231,8 +237,8 @@ export class HttpClient {
           errorMessage += ` - ${errorText}`;
         }
 
-        // Log error response
-        logger.logResponse(method, fullUrl, response.status, response.statusText, errorBody, false);
+        // Log error response with headers
+        logger.logResponse(method, fullUrl, response.status, response.statusText, errorBody, false, responseHeaders);
 
         throw new Error(errorMessage);
       }
@@ -243,8 +249,8 @@ export class HttpClient {
       if (contentType?.includes('application/json')) {
         const jsonData = await response.json() as ApiResponse<T>;
 
-        // Log successful response
-        logger.logResponse(method, fullUrl, response.status, response.statusText, jsonData, true);
+        // Log successful response with headers
+        logger.logResponse(method, fullUrl, response.status, response.statusText, jsonData, true, responseHeaders);
 
         // Handle API response format
         if (jsonData.success === false) {
@@ -258,8 +264,8 @@ export class HttpClient {
       // If not JSON, return text
       const text = await response.text();
 
-      // Log text response
-      logger.logResponse(method, fullUrl, response.status, response.statusText, text, true);
+      // Log text response with headers
+      logger.logResponse(method, fullUrl, response.status, response.statusText, text, true, responseHeaders);
 
       return text as T;
 
