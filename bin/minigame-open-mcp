@@ -2,33 +2,31 @@
 
 /**
  * TapTap Minigame Open API MCP Server
+ * Entry point for NPM executable
  */
 
-const path = require('path');
-const fs = require('fs');
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { existsSync } from 'node:fs';
+
+// Get current file path and directory (ES Module equivalent of __dirname)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Get package root directory
-const packageRoot = path.join(__dirname, '..');
+const packageRoot = join(__dirname, '..');
 
 // Check if compiled version exists
-const distPath = path.join(packageRoot, 'dist', 'server.js');
-const srcPath = path.join(packageRoot, 'src', 'server.ts');
+const distPath = join(packageRoot, 'dist', 'server.js');
 
-if (fs.existsSync(distPath)) {
-    // Use compiled version
-    require(distPath);
-} else if (fs.existsSync(srcPath)) {
-    // Development mode, use ts-node
-    try {
-        require('ts-node/register');
-        require(srcPath);
-    } catch (error) {
-        console.error('❌ Please install dependencies or build the project:');
-        console.error('   npm install');
-        console.error('   npm run build');
+if (existsSync(distPath)) {
+    // Use compiled version (ES Module dynamic import)
+    import(distPath).catch(error => {
+        console.error('❌ Failed to start server:', error);
         process.exit(1);
-    }
+    });
 } else {
-    console.error('❌ Server file not found');
+    console.error('❌ Server file not found. Please build the project first:');
+    console.error('   npm run build');
     process.exit(1);
 }

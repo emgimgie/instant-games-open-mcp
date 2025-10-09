@@ -40,17 +40,17 @@ interface HandlerContext {
 }
 
 /**
- * MCP 服务器类
+ * TapTap 小游戏 MCP 服务器
  */
-class TapTapDocsMCPServer {
+class TapTapMinigameMCPServer {
   private server: Server;
   private context: HandlerContext;
 
   constructor() {
     this.server = new Server(
       {
-        name: 'taptap-leaderboard-mcp',
-        version: '1.0.0',
+        name: 'taptap-minigame-mcp',
+        version: '1.0.2',
       }
     );
 
@@ -175,7 +175,7 @@ class TapTapDocsMCPServer {
     await this.server.connect(transport);
 
     const tools = getToolDefinitions();
-    process.stderr.write('🚀 TapTap Leaderboard MCP Server Started\n');
+    process.stderr.write('🚀 TapTap Minigame MCP Server Started\n');
     process.stderr.write(`📚 Providing ${tools.length} tools\n`);
     process.stderr.write('🏆 Features: Leaderboard Documentation & Management API\n');
     process.stderr.write(`🌍 Environment: ${apiConfig.environment}\n`);
@@ -185,7 +185,7 @@ class TapTapDocsMCPServer {
 
 // 启动服务器
 async function main(): Promise<void> {
-  const server = new TapTapDocsMCPServer();
+  const server = new TapTapMinigameMCPServer();
 
   // 处理优雅关闭
   process.on('SIGINT', () => {
