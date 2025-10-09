@@ -1,34 +1,34 @@
 #!/usr/bin/env node
 
 /**
- * TapTap 文档 MCP 服务器启动脚本
+ * TapTap Minigame Open API MCP Server
  */
 
 const path = require('path');
 const fs = require('fs');
 
-// 获取包的根目录
+// Get package root directory
 const packageRoot = path.join(__dirname, '..');
 
-// 检查是否已编译
+// Check if compiled version exists
 const distPath = path.join(packageRoot, 'dist', 'server.js');
 const srcPath = path.join(packageRoot, 'src', 'server.ts');
 
 if (fs.existsSync(distPath)) {
-    // 使用编译后的版本
+    // Use compiled version
     require(distPath);
 } else if (fs.existsSync(srcPath)) {
-    // 开发模式，使用 ts-node
+    // Development mode, use ts-node
     try {
         require('ts-node/register');
         require(srcPath);
     } catch (error) {
-        console.error('❌ 请先安装开发依赖或编译项目：');
+        console.error('❌ Please install dependencies or build the project:');
         console.error('   npm install');
         console.error('   npm run build');
         process.exit(1);
     }
 } else {
-    console.error('❌ 未找到服务器文件');
+    console.error('❌ Server file not found');
     process.exit(1);
 }

@@ -47,13 +47,8 @@ class TapTapDocsMCPServer {
   constructor() {
     this.server = new Server(
       {
-        name: 'taptap-docs-mcp',
+        name: 'taptap-leaderboard-mcp',
         version: '1.0.0',
-      },
-      {
-        capabilities: {
-          tools: {},
-        },
       }
     );
 
@@ -558,7 +553,7 @@ class TapTapDocsMCPServer {
    */
   private async getUserLeaderboardScores(args: { leaderboardId?: string; limit?: number }): Promise<string> {
     if (!TAPTAP_USER_TOKEN) {
-      return `❌ 此功能需要用户登录 TapTap\n请设置 TAPTAP_USER_TOKEN 环境变量\n\n降级为文档模式:\n${await leaderboardTools.getLeaderboardOverview({})}`;
+      return `❌ 此功能需要用户登录 TapTap\n请设置 TAPTAP_USER_TOKEN 环境变量\n\n降级为文档模式:\n${await leaderboardTools.getLeaderboardOverview()}`;
     }
 
     try {
@@ -584,7 +579,7 @@ class TapTapDocsMCPServer {
       return `🏆 用户排行榜数据:\n${JSON.stringify(data, null, 2)}`;
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
-      return `❌ API 调用失败: ${errorMsg}\n\n降级为文档模式:\n${await leaderboardTools.getLeaderboardOverview({})}`;
+      return `❌ API 调用失败: ${errorMsg}\n\n降级为文档模式:\n${await leaderboardTools.getLeaderboardOverview()}`;
     }
   }
 

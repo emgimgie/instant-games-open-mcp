@@ -1,25 +1,33 @@
 {
-  "name": "@taptap/minigame-docs-mcp",
+  "name": "@mikoto_zero/minigame-open-mcp",
   "version": "1.0.0",
-  "description": "TapTap 小游戏开发文档 MCP 服务器 - Node.js 版本",
+  "type": "module",
+  "description": "TapTap Minigame Open API MCP Server - Documentation and Management APIs for TapTap minigame (Leaderboard, and more features coming)",
   "main": "dist/server.js",
   "bin": {
-    "taptap-docs-mcp": "bin/taptap-docs-mcp"
+    "minigame-open-mcp": "bin/minigame-open-mcp"
   },
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
     "dev": "ts-node src/server.ts",
+    "prepublishOnly": "npm run build",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
     "format": "prettier --write src/**/*.ts"
   },
   "keywords": [
     "mcp",
+    "model-context-protocol",
     "taptap",
+    "minigame",
+    "leaderboard",
+    "ranking",
+    "open-api",
+    "game-development",
     "documentation",
     "ai-agent",
-    "minigame"
+    "openhands"
   ],
   "author": "TapTap Team",
   "license": "MIT",
@@ -49,6 +57,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/taptap/taptap-minigame-mcp-server.git"
+    "url": "git+https://github.com/taptap/minigame-open-mcp.git"
+  },
+  "homepage": "https://github.com/taptap/minigame-open-mcp#readme",
+  "bugs": {
+    "url": "https://github.com/taptap/minigame-open-mcp/issues"
   }
 }

@@ -1,0 +1,52 @@
+# Source files (only publish compiled files)
+src/
+tsconfig.json
+*.ts
+!*.d.ts
+
+# Development files
+.vscode/
+.idea/
+*.log
+*.swp
+.DS_Store
+
+# Test files
+test/
+tests/
+*.test.js
+*.spec.js
+__tests__/
+coverage/
+
+# Build artifacts
+node_modules/
+.nyc_output/
+
+# Git files
+.git/
+.gitignore
+.gitattributes
+
+# Documentation (keep README.md)
+docs/
+CONTRIBUTING.md
+
+# Config files
+.eslintrc*
+.prettierrc*
+.editorconfig
+jest.config.js
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+
+# Environment
+.env
+.env.*
+
+# Cache
+.taptap-minigame/
+*.cache

@@ -1,205 +1,235 @@
-# TapTap 小游戏开发文档 MCP 服务器
+# TapTap Minigame Open API MCP Server
 
-> 基于 Model Context Protocol (MCP) 的 TapTap 小游戏开发文档服务器（Node.js 版本）
->
-> 🚀 零配置部署 | 📚 完整文档 | 🔧 即开即用
+> Model Context Protocol (MCP) server for TapTap minigame leaderboard documentation and management APIs.
 
-## 🌟 功能特性
+🚀 **Auto-fetch IDs** | 📚 **Complete Docs** | 🔧 **Server-side Management**
 
-### ☁️ 云存档系统
-- 跨设备存档同步方案
-- 版本冲突智能处理
-- 多槽位存档管理
-- 数据安全和备份
-- 完整的 API 调用示例
+## Features
 
-### 🏆 排行榜系统
-- 分数提交和批量操作
-- 排名查询和实时更新
-- 排行榜界面集成
-- 竞技系统设计模式
-- 实时排名显示方案
+### 📖 LeaderboardManager API Documentation
 
-### ✨ 核心优势
-- **专注用户功能** - 云存档和排行榜等需要用户 token 的核心功能
-- **完整代码示例** - 可直接复制使用的实现代码
-- **零配置启动** - 无需 API 密钥或外部依赖
-- **即开即用** - 通过 npx 一键启动
+Complete documentation for all 5 LeaderboardManager APIs:
+- `tap.getLeaderboardManager()` - Initialize leaderboard system
+- `openLeaderboard()` - Display leaderboard UI
+- `submitScores()` - Submit player scores
+- `loadLeaderboardScores()` - Fetch leaderboard data
+- `loadCurrentPlayerLeaderboardScore()` - Get player's rank
+- `loadPlayerCenteredScores()` - Load nearby players
 
-## 🚀 快速开始
+Each API includes:
+- Method signature
+- Parameter descriptions
+- Return values
+- Complete code examples
+- Error handling
 
-### 通过 NPX 直接使用（推荐）
+### ⚙️ Server-side Management
+
+- **Create Leaderboards** - Create new leaderboards via TapTap API
+- **List Leaderboards** - Query existing leaderboards
+- **Auto ID Management** - Automatically fetch and cache developer_id and app_id
+- **Smart Workflow** - Intelligent guidance for leaderboard integration
+
+### 🎯 Intelligent Workflow
+
+The `start_leaderboard_integration` tool provides step-by-step guidance:
+1. Check existing leaderboards
+2. Create if needed
+3. Guide implementation with docs
+
+## Quick Start
+
+### Installation
+
 ```bash
-# 无需安装，直接运行
-npx @taptap/minigame-docs-mcp
+npm install -g minigame-open-mcp
 ```
 
-### 全局安装
-```bash
-# 全局安装
-npm install -g @taptap/minigame-docs-mcp
+Or use directly with npx (no installation needed):
 
-# 运行
-taptap-docs-mcp
+```bash
+npx minigame-open-mcp
 ```
 
-### 本地开发
-```bash
-# 克隆项目
-git clone <repository-url>
-cd taptap-minigame-mcp-server
+### Configuration
 
-# 安装依赖
-npm install
+#### For Claude Desktop
 
-# 开发模式运行
-npm run dev
+Add to `~/.config/claude-desktop/config.json`:
 
-# 或使用启动脚本
-./start-node-mcp.sh
-```
-
-## 🔗 AI Agent 集成
-
-### Claude Desktop 集成
-在 Claude Desktop 配置文件中添加：
 ```json
 {
   "mcpServers": {
-    "taptap-docs": {
+    "taptap-leaderboard": {
       "command": "npx",
-      "args": ["@taptap/minigame-docs-mcp"]
+      "args": ["minigame-open-mcp"],
+      "env": {
+        "TAPTAP_USER_TOKEN": "your_user_token",
+        "TAPTAP_CLIENT_ID": "your_client_id",
+        "TAPTAP_CLIENT_SECRET": "your_client_secret"
+      }
     }
   }
 }
 ```
 
-### OpenHands 集成
-在 OpenHands 的 `config.toml` 中添加：
-```toml
-[mcp]
-stdio_servers = [
-    {
-        name = "taptap-docs",
-        command = "npx",
-        args = ["@taptap/minigame-docs-mcp"]
+#### For OpenHands
+
+```json
+{
+  "mcpServers": {
+    "taptap-leaderboard": {
+      "command": "npx",
+      "args": ["minigame-open-mcp"],
+      "env": {
+        "TAPTAP_USER_TOKEN": "${CURRENT_USER_TAPTAP_TOKEN}",
+        "TAPTAP_CLIENT_ID": "your_client_id",
+        "TAPTAP_CLIENT_SECRET": "your_client_secret",
+        "TAPTAP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}"
+      }
     }
-]
+  }
+}
 ```
 
-### 其他 AI Agent
-使用标准 MCP 客户端库连接：
-```javascript
-import { StdioClientTransport } from '@modelcontextprotocol/sdk/client/stdio.js';
+### Environment Variables
 
-const transport = new StdioClientTransport({
-    command: 'npx',
-    args: ['@taptap/minigame-docs-mcp']
-});
-```
+**Required:**
+- `TAPTAP_USER_TOKEN` - User authentication token
+- `TAPTAP_CLIENT_ID` - Client ID for API access
+- `TAPTAP_CLIENT_SECRET` - Client secret for request signing
 
-## 📖 可用工具
+**Optional:**
+- `TAPTAP_ENV` - Environment: `production` (default) or `rnd`
+- `TAPTAP_PROJECT_PATH` - Project path for local caching
 
-### ☁️ 云存档功能工具
-- `search_cloud_save_docs` - 搜索云存档相关文档（同步、备份、冲突处理）
-- `get_cloud_save_overview` - 获取云存档功能概览
-- `get_cloud_save_category_docs` - 获取指定云存档分类的详细文档和 API 示例
+## Usage
 
-### 🏆 排行榜系统工具
-- `search_leaderboard_docs` - 搜索排行榜相关文档（分数提交、排名查询、界面显示）
-- `get_leaderboard_overview` - 获取排行榜功能概览
-- `get_leaderboard_category_docs` - 获取指定排行榜分类的详细文档
-- `get_leaderboard_patterns` - 获取排行榜集成模式和最佳实践
-
-> **注意**: 这些功能都需要用户 token 来执行实际的 API 请求
-
-## 💡 使用示例
-
-### 云存档开发
-```
-开发者: 如何实现游戏的云存档同步功能？
-
-MCP 工具: get_cloud_save_category_docs
-参数: { "category": "advanced_features" }
-→ 返回版本冲突处理、自动同步等高级功能的实现代码
-```
-
-### 排行榜系统
-```
-开发者: 我想在游戏中添加排行榜功能
-
-MCP 工具: get_leaderboard_patterns
-→ 返回完整的排行榜集成模式和游戏结束提交分数的完整代码示例
-```
-
-### 功能概览查询
-```
-开发者: TapTap 有哪些用户功能可以集成？
-
-MCP 工具: get_cloud_save_overview
-MCP 工具: get_leaderboard_overview
-→ 返回云存档和排行榜功能的完整概览和使用方法
-```
-
-## 🔧 开发和构建
-
-### 本地开发
-```bash
-# 安装依赖
-npm install
-
-# 开发模式（热重载）
-npm run dev
-
-# 构建项目
-npm run build
-
-# 运行测试
-npm test
-
-# 代码检查
-npm run lint
-
-# 格式化代码
-npm run format
-```
-
-### 发布到 NPM
-```bash
-# 构建项目
-npm run build
-
-# 发布到 NPM
-npm publish
-
-# 发布到私有仓库
-npm publish --registry https://npm.taptap.com/
-```
-
-## 📁 项目结构
+### Scenario 1: Getting Started with Leaderboards
 
 ```
-├── src/                          # TypeScript 源码
-│   ├── server.ts                 # 主服务器入口
-│   ├── data/                     # 静态文档数据
-│   │   ├── cloudSaveDocs.ts     # 云存档文档
-│   │   └── leaderboardDocs.ts   # 排行榜文档
-│   └── tools/                   # 工具处理函数
-│       ├── cloudSaveTools.ts    # 云存档工具
-│       └── leaderboardTools.ts  # 排行榜工具
-├── bin/                         # 可执行文件
-│   └── taptap-docs-mcp          # NPM 启动脚本
-├── dist/                        # 编译输出（自动生成）
-├── examples/                    # 集成配置示例
-├── package.json                 # NPM 包配置
-├── tsconfig.json               # TypeScript 配置
-└── README.md                   # 项目文档
+User: "I want to integrate leaderboards into my game"
+
+AI Agent calls: start_leaderboard_integration
+
+System response:
+✅ Checks existing leaderboards
+✅ Guides creation if needed
+✅ Shows available leaderboard features
+✅ Provides next steps
 ```
 
-## 📄 许可证
+### Scenario 2: Get Implementation Code
 
-MIT License
+```
+User: "How do I submit scores to the leaderboard?"
 
----
+AI Agent calls: submit_scores
 
-> **注意**: 本项目现在完全基于 Node.js，无需 Python 环境，通过 `npx` 即可零配置使用。
+System returns:
+✅ Method signature: leaderboardManager.submitScores(scores, callback)
+✅ Parameter documentation
+✅ Complete code example
+✅ Error handling guide
+```
+
+### Scenario 3: Create a Leaderboard
+
+```
+User: "Create a weekly high score leaderboard"
+
+AI Agent calls: create_leaderboard
+{
+  title: "Weekly High Score",
+  period_type: 1,
+  score_type: 0,
+  score_order: 1,
+  calc_type: 0
+}
+
+System:
+✅ Auto-fetches developer_id and app_id
+✅ Creates leaderboard
+✅ Returns leaderboard_id
+✅ Caches for future use
+```
+
+## Available Tools (14 total)
+
+### Core API Documentation Tools (6)
+- `get_leaderboard_manager`
+- `open_leaderboard`
+- `submit_scores`
+- `load_leaderboard_scores`
+- `load_current_player_score`
+- `load_player_centered_scores`
+
+### Management Tools (2)
+- `create_leaderboard` - Create new leaderboards
+- `list_leaderboards` - Query existing leaderboards
+
+### Helper Tools (3)
+- `search_leaderboard_docs` - Search documentation
+- `get_leaderboard_overview` - System overview
+- `get_leaderboard_patterns` - Best practices
+
+### System Tools (2)
+- `check_environment` - Environment check
+- `start_leaderboard_integration` - Workflow guidance
+
+### User Data Tool (1)
+- `get_user_leaderboard_scores` - Query user scores (requires token)
+
+## Technical Details
+
+### Request Signing
+
+All server-side API requests use HMAC-SHA256 signing:
+
+```
+Signature = HMAC-SHA256(
+  method + "\n" +
+  url + "\n" +
+  x-tap-headers + "\n" +
+  body + "\n",
+  TAPTAP_CLIENT_SECRET
+)
+```
+
+### Auto ID Management
+
+Developer ID and App ID are automatically managed:
+
+1. First call to management tools triggers `/level/v1/list` API
+2. Selects first developer and first app
+3. Caches to `~/.config/taptap-minigame/app.json`
+4. Subsequent calls use cached values
+5. No manual ID input needed
+
+### Multi-Environment Support
+
+- **Production** (default): `https://agent.tapapis.cn`
+- **RND**: `https://agent.api.xdrnd.cn`
+
+Switch via `TAPTAP_ENV` environment variable.
+
+## Requirements
+
+- Node.js >= 16.0.0
+- Valid TapTap user token
+- Client ID and secret for API access
+
+## API Reference
+
+Based on TapTap official documentation:
+- https://developer.taptap.cn/minigameapidoc/dev/api/open-api/leaderboard/
+
+## License
+
+MIT
+
+## Links
+
+- [TapTap Developer Portal](https://developer.taptap.cn/)
+- [MCP Protocol](https://modelcontextprotocol.io/)
+- [Issues](https://github.com/taptap/taptap-minigame-mcp-server/issues)

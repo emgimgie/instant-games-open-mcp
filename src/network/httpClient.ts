@@ -204,7 +204,7 @@ export class HttpClient {
         let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
 
         if (contentType?.includes('application/json')) {
-          const errorData = await response.json();
+          const errorData = await response.json() as any;
           errorMessage += ` - ${errorData.message || errorData.error || JSON.stringify(errorData)}`;
         } else {
           const errorText = await response.text();
