@@ -182,7 +182,7 @@ export async function createLeaderboard(
                `系统会自动从 /level/v1/list 接口获取您的应用信息。\n` +
                `如果失败，请检查：\n` +
                `1. 用户是否已创建应用/游戏\n` +
-               `2. TAPTAP_MAC_TOKEN 是否有效\n` +
+               `2. TDS_MCP_MAC_TOKEN 是否有效\n` +
                `3. 您也可以手动指定 developer_id 和 app_id 参数`;
       }
     }
@@ -230,9 +230,9 @@ export async function createLeaderboard(
     } else if (errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
       specificHelp = `\n🔑 **认证错误：**\n` +
                      `请检查环境变量:\n` +
-                     `- TAPTAP_MAC_TOKEN\n` +
-                     `- TAPTAP_CLIENT_ID\n` +
-                     `- TAPTAP_CLIENT_SECRET`;
+                     `- TDS_MCP_MAC_TOKEN\n` +
+                     `- TDS_MCP_CLIENT_ID\n` +
+                     `- TDS_MCP_CLIENT_TOKEN`;
     } else if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
       specificHelp = `\n🚫 **权限错误：**\n` +
                      `当前用户可能没有创建排行榜的权限，请检查开发者账号权限。`;
@@ -318,7 +318,7 @@ export async function getUserLeaderboardScores(
   context: HandlerContext
 ): Promise<string> {
   if (!context.macToken || !context.macToken.kid) {
-    return `❌ 此功能需要用户登录 TapTap\n请设置 TAPTAP_MAC_TOKEN 环境变量\n\n降级为文档模式:\n${await leaderboardTools.getLeaderboardOverview()}`;
+    return `❌ 此功能需要用户登录 TapTap\n请设置 TDS_MCP_MAC_TOKEN 环境变量\n\n降级为文档模式:\n${await leaderboardTools.getLeaderboardOverview()}`;
   }
 
   try {

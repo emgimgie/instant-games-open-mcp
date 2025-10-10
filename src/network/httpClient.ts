@@ -21,21 +21,21 @@ export class ApiConfig {
   public readonly environment: 'rnd' | 'production';
 
   private constructor() {
-    // Required environment variables
-    const macTokenStr = process.env.TAPTAP_MAC_TOKEN || '';
-    this.clientId = process.env.TAPTAP_CLIENT_ID || '';
-    this.clientSecret = process.env.TAPTAP_CLIENT_SECRET || '';
+    // Required environment variables (TDS_MCP_* prefix for consistency)
+    const macTokenStr = process.env.TDS_MCP_MAC_TOKEN || '';
+    this.clientId = process.env.TDS_MCP_CLIENT_ID || '';
+    this.clientSecret = process.env.TDS_MCP_CLIENT_TOKEN || '';  // Using CLIENT_TOKEN to match tapcode-mcp-h5
 
     // Parse MAC Token from JSON string
     try {
       this.macToken = macTokenStr ? JSON.parse(macTokenStr) : {} as MacToken;
     } catch (error) {
-      process.stderr.write('❌ Failed to parse TAPTAP_MAC_TOKEN: Invalid JSON format\n');
+      process.stderr.write('❌ Failed to parse TDS_MCP_MAC_TOKEN: Invalid JSON format\n');
       process.exit(1);
     }
 
     // Optional: default to production
-    this.environment = (process.env.TAPTAP_ENV === 'rnd') ? 'rnd' : 'production';
+    this.environment = (process.env.TDS_MCP_ENV === 'rnd') ? 'rnd' : 'production';
 
     // Set API base URL based on environment
     this.apiBaseUrl = this.environment === 'production'
@@ -50,20 +50,20 @@ export class ApiConfig {
     const missing: string[] = [];
 
     if (!this.macToken.kid || !this.macToken.mac_key) {
-      missing.push('TAPTAP_MAC_TOKEN (must be valid JSON with kid and mac_key)');
+      missing.push('TDS_MCP_MAC_TOKEN (must be valid JSON with kid and mac_key)');
     }
 
     if (!this.clientId) {
-      missing.push('TAPTAP_CLIENT_ID');
+      missing.push('TDS_MCP_CLIENT_ID');
     }
 
     if (!this.clientSecret) {
-      missing.push('TAPTAP_CLIENT_SECRET');
+      missing.push('TDS_MCP_CLIENT_TOKEN');
     }
 
     if (missing.length > 0) {
       process.stderr.write(`❌ Missing required environment variables: ${missing.join(', ')}\n`);
-      process.stderr.write('\nExample TAPTAP_MAC_TOKEN format:\n');
+      process.stderr.write('\nExample TDS_MCP_MAC_TOKEN format:\n');
       process.stderr.write('{"kid":"abc123","token_type":"mac","mac_key":"secret_key","mac_algorithm":"hmac-sha-1"}\n');
       process.exit(1);
     }
@@ -82,10 +82,10 @@ export class ApiConfig {
 
   public getConfigStatus(): Record<string, string> {
     return {
-      'TAPTAP_MAC_TOKEN': this.macToken.kid ? `✅ 已配置 (kid: ${this.macToken.kid.substring(0, 8)}...)` : '❌ 未配置',
-      'TAPTAP_CLIENT_ID': this.clientId ? '✅ 已配置' : '❌ 未配置',
-      'TAPTAP_CLIENT_SECRET': this.clientSecret ? '✅ 已配置' : '❌ 未配置',
-      'TAPTAP_ENV': `${this.environment} (${this.apiBaseUrl})`,
+      'TDS_MCP_MAC_TOKEN': this.macToken.kid ? `✅ 已配置 (kid: ${this.macToken.kid.substring(0, 8)}...)` : '❌ 未配置',
+      'TDS_MCP_CLIENT_ID': this.clientId ? '✅ 已配置' : '❌ 未配置',
+      'TDS_MCP_CLIENT_TOKEN': this.clientSecret ? '✅ 已配置' : '❌ 未配置',
+      'TDS_MCP_ENV': `${this.environment} (${this.apiBaseUrl})`,
     };
   }
 }

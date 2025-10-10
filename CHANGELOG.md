@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.13] - 2025-10-10
+
+### Changed
+- 🔄 **Rename environment variables** - Align with tapcode-mcp-h5 naming convention
+  - `TAPTAP_MAC_TOKEN` → `TDS_MCP_MAC_TOKEN`
+  - `TAPTAP_CLIENT_ID` → `TDS_MCP_CLIENT_ID`
+  - `TAPTAP_CLIENT_SECRET` → `TDS_MCP_CLIENT_TOKEN`
+  - `TAPTAP_ENV` → `TDS_MCP_ENV`
+  - `TAPTAP_PROJECT_PATH` → `TDS_MCP_PROJECT_PATH`
+  - `TAPTAP_MINIGAME_MCP_VERBOSE` → (unchanged, kept as is)
+  - Updated all documentation and code to use TDS_MCP_* prefix
+  - Maintains consistency with tapcode-mcp-h5 project
+
 ## [1.0.12] - 2025-10-10
 
 ### Fixed

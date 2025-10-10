@@ -123,7 +123,7 @@ Use this as the first step for any leaderboard integration request.`,
     // 🔧 Environment Check Tool
     {
       name: 'check_environment',
-      description: 'Check environment configuration and user authentication status. Use this to verify if TAPTAP_MAC_TOKEN and TAPTAP_CLIENT_ID are configured.',
+      description: 'Check environment configuration and user authentication status. Use this to verify if TDS_MCP_MAC_TOKEN and TDS_MCP_CLIENT_ID are configured.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -158,7 +158,7 @@ Use this as the first step for any leaderboard integration request.`,
       }
     },
 
-    // ⚙️ Leaderboard Management Tools (requires TAPTAP_MAC_TOKEN, TAPTAP_CLIENT_ID, TAPTAP_CLIENT_SECRET)
+    // ⚙️ Leaderboard Management Tools (requires TDS_MCP_MAC_TOKEN, TDS_MCP_CLIENT_ID, TDS_MCP_CLIENT_TOKEN)
     {
       name: 'create_leaderboard',
       description: `Create a new leaderboard on TapTap server. Use this AFTER checking existing leaderboards with list_leaderboards.
@@ -267,7 +267,7 @@ Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for
       }
     },
 
-    // 🔑 User Data Tools (requires TAPTAP_MAC_TOKEN)
+    // 🔑 User Data Tools (requires TDS_MCP_MAC_TOKEN)
     {
       name: 'get_user_leaderboard_scores',
       description: 'Get actual user leaderboard score data from TapTap API (requires user login). Use this when user wants to see their own scores or ranking positions. Falls back to documentation mode if token is not provided.',

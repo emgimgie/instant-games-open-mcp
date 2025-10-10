@@ -84,11 +84,11 @@ TAPTAP_MINIGAME_MCP_VERBOSE=true npm start
 
 ```bash
 # MAC Token（JSON 字符串格式）
-export TAPTAP_MAC_TOKEN='{"kid":"your_kid","token_type":"mac","mac_key":"your_mac_key","mac_algorithm":"hmac-sha-1"}'
+export TDS_MCP_MAC_TOKEN='{"kid":"your_kid","token_type":"mac","mac_key":"your_mac_key","mac_algorithm":"hmac-sha-1"}'
 
 # 客户端配置
-export TAPTAP_CLIENT_ID="your_client_id"
-export TAPTAP_CLIENT_SECRET="your_client_secret"
+export TDS_MCP_CLIENT_ID="your_client_id"
+export TDS_MCP_CLIENT_TOKEN="your_client_secret"
 
 # 启动服务器
 npm start
@@ -102,11 +102,11 @@ npm start
       "command": "npx",
       "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
-        "TAPTAP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
-        "TAPTAP_CLIENT_ID": "your_client_id",
-        "TAPTAP_CLIENT_SECRET": "your_client_secret",
-        "TAPTAP_ENV": "production",
-        "TAPTAP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
+        "TDS_MCP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
+        "TDS_MCP_CLIENT_ID": "your_client_id",
+        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
+        "TDS_MCP_ENV": "production",
+        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
         "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
       }
     }
@@ -122,11 +122,11 @@ npm start
       "command": "npx",
       "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
-        "TAPTAP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
-        "TAPTAP_CLIENT_ID": "your_client_id",
-        "TAPTAP_CLIENT_SECRET": "your_client_secret",
-        "TAPTAP_ENV": "production",
-        "TAPTAP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
+        "TDS_MCP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
+        "TDS_MCP_CLIENT_ID": "your_client_id",
+        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
+        "TDS_MCP_ENV": "production",
+        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
         "TAPTAP_MINIGAME_MCP_VERBOSE": "true"
       }
     }
@@ -146,9 +146,9 @@ npm run lint
 npm run format
 
 # 测试服务器启动
-TAPTAP_MAC_TOKEN='{"kid":"test","token_type":"mac","mac_key":"test","mac_algorithm":"hmac-sha-1"}' \
-TAPTAP_CLIENT_ID=test \
-TAPTAP_CLIENT_SECRET=test \
+TDS_MCP_MAC_TOKEN='{"kid":"test","token_type":"mac","mac_key":"test","mac_algorithm":"hmac-sha-1"}' \
+TDS_MCP_CLIENT_ID=test \
+TDS_MCP_CLIENT_TOKEN=test \
 node dist/server.js
 ```
 
@@ -163,9 +163,9 @@ node dist/server.js
       "command": "npx",
       "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
-        "TAPTAP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
-        "TAPTAP_CLIENT_ID": "your_client_id",
-        "TAPTAP_CLIENT_SECRET": "your_secret",
+        "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
+        "TDS_MCP_CLIENT_ID": "your_client_id",
+        "TDS_MCP_CLIENT_TOKEN": "your_secret",
         "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
       }
     }
@@ -181,9 +181,9 @@ node dist/server.js
       "command": "npx",
       "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
-        "TAPTAP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
-        "TAPTAP_CLIENT_ID": "your_client_id",
-        "TAPTAP_CLIENT_SECRET": "your_secret",
+        "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
+        "TDS_MCP_CLIENT_ID": "your_client_id",
+        "TDS_MCP_CLIENT_TOKEN": "your_secret",
         "TAPTAP_MINIGAME_MCP_VERBOSE": "true"
       }
     }
@@ -245,18 +245,18 @@ node dist/server.js
 ### 环境变量详解
 
 **核心环境变量（必需）**：
-- `TAPTAP_MAC_TOKEN`: 用户 MAC Token，JSON 字符串格式
+- `TDS_MCP_MAC_TOKEN`: 用户 MAC Token，JSON 字符串格式
   ```json
   {"kid":"abc123","token_type":"mac","mac_key":"secret","mac_algorithm":"hmac-sha-1"}
   ```
-- `TAPTAP_CLIENT_ID`: 客户端 ID，用于 API 调用
-- `TAPTAP_CLIENT_SECRET`: 客户端密钥，用于请求签名
+- `TDS_MCP_CLIENT_ID`: 客户端 ID，用于 API 调用
+- `TDS_MCP_CLIENT_TOKEN`: 客户端密钥，用于请求签名
 
 **可选配置**：
-- `TAPTAP_ENV`: 环境选择，`production`（默认）或 `rnd`
+- `TDS_MCP_ENV`: 环境选择，`production`（默认）或 `rnd`
   - production: `https://agent.tapapis.cn`
   - rnd: `https://agent.api.xdrnd.cn`
-- `TAPTAP_PROJECT_PATH`: 项目路径，用于本地缓存
+- `TDS_MCP_PROJECT_PATH`: 项目路径，用于本地缓存
 - `TAPTAP_MINIGAME_MCP_VERBOSE`: 详细日志模式，设置为 `true` 或 `1` 启用
   - 记录所有工具调用的输入和输出
   - 记录所有 HTTP 请求和响应
@@ -526,4 +526,4 @@ npm publish --access public
 - 环境变量名称使用 TAPTAP_ 前缀
 - MAC Token 必须是 JSON 字符串格式
 - 请求签名使用两层机制（MAC + X-Tap-Sign）
-- 默认环境为 production，可通过 TAPTAP_ENV 切换
+- 默认环境为 production，可通过 TDS_MCP_ENV 切换

@@ -29,8 +29,8 @@ import * as environmentHandlers from './handlers/environmentHandlers.js';
 
 // 环境变量配置
 const apiConfig = ApiConfig.getInstance();
-const TAPTAP_MAC_TOKEN = apiConfig.macToken;
-const TAPTAP_PROJECT_PATH = process.env.TAPTAP_PROJECT_PATH;
+const TDS_MCP_MAC_TOKEN = apiConfig.macToken;
+const TDS_MCP_PROJECT_PATH = process.env.TDS_MCP_PROJECT_PATH;
 
 /**
  * Handler context type
@@ -51,13 +51,13 @@ class TapTapMinigameMCPServer {
     this.server = new Server(
       {
         name: 'taptap-minigame-mcp',
-        version: '1.0.12',
+        version: '1.0.13',
       }
     );
 
     this.context = {
-      projectPath: TAPTAP_PROJECT_PATH,
-      macToken: TAPTAP_MAC_TOKEN
+      projectPath: TDS_MCP_PROJECT_PATH,
+      macToken: TDS_MCP_MAC_TOKEN
     };
 
     this.setupHandlers();

@@ -64,9 +64,9 @@ Add to `~/.config/claude-desktop/config.json`:
       "command": "npx",
       "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
-        "TAPTAP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
-        "TAPTAP_CLIENT_ID": "your_client_id",
-        "TAPTAP_CLIENT_SECRET": "your_client_secret",
+        "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
+        "TDS_MCP_CLIENT_ID": "your_client_id",
+        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
         "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
       }
     }
@@ -83,9 +83,9 @@ Add to `~/.config/claude-desktop/config.json`:
       "command": "npx",
       "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
-        "TAPTAP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
-        "TAPTAP_CLIENT_ID": "your_client_id",
-        "TAPTAP_CLIENT_SECRET": "your_client_secret",
+        "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
+        "TDS_MCP_CLIENT_ID": "your_client_id",
+        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
         "TAPTAP_MINIGAME_MCP_VERBOSE": "true"
       }
     }
@@ -102,10 +102,10 @@ Add to `~/.config/claude-desktop/config.json`:
       "command": "npx",
       "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
-        "TAPTAP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
-        "TAPTAP_CLIENT_ID": "your_client_id",
-        "TAPTAP_CLIENT_SECRET": "your_client_secret",
-        "TAPTAP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
+        "TDS_MCP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
+        "TDS_MCP_CLIENT_ID": "your_client_id",
+        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
+        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
         "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
       }
     }
@@ -116,13 +116,13 @@ Add to `~/.config/claude-desktop/config.json`:
 ### Environment Variables
 
 **Required:**
-- `TAPTAP_MAC_TOKEN` - MAC Token in JSON format for authentication
-- `TAPTAP_CLIENT_ID` - Client ID for API access
-- `TAPTAP_CLIENT_SECRET` - Client secret for request signing
+- `TDS_MCP_MAC_TOKEN` - MAC Token in JSON format for authentication
+- `TDS_MCP_CLIENT_ID` - Client ID for API access
+- `TDS_MCP_CLIENT_TOKEN` - Client secret for request signing
 
 **Optional:**
-- `TAPTAP_ENV` - Environment: `production` (default) or `rnd`
-- `TAPTAP_PROJECT_PATH` - Project path for local caching
+- `TDS_MCP_ENV` - Environment: `production` (default) or `rnd`
+- `TDS_MCP_PROJECT_PATH` - Project path for local caching
 - `TAPTAP_MINIGAME_MCP_VERBOSE` - Detailed logging: `true` or `false` (default)
 
 **Debugging:**
@@ -229,7 +229,7 @@ Signature = HMAC-SHA256(
   url + "\n" +
   x-tap-headers + "\n" +
   body + "\n",
-  TAPTAP_CLIENT_SECRET
+  TDS_MCP_CLIENT_TOKEN
 )
 ```
 
@@ -248,7 +248,7 @@ Developer ID and App ID are automatically managed:
 - **Production** (default): `https://agent.tapapis.cn`
 - **RND**: `https://agent.api.xdrnd.cn`
 
-Switch via `TAPTAP_ENV` environment variable.
+Switch via `TDS_MCP_ENV` environment variable.
 
 ## Requirements
 
