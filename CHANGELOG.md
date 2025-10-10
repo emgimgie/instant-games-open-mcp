@@ -5,14 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2025-10-10
+
+### Fixed
+- 🐛 **Revert to form-urlencoded** - Server requires form format, not JSON
+  - JSON format causes "必填" errors even with string/number variations
+  - Server's form parser handles numeric enum values correctly (when not 0)
+  - Reverted Content-Type to application/x-www-form-urlencoded
+  - All parameters sent as numbers (except text fields)
+  - **Critical**: All enum values must be >= 1 (not 0)
+
+### Notes
+- About isError=false: This is MCP protocol behavior - tools that return strings (including error messages) are considered "successful execution". Only thrown exceptions result in isError=true. The error message in the output is sufficient for AI agents to detect and handle failures.
+
 ## [1.0.9] - 2025-10-10
 
 ### Fixed
-- 🐛 **Hotfix for JSON parameter types** - Correct type mapping for API fields
+- 🐛 **Hotfix for JSON parameter types** - Attempted fix (reverted in 1.1.0)
   - IDs (developer_id, app_id, display_limit) should remain as numbers
   - Enums (period_type, score_type, score_order, calc_type) should be strings
-  - Fixes "cannot unmarshal string into Go struct field developer_id of type uint64" error
-  - Only enum values need string conversion, not all parameters
+  - This approach didn't work - server still rejected requests
 
 ## [1.0.8] - 2025-10-10
 

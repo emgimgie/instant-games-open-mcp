@@ -84,36 +84,25 @@ export async function createLeaderboard(params: CreateLeaderboardParams): Promis
   const client = new HttpClient();
 
   try {
-    // Build request body with correct types:
-    // - IDs (developer_id, app_id, display_limit) remain as numbers
-    // - Enum values (period_type, score_type, etc.) converted to strings
-    // - Text fields (title, period_time, score_unit) remain as strings
-    const requestBody: Record<string, string | number> = {
-      developer_id: params.developer_id,              // number (ID)
-      app_id: params.app_id,                          // number (ID)
-      title: params.title,                            // string
-      period_type: String(params.period_type),        // string (enum)
-      score_type: String(params.score_type),          // string (enum)
-      score_order: String(params.score_order),        // string (enum)
-      calc_type: String(params.calc_type)             // string (enum)
-    };
-
-    // Add optional fields only if provided
-    if (params.display_limit !== undefined) {
-      requestBody.display_limit = params.display_limit;  // number (ID)
-    }
-    if (params.period_time) {
-      requestBody.period_time = params.period_time;      // string
-    }
-    if (params.score_unit) {
-      requestBody.score_unit = params.score_unit;        // string
-    }
-
+    // Use form-urlencoded format (server prefers this over JSON)
+    // All parameters are sent as form fields with numeric values
+    // IMPORTANT: Enum values must be >= 1 (0 = UNSPECIFIED/invalid)
     const result = await client.post<CreateLeaderboardResponse>('/open/leaderboard/v1/create', {
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/x-www-form-urlencoded'
       },
-      body: requestBody
+      body: {
+        developer_id: params.developer_id,
+        app_id: params.app_id,
+        title: params.title,
+        period_type: params.period_type,    // number (must be 1-4, not 0)
+        score_type: params.score_type,      // number (must be 1-2, not 0)
+        score_order: params.score_order,    // number (must be 1-2, not 0)
+        calc_type: params.calc_type,        // number (must be 1-3, not 0)
+        display_limit: params.display_limit,
+        period_time: params.period_time,
+        score_unit: params.score_unit
+      }
     });
 
     return result;
