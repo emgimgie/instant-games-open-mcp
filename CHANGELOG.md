@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.11] - 2025-10-10
+
+### Fixed
+- 🐛 **Add period_time auto-default logic** - Required when period_type is not 1 (ALWAYS)
+  - When period_type is 2/3/4 (Daily/Weekly/Monthly), period_time is REQUIRED
+  - Auto-defaults to "08:00:00" (8 AM) if not provided
+  - Prevents 500 Internal Server Error caused by missing period_time
+
+### Improved
+- 📝 **Enhanced period_type documentation**
+  - Clarified: 3=Weekly (resets every Monday)
+  - Clarified: 4=Monthly (resets on 1st of month)
+  - Added warning about period_time requirement
+  - Updated all examples to include period_time when needed
+
 ## [1.0.10] - 2025-10-10
 
 ### Fixed

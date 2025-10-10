@@ -163,23 +163,31 @@ Use this as the first step for any leaderboard integration request.`,
       name: 'create_leaderboard',
       description: `Create a new leaderboard on TapTap server. Use this AFTER checking existing leaderboards with list_leaderboards.
 
-⚠️ CRITICAL: ALL enum values CANNOT be 0 (0 = UNSPECIFIED/invalid)! Use values 1-4 only!
+⚠️ CRITICAL RULES:
+1. ALL enum values CANNOT be 0 (0 = UNSPECIFIED/invalid)! Use values 1-4 only!
+2. If period_type is 2/3/4 (Daily/Weekly/Monthly), you MUST provide period_time!
+   - Auto-defaults to "08:00:00" (8 AM) if not provided
+   - period_type=1 (Always) does NOT need period_time
 
 Required parameters (MUST provide all 5 with VALID values):
 1. title: Leaderboard name/title (string)
 2. period_type: MUST be 1-4 (DO NOT use 0!)
-   - 1=Always/永久, 2=Daily/每天, 3=Weekly/每周, 4=Monthly/每月
+   - 1=Always/永久(no reset)
+   - 2=Daily/每天(resets daily at period_time)
+   - 3=Weekly/每周一(resets every Monday at period_time)
+   - 4=Monthly/每月1日(resets on 1st at period_time)
 3. score_type: MUST be 1-2 (DO NOT use 0!)
    - 1=Integer/数值型, 2=Time/时间型
 4. score_order: MUST be 1-2 (DO NOT use 0!)
    - 1=Descending/降序(higher better), 2=Ascending/升序(lower better)
 5. calc_type: MUST be 1-3 (DO NOT use 0!)
    - 1=Sum/累计分, 2=Best/最佳分, 3=Latest/最新分
+6. period_time: REQUIRED if period_type is 2/3/4 (HH:MM:SS format, e.g., "08:00:00")
 
 Example configurations:
-- High score game: period_type=3, score_type=1, score_order=1, calc_type=2
-- Racing game: period_type=3, score_type=2, score_order=2, calc_type=2
-- Cumulative points: period_type=1, score_type=1, score_order=1, calc_type=1
+- High score game: period_type=3, score_type=1, score_order=1, calc_type=2, period_time="08:00:00"
+- Racing game: period_type=3, score_type=2, score_order=2, calc_type=2, period_time="08:00:00"
+- Cumulative points: period_type=1, score_type=1, score_order=1, calc_type=1 (no period_time needed)
 
 Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for client-side APIs.`,
       inputSchema: {
@@ -199,7 +207,7 @@ Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for
           },
           period_type: {
             type: 'number',
-            description: 'Reset period (CANNOT be 0!): 1=Always/永久, 2=Daily/每天, 3=Weekly/每周, 4=Monthly/每月 (REQUIRED, must be 1-4)',
+            description: 'Reset period (CANNOT be 0!): 1=Always/永久(never reset), 2=Daily/每天(daily reset), 3=Weekly/每周一(reset every Monday), 4=Monthly/每月1日(reset on 1st). CRITICAL: If NOT 1, you MUST provide period_time! (REQUIRED, must be 1-4)',
             enum: [1, 2, 3, 4]
           },
           score_type: {
@@ -223,7 +231,7 @@ Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for
           },
           period_time: {
             type: 'string',
-            description: 'Daily/weekly/monthly reset time in HH:MM:SS format, e.g., "00:00:00" for midnight (optional, only for period_type 0/1/2)'
+            description: 'Reset time in HH:MM:SS format, e.g., "08:00:00" for 8 AM, "00:00:00" for midnight. REQUIRED when period_type is 2/3/4 (Daily/Weekly/Monthly). Auto-defaults to "08:00:00" if not provided and needed.'
           },
           score_unit: {
             type: 'string',

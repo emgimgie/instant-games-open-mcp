@@ -9,13 +9,14 @@ import { readAppCache, saveAppCache, AppCacheInfo } from '../utils/cache.js';
 /**
  * Period types for leaderboard
  * WARNING: 0 = UNSPECIFIED (invalid), do NOT use 0!
+ * IMPORTANT: When period_type is not 1 (ALWAYS), period_time is REQUIRED
  */
 export enum PeriodType {
   UNSPECIFIED = 0,  // 未指定 - 无效值
-  ALWAYS = 1,       // 永久
-  DAILY = 2,        // 每天
-  WEEKLY = 3,       // 每周
-  MONTHLY = 4       // 每月
+  ALWAYS = 1,       // 永久（不重置）
+  DAILY = 2,        // 每天（每天重置）
+  WEEKLY = 3,       // 每周（每周一重置）
+  MONTHLY = 4       // 每月（每月第一天重置）
 }
 
 /**
@@ -84,6 +85,13 @@ export async function createLeaderboard(params: CreateLeaderboardParams): Promis
   const client = new HttpClient();
 
   try {
+    // CRITICAL: When period_type is not 1 (ALWAYS), period_time is REQUIRED
+    // Default to 08:00:00 if not provided and period_type requires it
+    let periodTime = params.period_time;
+    if (params.period_type !== PeriodType.ALWAYS && !periodTime) {
+      periodTime = '08:00:00';  // Default: 8 AM reset time
+    }
+
     // Use form-urlencoded format (server prefers this over JSON)
     // All parameters are sent as form fields with numeric values
     // IMPORTANT: Enum values must be >= 1 (0 = UNSPECIFIED/invalid)
@@ -100,7 +108,7 @@ export async function createLeaderboard(params: CreateLeaderboardParams): Promis
         score_order: params.score_order,    // number (must be 1-2, not 0)
         calc_type: params.calc_type,        // number (must be 1-3, not 0)
         display_limit: params.display_limit,
-        period_time: params.period_time,
+        period_time: periodTime,            // Required when period_type != 1
         score_unit: params.score_unit
       }
     });
