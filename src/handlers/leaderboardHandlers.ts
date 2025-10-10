@@ -54,20 +54,24 @@ export async function startLeaderboardIntegration(
       return `🎯 排行榜接入流程\n\n` +
              `📋 **当前状态：** 暂无排行榜\n\n` +
              `**下一步操作：**\n` +
-             `您需要先创建一个排行榜。请使用 create_leaderboard 工具创建排行榜。\n\n` +
-             `**创建排行榜需要配置：**\n` +
+             `您需要先在服务器端创建一个排行榜（使用 create_leaderboard 工具）。\n\n` +
+             `⚠️ **重要：** TapTap 排行榜不需要引入任何 npm 包或 JS SDK！\n` +
+             `- 客户端直接使用全局 tap 对象\n` +
+             `- 无需 import 或 require\n` +
+             `- TapTap 运行环境自动提供\n\n` +
+             `**创建排行榜需要配置（所有值不能为 0）：**\n` +
              `1. title - 排行榜名称（如 "每周高分榜"）\n` +
-             `2. period_type - 周期类型：0=每日, 1=每周, 2=每月, 3=永久\n` +
-             `3. score_type - 分数类型：0=整数, 1=浮点数, 2=时间\n` +
-             `4. score_order - 排序：0=升序（越低越好）, 1=降序（越高越好）\n` +
-             `5. calc_type - 计算方式：0=最佳, 1=最新, 2=累计, 3=首次\n\n` +
-             `💡 **建议配置示例（每周高分榜）：**\n` +
+             `2. period_type - 周期：1=永久, 2=每日, 3=每周, 4=每月\n` +
+             `3. score_type - 分数类型：1=数值型, 2=时间型\n` +
+             `4. score_order - 排序：1=降序（越高越好）, 2=升序（越低越好）\n` +
+             `5. calc_type - 计算：1=累计, 2=最佳, 3=最新\n\n` +
+             `💡 **示例配置（每周高分榜）：**\n` +
              `\`\`\`\n` +
              `title: "每周高分榜"\n` +
-             `period_type: 1 (每周)\n` +
-             `score_type: 0 (整数)\n` +
+             `period_type: 3 (每周)\n` +
+             `score_type: 1 (数值型)\n` +
              `score_order: 1 (降序，分数越高越好)\n` +
-             `calc_type: 0 (保留最佳成绩)\n` +
+             `calc_type: 2 (保留最佳成绩)\n` +
              `\`\`\``;
     }
 
@@ -201,7 +205,38 @@ export async function createLeaderboard(
            `在小游戏中使用 leaderboardId "${result.leaderboard_id}" 来调用排行榜 API`;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    return `❌ 创建排行榜失败:\n${errorMsg}\n\n请检查:\n1. 环境变量是否正确配置（TAPTAP_MAC_TOKEN, TAPTAP_CLIENT_ID, TAPTAP_CLIENT_SECRET）\n2. 用户是否已创建应用/游戏\n3. 用户是否有创建排行榜的权限\n4. 是否有多个应用需要选择 (使用 list_developers_and_apps 查看)`;
+
+    // 解析具体错误，提供更有针对性的建议
+    let specificHelp = '';
+
+    if (errorMsg.includes('score_type') || errorMsg.includes('period_type') ||
+        errorMsg.includes('score_order') || errorMsg.includes('calc_type')) {
+      specificHelp = `\n⚠️ **参数错误：**\n` +
+                     `所有枚举参数的值不能为 0！（0 = 未指定/无效）\n` +
+                     `正确的值：\n` +
+                     `- period_type: 1=永久, 2=每日, 3=每周, 4=每月\n` +
+                     `- score_type: 1=数值型, 2=时间型\n` +
+                     `- score_order: 1=降序(越高越好), 2=升序(越低越好)\n` +
+                     `- calc_type: 1=累计, 2=最佳, 3=最新\n\n` +
+                     `请使用正确的枚举值重试。`;
+    } else if (errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
+      specificHelp = `\n🔑 **认证错误：**\n` +
+                     `请检查环境变量:\n` +
+                     `- TAPTAP_MAC_TOKEN\n` +
+                     `- TAPTAP_CLIENT_ID\n` +
+                     `- TAPTAP_CLIENT_SECRET`;
+    } else if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
+      specificHelp = `\n🚫 **权限错误：**\n` +
+                     `当前用户可能没有创建排行榜的权限，请检查开发者账号权限。`;
+    }
+
+    return `❌ 创建排行榜失败\n\n` +
+           `**错误信息：**\n${errorMsg}\n${specificHelp}\n\n` +
+           `**常见问题检查：**\n` +
+           `1. 所有枚举参数是否使用了正确的值（不能为 0）\n` +
+           `2. 环境变量是否正确配置\n` +
+           `3. 用户是否有创建排行榜的权限\n` +
+           `4. 是否有多个应用需要选择`;
   }
 }
 

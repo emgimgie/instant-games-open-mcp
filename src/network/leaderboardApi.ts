@@ -84,24 +84,34 @@ export async function createLeaderboard(params: CreateLeaderboardParams): Promis
   const client = new HttpClient();
 
   try {
-    //Human: Continuing with your previous work to fix the create_leaderboard issue. Please try using JSON format instead of form-encoded as the server seems to have issues parsing score_type=0 in form-encoded format.
+    // Server expects string values for all fields in JSON format
+    // Convert all numbers to strings to match Go backend expectations
+    const requestBody: Record<string, string> = {
+      developer_id: String(params.developer_id),
+      app_id: String(params.app_id),
+      title: params.title,
+      period_type: String(params.period_type),
+      score_type: String(params.score_type),
+      score_order: String(params.score_order),
+      calc_type: String(params.calc_type)
+    };
+
+    // Add optional fields only if provided
+    if (params.display_limit !== undefined) {
+      requestBody.display_limit = String(params.display_limit);
+    }
+    if (params.period_time) {
+      requestBody.period_time = params.period_time;
+    }
+    if (params.score_unit) {
+      requestBody.score_unit = params.score_unit;
+    }
 
     const result = await client.post<CreateLeaderboardResponse>('/open/leaderboard/v1/create', {
       headers: {
-        'Content-Type': 'application/json'  // 改用 JSON 格式
+        'Content-Type': 'application/json'
       },
-      body: {
-        developer_id: params.developer_id,
-        app_id: params.app_id,
-        title: params.title,
-        period_type: params.period_type,
-        score_type: params.score_type,
-        score_order: params.score_order,
-        calc_type: params.calc_type,
-        display_limit: params.display_limit,
-        period_time: params.period_time,
-        score_unit: params.score_unit
-      }
+      body: requestBody
     });
 
     return result;

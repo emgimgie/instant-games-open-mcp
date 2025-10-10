@@ -13,7 +13,20 @@ export function getToolDefinitions(): Tool[] {
     // 🎯 Workflow Guidance Tool
     {
       name: 'start_leaderboard_integration',
-      description: 'START HERE when user asks about integrating leaderboards, implementing rankings, or "接入排行榜". This tool guides the complete workflow: check existing leaderboards, create if needed, then provide implementation docs. Use this as the first step for any leaderboard integration request.',
+      description: `START HERE when user asks about integrating leaderboards, implementing rankings, or "接入排行榜".
+
+This tool guides the complete leaderboard integration workflow:
+1. Check if leaderboards already exist on server
+2. Guide user to create one if needed (server-side only, via this MCP tool)
+3. Provide client-side implementation code and docs
+
+IMPORTANT: TapTap leaderboard integration does NOT require npm packages or external JS SDKs!
+- Client code uses the global 'tap' object (provided by TapTap runtime)
+- Access via: tap.getLeaderboardManager()
+- No imports or dependencies needed
+- Works directly in TapTap minigame environment
+
+Use this as the first step for any leaderboard integration request.`,
       inputSchema: {
         type: 'object',
         properties: {

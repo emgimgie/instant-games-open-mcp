@@ -8,17 +8,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.7] - 2025-10-10
 
 ### Fixed
-- 🐛 **Critical fix for create_leaderboard** - Corrected enum values (0 is invalid!)
-  - According to API docs, all enum values with 0 mean "UNSPECIFIED/未指定" (invalid)
-  - Updated all enums to start from 1 instead of 0
-  - period_type: 1=Always, 2=Daily, 3=Weekly, 4=Monthly (not 0-4)
-  - score_type: 1=Integer, 2=Time (not 0-2)
-  - score_order: 1=Descending, 2=Ascending (not 0-2)
-  - calc_type: 1=Sum, 2=Best, 3=Latest (not 0-3)
-  - Updated tool descriptions with warnings: "CANNOT be 0!"
-  - Updated example configurations to use correct values
-  - Changed Content-Type to application/json for better compatibility
-  - Fixes "「score_type」必填" error caused by using invalid 0 values
+- 🐛 **Critical fix for create_leaderboard** - Multiple fixes for API compatibility
+  1. **Corrected enum values** - 0 is invalid (UNSPECIFIED)
+     - period_type: 1=Always, 2=Daily, 3=Weekly, 4=Monthly
+     - score_type: 1=Integer, 2=Time
+     - score_order: 1=Descending, 2=Ascending
+     - calc_type: 1=Sum, 2=Best, 3=Latest
+  2. **Convert parameters to strings** - Server expects string values in JSON
+     - All numeric parameters converted via String()
+     - Fixes "cannot unmarshal number into Go struct field" error
+  3. **Enhanced error messages** - Context-aware error handling
+     - Detects parameter errors and provides correct enum values
+     - Detects authentication errors with specific guidance
+     - Detects permission errors
+     - Better troubleshooting information for AI agents
+
+### Improved
+- 📝 **Enhanced start_leaderboard_integration tool**
+  - Added clarification: NO npm packages or JS SDKs required
+  - Emphasized use of global 'tap' object
+  - Updated enum value descriptions to correct values
+  - Better workflow guidance
+
+### Added
+- 📚 **Documentation improvements**
+  - Added TOOLS-COMPARISON.md explaining three tools' differences
+  - Added API-ENUM-VALUES.md with complete enum reference
 
 ## [1.0.6] - 2025-10-09
 
