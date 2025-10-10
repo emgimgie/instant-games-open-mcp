@@ -150,17 +150,23 @@ export function getToolDefinitions(): Tool[] {
       name: 'create_leaderboard',
       description: `Create a new leaderboard on TapTap server. Use this AFTER checking existing leaderboards with list_leaderboards.
 
-IMPORTANT - Required parameters (MUST provide all 5):
-1. title: Leaderboard name/title
-2. period_type: Period type (0=Daily, 1=Weekly, 2=Monthly, 3=Always, 4=Custom)
-3. score_type: Score type (0=Integer, 1=Float, 2=Time) - MUST be a number (0, 1, or 2)
-4. score_order: Score order (0=Ascending/lower better, 1=Descending/higher better, 2=None)
-5. calc_type: Calculation type (0=Best, 1=Latest, 2=Sum, 3=First)
+⚠️ CRITICAL: ALL enum values CANNOT be 0 (0 = UNSPECIFIED/invalid)! Use values 1-4 only!
 
-Common configurations:
-- High score game: period_type=1(Weekly), score_type=0(Integer), score_order=1(Descending), calc_type=0(Best)
-- Racing game: period_type=1(Weekly), score_type=2(Time), score_order=0(Ascending), calc_type=0(Best)
-- Cumulative: period_type=3(Always), score_type=0(Integer), score_order=1(Descending), calc_type=2(Sum)
+Required parameters (MUST provide all 5 with VALID values):
+1. title: Leaderboard name/title (string)
+2. period_type: MUST be 1-4 (DO NOT use 0!)
+   - 1=Always/永久, 2=Daily/每天, 3=Weekly/每周, 4=Monthly/每月
+3. score_type: MUST be 1-2 (DO NOT use 0!)
+   - 1=Integer/数值型, 2=Time/时间型
+4. score_order: MUST be 1-2 (DO NOT use 0!)
+   - 1=Descending/降序(higher better), 2=Ascending/升序(lower better)
+5. calc_type: MUST be 1-3 (DO NOT use 0!)
+   - 1=Sum/累计分, 2=Best/最佳分, 3=Latest/最新分
+
+Example configurations:
+- High score game: period_type=3, score_type=1, score_order=1, calc_type=2
+- Racing game: period_type=3, score_type=2, score_order=2, calc_type=2
+- Cumulative points: period_type=1, score_type=1, score_order=1, calc_type=1
 
 Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for client-side APIs.`,
       inputSchema: {
@@ -180,23 +186,23 @@ Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for
           },
           period_type: {
             type: 'number',
-            description: 'Reset period: 0=Daily, 1=Weekly, 2=Monthly, 3=Always (no reset), 4=Custom period (REQUIRED)',
-            enum: [0, 1, 2, 3, 4]
+            description: 'Reset period (CANNOT be 0!): 1=Always/永久, 2=Daily/每天, 3=Weekly/每周, 4=Monthly/每月 (REQUIRED, must be 1-4)',
+            enum: [1, 2, 3, 4]
           },
           score_type: {
             type: 'number',
-            description: 'Score data type: 0=Integer (e.g., points, kills), 1=Float (decimal scores), 2=Time (milliseconds) (REQUIRED - must be 0, 1, or 2)',
-            enum: [0, 1, 2]
+            description: 'Score data type (CANNOT be 0!): 1=Integer/数值型 (points, kills), 2=Time/时间型 (milliseconds) (REQUIRED, must be 1 or 2)',
+            enum: [1, 2]
           },
           score_order: {
             type: 'number',
-            description: 'Ranking order: 0=Ascending (lower score is better, e.g., race time), 1=Descending (higher score is better, e.g., points), 2=None (no ordering) (REQUIRED)',
-            enum: [0, 1, 2]
+            description: 'Ranking order (CANNOT be 0!): 1=Descending/降序 (higher is better, e.g., points), 2=Ascending/升序 (lower is better, e.g., time) (REQUIRED, must be 1 or 2)',
+            enum: [1, 2]
           },
           calc_type: {
             type: 'number',
-            description: 'Score calculation when player submits multiple times: 0=Best (keep highest/lowest), 1=Latest (keep most recent), 2=Sum (add all scores), 3=First (keep first submission) (REQUIRED)',
-            enum: [0, 1, 2, 3]
+            description: 'Score calculation method (CANNOT be 0!): 1=Sum/累计分 (add all), 2=Best/最佳分 (keep best), 3=Latest/最新分 (keep latest) (REQUIRED, must be 1-3)',
+            enum: [1, 2, 3]
           },
           display_limit: {
             type: 'number',

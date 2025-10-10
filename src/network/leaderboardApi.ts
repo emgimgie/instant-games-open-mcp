@@ -8,41 +8,45 @@ import { readAppCache, saveAppCache, AppCacheInfo } from '../utils/cache.js';
 
 /**
  * Period types for leaderboard
+ * WARNING: 0 = UNSPECIFIED (invalid), do NOT use 0!
  */
 export enum PeriodType {
-  DAILY = 0,
-  WEEKLY = 1,
-  MONTHLY = 2,
-  ALWAYS = 3,
-  CUSTOM = 4
+  UNSPECIFIED = 0,  // 未指定 - 无效值
+  ALWAYS = 1,       // 永久
+  DAILY = 2,        // 每天
+  WEEKLY = 3,       // 每周
+  MONTHLY = 4       // 每月
 }
 
 /**
  * Score types
+ * WARNING: 0 = UNSPECIFIED (invalid), do NOT use 0!
  */
 export enum ScoreType {
-  INTEGER = 0,
-  FLOAT = 1,
-  TIME = 2
+  UNSPECIFIED = 0,  // 未指定 - 无效值
+  INTEGER = 1,      // 数值型
+  TIME = 2          // 时间型
 }
 
 /**
  * Score order
+ * WARNING: 0 = UNSPECIFIED (invalid), do NOT use 0!
  */
 export enum ScoreOrder {
-  ASCENDING = 0,
-  DESCENDING = 1,
-  NONE = 2
+  UNSPECIFIED = 0,  // 未指定 - 无效值
+  DESCENDING = 1,   // 降序（数值越大越好）
+  ASCENDING = 2     // 升序（数值越小越好）
 }
 
 /**
  * Calculation types
+ * WARNING: 0 = UNSPECIFIED (invalid), do NOT use 0!
  */
 export enum CalcType {
-  BEST = 0,
-  LATEST = 1,
-  SUM = 2,
-  FIRST = 3
+  UNSPECIFIED = 0,  // 未指定 - 无效值
+  SUM = 1,          // 累计分
+  BEST = 2,         // 最佳分
+  LATEST = 3        // 最新分
 }
 
 /**
@@ -389,26 +393,22 @@ export async function listLeaderboards(
  */
 export const EnumDescriptions = {
   PeriodType: {
-    [PeriodType.DAILY]: 'Daily (resets every day)',
-    [PeriodType.WEEKLY]: 'Weekly (resets every week)',
-    [PeriodType.MONTHLY]: 'Monthly (resets every month)',
-    [PeriodType.ALWAYS]: 'Always (never resets)',
-    [PeriodType.CUSTOM]: 'Custom (custom reset schedule)'
+    [PeriodType.ALWAYS]: 'Always/永久 (never resets)',
+    [PeriodType.DAILY]: 'Daily/每天 (resets every day)',
+    [PeriodType.WEEKLY]: 'Weekly/每周 (resets every week)',
+    [PeriodType.MONTHLY]: 'Monthly/每月 (resets every month)'
   },
   ScoreType: {
-    [ScoreType.INTEGER]: 'Integer',
-    [ScoreType.FLOAT]: 'Float',
-    [ScoreType.TIME]: 'Time'
+    [ScoreType.INTEGER]: 'Integer/数值型',
+    [ScoreType.TIME]: 'Time/时间型'
   },
   ScoreOrder: {
-    [ScoreOrder.ASCENDING]: 'Ascending (lower is better)',
-    [ScoreOrder.DESCENDING]: 'Descending (higher is better)',
-    [ScoreOrder.NONE]: 'None'
+    [ScoreOrder.DESCENDING]: 'Descending/降序 (higher is better)',
+    [ScoreOrder.ASCENDING]: 'Ascending/升序 (lower is better)'
   },
   CalcType: {
-    [CalcType.BEST]: 'Best (keep best score)',
-    [CalcType.LATEST]: 'Latest (keep latest score)',
-    [CalcType.SUM]: 'Sum (sum all scores)',
-    [CalcType.FIRST]: 'First (keep first score)'
+    [CalcType.SUM]: 'Sum/累计分 (add all scores)',
+    [CalcType.BEST]: 'Best/最佳分 (keep best score)',
+    [CalcType.LATEST]: 'Latest/最新分 (keep latest score)'
   }
 };

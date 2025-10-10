@@ -8,12 +8,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.7] - 2025-10-10
 
 ### Fixed
-- 🐛 **Critical fix for create_leaderboard API** - Changed Content-Type from form-encoded to JSON
-  - Server was rejecting form-encoded requests with `score_type=0`
-  - Server's form parser treats `score_type=0` as missing/empty
-  - Now using `application/json` instead of `application/x-www-form-urlencoded`
-  - Fixes "「score_type」必填" error even when parameter was provided
-  - Tested with verbose logs showing correct parameter transmission
+- 🐛 **Critical fix for create_leaderboard** - Corrected enum values (0 is invalid!)
+  - According to API docs, all enum values with 0 mean "UNSPECIFIED/未指定" (invalid)
+  - Updated all enums to start from 1 instead of 0
+  - period_type: 1=Always, 2=Daily, 3=Weekly, 4=Monthly (not 0-4)
+  - score_type: 1=Integer, 2=Time (not 0-2)
+  - score_order: 1=Descending, 2=Ascending (not 0-2)
+  - calc_type: 1=Sum, 2=Best, 3=Latest (not 0-3)
+  - Updated tool descriptions with warnings: "CANNOT be 0!"
+  - Updated example configurations to use correct values
+  - Changed Content-Type to application/json for better compatibility
+  - Fixes "「score_type」必填" error caused by using invalid 0 values
 
 ## [1.0.6] - 2025-10-09
 
