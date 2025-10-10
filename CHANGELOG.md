@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.12] - 2025-10-10
+
+### Fixed
+- 📝 **Fix documentation inconsistencies** - Corrected code examples to prevent AI confusion
+  - Fixed: Use `leaderboardId` (not `leaderboardName`) consistently
+  - Fixed: All API calls must use object parameters, not direct strings
+  - Fixed: submitScores must wrap scores in `{ scores: [...] }` object
+  - Fixed: loadCurrentPlayerLeaderboardScore takes `{ leaderboardId, collection }` object
+  - Fixed: loadPlayerCenteredScores takes `{ leaderboardId, before, after }` object
+  - Fixed: openLeaderboard takes `{ leaderboardId, collection }` object
+  - Added warning in Quick Start section about correct parameter format
+  - Prevents AI agents from generating incorrect code with wrong field names
+
 ## [1.0.11] - 2025-10-10
 
 ### Fixed

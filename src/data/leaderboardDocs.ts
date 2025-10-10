@@ -344,14 +344,14 @@ const leaderboardManager = tap.getLeaderboardManager();
 // 1. After game ends, submit score
 async function submitGameScore(finalScore) {
   try {
-    await leaderboardManager.submitScores([{
-      leaderboardName: 'daily_ranking',
-      score: finalScore,
-      extraInfo: JSON.stringify({
-        timestamp: Date.now(),
-        gameMode: 'classic'
-      })
-    }]);
+    // Use leaderboardId (not leaderboardName!)
+    // Wrap in scores array within an object
+    await leaderboardManager.submitScores({
+      scores: [{
+        leaderboardId: 'daily_ranking',  // Use leaderboardId
+        score: finalScore
+      }]
+    });
     console.log('Score submitted!');
     return true;
   } catch (error) {
@@ -363,7 +363,11 @@ async function submitGameScore(finalScore) {
 // 2. Show player's ranking after submission
 async function showPlayerRanking() {
   try {
-    const playerScore = await leaderboardManager.loadCurrentPlayerLeaderboardScore('daily_ranking');
+    // Use object parameter with leaderboardId
+    const playerScore = await leaderboardManager.loadCurrentPlayerLeaderboardScore({
+      leaderboardId: 'daily_ranking',
+      collection: 'public'
+    });
 
     // Display ranking to player
     showMessage(\`Your rank: #\${playerScore.rank}\`);
@@ -381,7 +385,9 @@ async function showPlayerRanking() {
 // 3. Display nearby competitors
 async function showNearbyPlayers() {
   try {
-    const nearby = await leaderboardManager.loadPlayerCenteredScores('daily_ranking', {
+    // Use object parameter with leaderboardId
+    const nearby = await leaderboardManager.loadPlayerCenteredScores({
+      leaderboardId: 'daily_ranking',
       before: 3,
       after: 3
     });
@@ -395,7 +401,11 @@ async function showNearbyPlayers() {
 
 // 4. Open full leaderboard when player clicks "View All"
 function openFullLeaderboard() {
-  leaderboardManager.openLeaderboard();
+  // Use object parameter with leaderboardId
+  leaderboardManager.openLeaderboard({
+    leaderboardId: 'daily_ranking',
+    collection: 'public'
+  });
 }
 
 // Complete flow
@@ -548,22 +558,31 @@ Available methods: ${cat.apis.map(api => `\`${api.name}\``).join(', ')}
 
 ## Quick Start
 
+⚠️ **CRITICAL: Use leaderboardId (NOT leaderboardName) and wrap parameters in objects!**
+
 \`\`\`javascript
 // 1. Get LeaderboardManager instance
 const leaderboardManager = tap.getLeaderboardManager();
 
-// 2. Submit a score
-await leaderboardManager.submitScores([{
-  leaderboardName: 'my_leaderboard',
-  score: 1000
-}]);
+// 2. Submit a score (use leaderboardId and wrap in scores array)
+await leaderboardManager.submitScores({
+  scores: [{
+    leaderboardId: 'my_leaderboard',  // Use leaderboardId (not leaderboardName)
+    score: 1000
+  }]
+});
 
-// 3. Query current player's rank
-const playerScore = await leaderboardManager.loadCurrentPlayerLeaderboardScore('my_leaderboard');
+// 3. Query current player's rank (use object parameter)
+const playerScore = await leaderboardManager.loadCurrentPlayerLeaderboardScore({
+  leaderboardId: 'my_leaderboard',
+  collection: 'public'
+});
 console.log('Your rank:', playerScore.rank);
 
-// 4. Open leaderboard UI
-leaderboardManager.openLeaderboard();
+// 4. Open leaderboard UI (use object parameter)
+leaderboardManager.openLeaderboard({
+  leaderboardId: 'my_leaderboard'
+});
 \`\`\`
 `;
 }
