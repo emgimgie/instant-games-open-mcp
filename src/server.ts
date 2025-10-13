@@ -51,7 +51,7 @@ class TapTapMinigameMCPServer {
     this.server = new Server(
       {
         name: 'taptap-minigame-mcp',
-        version: '1.0.13',
+        version: '1.0.14',
       }
     );
 
@@ -164,6 +164,9 @@ class TapTapMinigameMCPServer {
     }
     if (name === 'list_leaderboards') {
       return leaderboardHandlers.listLeaderboards(args, this.context);
+    }
+    if (name === 'publish_leaderboard') {
+      return leaderboardHandlers.publishLeaderboard(args, this.context);
     }
 
     // User data tools

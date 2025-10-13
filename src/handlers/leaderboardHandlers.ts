@@ -6,6 +6,7 @@
 import {
   createLeaderboard as createLeaderboardApi,
   listLeaderboards as listLeaderboardsApi,
+  publishLeaderboard as publishLeaderboardApi,
   ensureAppInfo,
   SelectionRequiredError,
   PeriodType,
@@ -90,23 +91,50 @@ export async function startLeaderboardIntegration(
     if (leaderboardsResult.list.length === 1) {
       // Only one leaderboard - recommend using it
       const lb = leaderboardsResult.list[0];
+      const statusEmoji = lb.whitelist_only ? '🔒' : '🚀';
+      const statusText = lb.whitelist_only ? '仅白名单可见（内测模式）' : '已公开发布';
+
       output += `**推荐使用现有排行榜：**\n`;
       output += `- 名称: ${lb.title}\n`;
       output += `- ID: ${lb.leaderboard_open_id}\n`;
       output += `- 周期: ${lb.period}\n`;
-      output += `- 默认: ${lb.is_default ? '是' : '否'}\n\n`;
+      output += `- 默认: ${lb.is_default ? '是' : '否'}\n`;
+      output += `- 状态: ${statusEmoji} ${statusText}\n\n`;
+
+      // Add publish reminder if still in whitelist mode
+      if (lb.whitelist_only) {
+        output += `💡 **提示：** 此排行榜当前处于内测模式（仅白名单可见）。\n`;
+        output += `完成测试后，可以使用 publish_leaderboard 工具将其发布上线，让所有用户可见。\n\n`;
+      }
+
       output += `**下一步：选择要实现的功能**\n`;
       output += `请告诉我您想实现以下哪个功能，我会提供相应的代码示例：\n\n`;
     } else {
       // Multiple leaderboards - let AI/user choose
       output += `**现有排行榜列表：**\n\n`;
+      let hasWhitelistOnly = false;
+
       leaderboardsResult.list.forEach((lb, index) => {
+        const statusEmoji = lb.whitelist_only ? '🔒' : '🚀';
+        const statusText = lb.whitelist_only ? '内测' : '已发布';
+
         output += `${index + 1}. **${lb.title}**\n`;
         output += `   - ID: ${lb.leaderboard_open_id}\n`;
         output += `   - 周期: ${lb.period}\n`;
         output += `   - 默认: ${lb.is_default ? '是' : '否'}\n`;
-        output += `   - 白名单: ${lb.whitelist_only ? '是' : '否'}\n\n`;
+        output += `   - 状态: ${statusEmoji} ${statusText}\n\n`;
+
+        if (lb.whitelist_only) {
+          hasWhitelistOnly = true;
+        }
       });
+
+      // Add publish reminder if any leaderboard is in whitelist mode
+      if (hasWhitelistOnly) {
+        output += `💡 **提示：** 检测到有排行榜处于内测模式（🔒 标记）。\n`;
+        output += `完成测试后，可以使用 publish_leaderboard 工具将其发布上线。\n\n`;
+      }
+
       output += `**下一步：**\n`;
       output += `请选择要使用的排行榜 (通过 leaderboard_open_id)，或者告诉我您想创建新的排行榜。\n\n`;
     }
@@ -117,6 +145,7 @@ export async function startLeaderboardIntegration(
     output += `3. 📥 **查询排行榜数据** - 使用 load_leaderboard_scores 工具查看文档\n`;
     output += `4. 🎯 **查询玩家排名** - 使用 load_current_player_score 工具查看文档\n`;
     output += `5. 👥 **查询周围玩家** - 使用 load_player_centered_scores 工具查看文档\n`;
+    output += `6. 🚀 **发布排行榜上线** - 使用 publish_leaderboard 工具（完成测试后）\n`;
 
     return output;
   } catch (error) {
@@ -210,7 +239,14 @@ export async function createLeaderboard(
            `- Developer ID: ${developerId}\n` +
            `- App ID: ${appId}\n\n` +
            `🎮 使用方法:\n` +
-           `在小游戏中使用 leaderboardId "${result.leaderboard_id}" 来调用排行榜 API`;
+           `在小游戏中使用 leaderboardId "${result.leaderboard_id}" 来调用排行榜 API\n\n` +
+           `🔒 **重要提示：**\n` +
+           `新创建的排行榜默认为 **仅白名单可见** 状态（内测模式）。\n` +
+           `这样您可以先进行测试，确认功能正常后再发布上线。\n\n` +
+           `**完成测试后的步骤：**\n` +
+           `1. 在客户端实现排行榜相关功能并测试\n` +
+           `2. 确认一切正常后，使用 publish_leaderboard 工具发布上线\n` +
+           `3. 发布后，所有用户都可以看到该排行榜`;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
 
@@ -273,14 +309,21 @@ export async function listLeaderboards(
     }
 
     let output = `📋 排行榜列表 (共 ${result.total} 个)\n\n`;
+    let hasWhitelistOnly = false;
 
     result.list.forEach((item, index) => {
-      output += `${index + 1}. **${item.title}**\n`;
+      const statusEmoji = item.whitelist_only ? '🔒' : '🚀';
+      const statusText = item.whitelist_only ? '内测中' : '已发布';
+
+      output += `${index + 1}. **${item.title}** ${statusEmoji} ${statusText}\n`;
       output += `   - ID: ${item.id}\n`;
       output += `   - Open ID: ${item.leaderboard_open_id}\n`;
       output += `   - Period: ${item.period}\n`;
-      output += `   - Default: ${item.is_default ? 'Yes' : 'No'}\n`;
-      output += `   - Whitelist Only: ${item.whitelist_only ? 'Yes' : 'No'}\n\n`;
+      output += `   - Default: ${item.is_default ? 'Yes' : 'No'}\n\n`;
+
+      if (item.whitelist_only) {
+        hasWhitelistOnly = true;
+      }
     });
 
     const currentPage = args.page || 1;
@@ -292,6 +335,13 @@ export async function listLeaderboards(
       if (currentPage < totalPages) {
         output += `Use page=${currentPage + 1} to see more results.\n`;
       }
+    }
+
+    // Add publish reminder if any leaderboard is in whitelist mode
+    if (hasWhitelistOnly) {
+      output += `\n💡 **提示：** 有排行榜处于内测模式（🔒 标记）。\n`;
+      output += `完成测试后，可以使用 publish_leaderboard 工具发布上线。\n`;
+      output += `示例：将 ID 为 123 的排行榜发布上线，使用参数 { "id": 123, "publish": true }`;
     }
 
     return output;
@@ -307,6 +357,111 @@ export async function listLeaderboards(
 
     const errorMsg = error instanceof Error ? error.message : String(error);
     return `❌ 查询排行榜列表失败:\n${errorMsg}`;
+  }
+}
+
+/**
+ * Publish a leaderboard or set it to whitelist-only mode
+ */
+export async function publishLeaderboard(
+  args: {
+    developer_id?: number;
+    app_id?: number;
+    id: number;
+    publish: boolean;  // true = 发布上线, false = 仅白名单可见
+  },
+  context: HandlerContext
+): Promise<string> {
+  try {
+    // Ensure developer_id and app_id are available
+    let developerId = args.developer_id;
+    let appId = args.app_id;
+
+    // If not provided, try to get from cache or API
+    if (!developerId || !appId) {
+      try {
+        const appInfo = await ensureAppInfo(context.projectPath, true);
+
+        if (!developerId) {
+          developerId = appInfo.developer_id;
+        }
+
+        if (!appId) {
+          appId = appInfo.app_id;
+        }
+      } catch (error) {
+        if (error instanceof SelectionRequiredError) {
+          return `❌ 无法发布排行榜：需要选择应用\n\n` +
+                 error.message + `\n\n` +
+                 `**操作步骤：**\n` +
+                 `1. 使用 list_developers_and_apps 查看所有可用的应用\n` +
+                 `2. 使用 select_app 选择要使用的应用\n` +
+                 `3. 再次调用 publish_leaderboard 发布排行榜`;
+        }
+        throw error;
+      }
+
+      if (!developerId || !appId) {
+        return `❌ 无法获取 developer_id 或 app_id\n\n` +
+               `系统会自动从 /level/v1/list 接口获取您的应用信息。\n` +
+               `如果失败，请检查：\n` +
+               `1. 用户是否已创建应用/游戏\n` +
+               `2. TDS_MCP_MAC_TOKEN 是否有效\n` +
+               `3. 您也可以手动指定 developer_id 和 app_id 参数`;
+      }
+    }
+
+    // whitelist_only 的含义：false = 公开发布，true = 仅白名单可见
+    // 所以我们需要反转用户的输入（publish = true 表示要公开发布）
+    const result = await publishLeaderboardApi({
+      developer_id: developerId,
+      app_id: appId,
+      id: args.id,
+      whitelist_only: !args.publish  // 反转：publish=true 时，whitelist_only=false
+    }, context.projectPath);
+
+    const statusText = result.whitelist_only ? '仅白名单可见' : '已公开发布';
+    const emoji = result.whitelist_only ? '🔒' : '🚀';
+
+    return `${emoji} 排行榜状态更新成功!\n\n` +
+           `📊 排行榜信息:\n` +
+           `- Leaderboard ID: ${result.id}\n` +
+           `- 当前状态: ${statusText}\n\n` +
+           `${result.whitelist_only ?
+             '🔒 **仅白名单可见模式**\n' +
+             '只有白名单中的用户可以看到此排行榜。\n' +
+             '适合用于内测或特定用户群体。' :
+             '🚀 **已公开发布**\n' +
+             '所有用户都可以看到此排行榜。\n' +
+             '排行榜已正式上线！'}`;
+  } catch (error) {
+    const errorMsg = error instanceof Error ? error.message : String(error);
+
+    // 解析具体错误，提供更有针对性的建议
+    let specificHelp = '';
+
+    if (errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
+      specificHelp = `\n🔑 **认证错误：**\n` +
+                     `请检查环境变量:\n` +
+                     `- TDS_MCP_MAC_TOKEN\n` +
+                     `- TDS_MCP_CLIENT_ID\n` +
+                     `- TDS_MCP_CLIENT_TOKEN`;
+    } else if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
+      specificHelp = `\n🚫 **权限错误：**\n` +
+                     `当前用户可能没有修改排行榜的权限，请检查开发者账号权限。`;
+    } else if (errorMsg.includes('404') || errorMsg.includes('Not Found')) {
+      specificHelp = `\n🔍 **排行榜不存在：**\n` +
+                     `请检查排行榜 ID (${args.id}) 是否正确。\n` +
+                     `使用 list_leaderboards 查看所有可用的排行榜。`;
+    }
+
+    return `❌ 发布排行榜失败\n\n` +
+           `**错误信息：**\n${errorMsg}\n${specificHelp}\n\n` +
+           `**常见问题检查：**\n` +
+           `1. 排行榜 ID 是否正确\n` +
+           `2. 环境变量是否正确配置\n` +
+           `3. 用户是否有修改排行榜的权限\n` +
+           `4. 是否有多个应用需要选择`;
   }
 }
 
