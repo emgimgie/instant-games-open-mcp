@@ -5,6 +5,53 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.15] - 2025-10-14
+
+### Fixed
+- 🐛 **Fix leaderboard_id undefined bug** - Corrected API response field mapping
+  - API returns `id` and `leaderboard_open_id`, not `leaderboard_id` and `open_id`
+  - Updated `CreateLeaderboardResponse` interface to match actual API response
+  - Fixed: `leaderboard_id` → `id` (排行榜数据库 ID)
+  - Fixed: `open_id` → `leaderboard_open_id` (客户端使用的开放 ID)
+  - Now returns correct IDs when creating leaderboards
+
+### Changed
+- 🚀 **Auto-publish leaderboards** - Simplified user experience by removing whitelist mode complexity
+  - Leaderboards are now automatically published after creation
+  - Removed all whitelist status indicators from UI
+  - Removed whitelist-related user prompts and guidance
+  - Users no longer need to manually publish leaderboards
+  - `publish_leaderboard` tool still available for special use cases
+
+### Improved
+- ✨ **Simplified workflow** - Streamlined leaderboard creation and integration process
+  - Updated creation success message to show auto-publish status
+  - Removed "发布排行榜上线" option from integration workflow
+  - Cleaner leaderboard list display without status badges
+  - Better user experience with fewer manual steps
+
+## [1.0.14] - 2025-10-14
+
+### Added
+- 🚀 **New publish_leaderboard tool** - Control leaderboard visibility
+  - Publish leaderboard to production (visible to all users)
+  - Set to whitelist-only mode (visible to whitelist users only)
+  - Auto-fetches developer_id and app_id
+  - Comprehensive error handling and user guidance
+
+### Improved
+- 💡 **Enhanced integration workflow** - Smart status detection and guidance
+  - Display leaderboard publish status (🚀 published / 🔒 whitelist-only)
+  - Auto-detect whitelist mode and prompt for publishing
+  - Show publish reminders for leaderboards in testing mode
+  - Added "发布排行榜上线" to feature list
+
+### Changed
+- 📝 **Updated create_leaderboard messages** - Inform users about default whitelist mode
+  - Explain new leaderboards start in whitelist-only mode
+  - Provide clear steps for testing and publishing
+  - Guide users through complete workflow
+
 ## [1.0.13] - 2025-10-10
 
 ### Changed

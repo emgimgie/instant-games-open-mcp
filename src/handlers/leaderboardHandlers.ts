@@ -91,49 +91,25 @@ export async function startLeaderboardIntegration(
     if (leaderboardsResult.list.length === 1) {
       // Only one leaderboard - recommend using it
       const lb = leaderboardsResult.list[0];
-      const statusEmoji = lb.whitelist_only ? '🔒' : '🚀';
-      const statusText = lb.whitelist_only ? '仅白名单可见（内测模式）' : '已公开发布';
 
       output += `**推荐使用现有排行榜：**\n`;
       output += `- 名称: ${lb.title}\n`;
       output += `- ID: ${lb.leaderboard_open_id}\n`;
       output += `- 周期: ${lb.period}\n`;
-      output += `- 默认: ${lb.is_default ? '是' : '否'}\n`;
-      output += `- 状态: ${statusEmoji} ${statusText}\n\n`;
-
-      // Add publish reminder if still in whitelist mode
-      if (lb.whitelist_only) {
-        output += `💡 **提示：** 此排行榜当前处于内测模式（仅白名单可见）。\n`;
-        output += `完成测试后，可以使用 publish_leaderboard 工具将其发布上线，让所有用户可见。\n\n`;
-      }
+      output += `- 默认: ${lb.is_default ? '是' : '否'}\n\n`;
 
       output += `**下一步：选择要实现的功能**\n`;
       output += `请告诉我您想实现以下哪个功能，我会提供相应的代码示例：\n\n`;
     } else {
       // Multiple leaderboards - let AI/user choose
       output += `**现有排行榜列表：**\n\n`;
-      let hasWhitelistOnly = false;
 
       leaderboardsResult.list.forEach((lb, index) => {
-        const statusEmoji = lb.whitelist_only ? '🔒' : '🚀';
-        const statusText = lb.whitelist_only ? '内测' : '已发布';
-
         output += `${index + 1}. **${lb.title}**\n`;
         output += `   - ID: ${lb.leaderboard_open_id}\n`;
         output += `   - 周期: ${lb.period}\n`;
-        output += `   - 默认: ${lb.is_default ? '是' : '否'}\n`;
-        output += `   - 状态: ${statusEmoji} ${statusText}\n\n`;
-
-        if (lb.whitelist_only) {
-          hasWhitelistOnly = true;
-        }
+        output += `   - 默认: ${lb.is_default ? '是' : '否'}\n\n`;
       });
-
-      // Add publish reminder if any leaderboard is in whitelist mode
-      if (hasWhitelistOnly) {
-        output += `💡 **提示：** 检测到有排行榜处于内测模式（🔒 标记）。\n`;
-        output += `完成测试后，可以使用 publish_leaderboard 工具将其发布上线。\n\n`;
-      }
 
       output += `**下一步：**\n`;
       output += `请选择要使用的排行榜 (通过 leaderboard_open_id)，或者告诉我您想创建新的排行榜。\n\n`;
@@ -145,7 +121,6 @@ export async function startLeaderboardIntegration(
     output += `3. 📥 **查询排行榜数据** - 使用 load_leaderboard_scores 工具查看文档\n`;
     output += `4. 🎯 **查询玩家排名** - 使用 load_current_player_score 工具查看文档\n`;
     output += `5. 👥 **查询周围玩家** - 使用 load_player_centered_scores 工具查看文档\n`;
-    output += `6. 🚀 **发布排行榜上线** - 使用 publish_leaderboard 工具（完成测试后）\n`;
 
     return output;
   } catch (error) {
@@ -229,24 +204,45 @@ export async function createLeaderboard(
       score_unit: args.score_unit
     });
 
-    return `✅ 排行榜创建成功!\n\n` +
+    // 自动发布排行榜（将白名单模式设置为 false，使其对所有用户可见）
+    try {
+      await publishLeaderboardApi({
+        developer_id: developerId,
+        app_id: appId,
+        id: result.id,
+        whitelist_only: false  // 发布上线，所有用户可见
+      }, context.projectPath);
+    } catch (publishError) {
+      // 如果发布失败，记录警告但不阻止创建流程
+      const publishErrorMsg = publishError instanceof Error ? publishError.message : String(publishError);
+      return `✅ 排行榜创建成功!\n\n` +
+             `📊 排行榜信息:\n` +
+             `- Leaderboard ID: ${result.id}\n` +
+             `- Open ID: ${result.leaderboard_open_id}\n` +
+             `- Title: ${result.title}\n\n` +
+             `📝 应用信息（已缓存）:\n` +
+             `- Developer ID: ${developerId}\n` +
+             `- App ID: ${appId}\n\n` +
+             `⚠️ **注意：** 排行榜创建成功，但自动发布失败。\n` +
+             `错误信息: ${publishErrorMsg}\n` +
+             `排行榜当前处于白名单模式，您可以稍后使用 publish_leaderboard 工具手动发布。\n\n` +
+             `🎮 使用方法:\n` +
+             `在小游戏中使用 leaderboardId "${result.leaderboard_open_id}" 来调用排行榜 API`;
+    }
+
+    return `✅ 排行榜创建成功并已自动发布上线!\n\n` +
            `📊 排行榜信息:\n` +
-           `- Leaderboard ID: ${result.leaderboard_id}\n` +
-           `- Open ID: ${result.open_id}\n` +
+           `- Leaderboard ID: ${result.id}\n` +
+           `- Open ID: ${result.leaderboard_open_id}\n` +
            `- Title: ${result.title}\n` +
-           `- Status: ${result.default_status}\n\n` +
+           `- 状态: 🚀 已发布（所有用户可见）\n\n` +
            `📝 应用信息（已缓存）:\n` +
            `- Developer ID: ${developerId}\n` +
            `- App ID: ${appId}\n\n` +
            `🎮 使用方法:\n` +
-           `在小游戏中使用 leaderboardId "${result.leaderboard_id}" 来调用排行榜 API\n\n` +
-           `🔒 **重要提示：**\n` +
-           `新创建的排行榜默认为 **仅白名单可见** 状态（内测模式）。\n` +
-           `这样您可以先进行测试，确认功能正常后再发布上线。\n\n` +
-           `**完成测试后的步骤：**\n` +
-           `1. 在客户端实现排行榜相关功能并测试\n` +
-           `2. 确认一切正常后，使用 publish_leaderboard 工具发布上线\n` +
-           `3. 发布后，所有用户都可以看到该排行榜`;
+           `在小游戏中使用 leaderboardId "${result.leaderboard_open_id}" 来调用排行榜 API\n\n` +
+           `💡 **提示：**\n` +
+           `排行榜已自动发布上线，所有用户都可以看到和使用此排行榜。`;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
 
@@ -309,21 +305,13 @@ export async function listLeaderboards(
     }
 
     let output = `📋 排行榜列表 (共 ${result.total} 个)\n\n`;
-    let hasWhitelistOnly = false;
 
     result.list.forEach((item, index) => {
-      const statusEmoji = item.whitelist_only ? '🔒' : '🚀';
-      const statusText = item.whitelist_only ? '内测中' : '已发布';
-
-      output += `${index + 1}. **${item.title}** ${statusEmoji} ${statusText}\n`;
+      output += `${index + 1}. **${item.title}**\n`;
       output += `   - ID: ${item.id}\n`;
       output += `   - Open ID: ${item.leaderboard_open_id}\n`;
       output += `   - Period: ${item.period}\n`;
       output += `   - Default: ${item.is_default ? 'Yes' : 'No'}\n\n`;
-
-      if (item.whitelist_only) {
-        hasWhitelistOnly = true;
-      }
     });
 
     const currentPage = args.page || 1;
@@ -335,13 +323,6 @@ export async function listLeaderboards(
       if (currentPage < totalPages) {
         output += `Use page=${currentPage + 1} to see more results.\n`;
       }
-    }
-
-    // Add publish reminder if any leaderboard is in whitelist mode
-    if (hasWhitelistOnly) {
-      output += `\n💡 **提示：** 有排行榜处于内测模式（🔒 标记）。\n`;
-      output += `完成测试后，可以使用 publish_leaderboard 工具发布上线。\n`;
-      output += `示例：将 ID 为 123 的排行榜发布上线，使用参数 { "id": 123, "publish": true }`;
     }
 
     return output;

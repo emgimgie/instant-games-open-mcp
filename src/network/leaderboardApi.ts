@@ -70,10 +70,10 @@ export interface CreateLeaderboardParams {
  * Create leaderboard response
  */
 export interface CreateLeaderboardResponse {
-  leaderboard_id: string;
-  open_id: string;
+  id: number;  // 排行榜 ID (实际的数据库 ID)
+  leaderboard_open_id: string;  // 排行榜开放 ID (用于客户端调用)
   title: string;
-  default_status: number;
+  is_default: boolean;
 }
 
 /**
