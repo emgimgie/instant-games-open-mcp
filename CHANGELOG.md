@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2025-10-14
+
+### Fixed
+- 🔄 **Republish v1.1.0 as stable version** - Skip the deprecated warnings from v1.1.1
+  - This version is identical to v1.1.0 in functionality
+  - Provides clean Tools, Resources, and Prompts without deprecation warnings
+  - Recommended for production use (v1.1.1 skipped)
+  - All 17 Tools remain available and fully functional
+
+### Note
+- v1.1.1 introduced deprecation warnings but has been skipped
+- v1.1.2 provides the same features as v1.1.0 without warnings
+- For experimental breaking changes, see v1.2.0-beta.1
+
 ## [1.1.0] - 2025-10-14
 
 ### Added
