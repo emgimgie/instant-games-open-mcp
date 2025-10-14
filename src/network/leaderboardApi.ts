@@ -70,10 +70,10 @@ export interface CreateLeaderboardParams {
  * Create leaderboard response
  */
 export interface CreateLeaderboardResponse {
-  leaderboard_id: string;
-  open_id: string;
+  id: number;  // 排行榜 ID (实际的数据库 ID)
+  leaderboard_open_id: string;  // 排行榜开放 ID (用于客户端调用)
   title: string;
-  default_status: number;
+  is_default: boolean;
 }
 
 /**
@@ -394,6 +394,72 @@ export async function listLeaderboards(
       throw new Error(`Failed to list leaderboards: ${error.message}`);
     }
     throw new Error(`Failed to list leaderboards: ${String(error)}`);
+  }
+}
+
+/**
+ * Publish leaderboard parameters
+ */
+export interface PublishLeaderboardParams {
+  developer_id?: number;
+  app_id?: number;
+  id: number;  // leaderboard_id
+  whitelist_only: boolean;  // false = 发布上线, true = 仅白名单可见
+}
+
+/**
+ * Publish leaderboard response
+ */
+export interface PublishLeaderboardResponse {
+  id: number;
+  whitelist_only: boolean;
+}
+
+/**
+ * Publish a leaderboard or set it to whitelist-only mode
+ * @param params - Publish parameters
+ * @param projectPath - Optional project path for cache lookup
+ * @returns Updated leaderboard status
+ */
+export async function publishLeaderboard(
+  params: PublishLeaderboardParams,
+  projectPath?: string
+): Promise<PublishLeaderboardResponse> {
+  const client = new HttpClient();
+
+  try {
+    // Ensure developer_id and app_id are available
+    let developerId = params.developer_id;
+    let appId = params.app_id;
+
+    if (!developerId || !appId) {
+      const appInfo = await ensureAppInfo(projectPath);
+      if (!developerId) developerId = appInfo.developer_id;
+      if (!appId) appId = appInfo.app_id;
+    }
+
+    if (!developerId || !appId) {
+      throw new Error('developer_id and app_id are required');
+    }
+
+    const response = await client.post<PublishLeaderboardResponse>('/open/leaderboard/v1/set-whitelist-only', {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      },
+      body: {
+        developer_id: developerId,
+        app_id: appId,
+        id: params.id,
+        whitelist_only: params.whitelist_only
+      }
+    });
+
+    return response;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to publish leaderboard: ${error.message}`);
+    }
+    throw new Error(`Failed to publish leaderboard: ${String(error)}`);
   }
 }
 

@@ -266,6 +266,44 @@ Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for
         }
       }
     },
+    {
+      name: 'publish_leaderboard',
+      description: `Publish a leaderboard or set it to whitelist-only mode. Use this when user wants to publish a leaderboard to production or restrict it to whitelist users only.
+
+Usage scenarios:
+- Publish leaderboard to production: set publish=true (makes it visible to all users)
+- Set to whitelist-only mode: set publish=false (only whitelist users can see it)
+- Switch between public and whitelist modes
+
+This is typically used:
+1. After creating a new leaderboard to make it live
+2. During beta testing to limit access to specific users
+3. To temporarily disable public access without deleting the leaderboard
+
+Auto-fetches developer_id and app_id if not provided. Requires leaderboard ID (get from list_leaderboards).`,
+      inputSchema: {
+        type: 'object',
+        properties: {
+          developer_id: {
+            type: 'number',
+            description: 'Developer ID (optional, will be auto-fetched if not provided)'
+          },
+          app_id: {
+            type: 'number',
+            description: 'Application/Game ID (optional, will be auto-fetched if not provided)'
+          },
+          id: {
+            type: 'number',
+            description: 'Leaderboard ID (REQUIRED, get from list_leaderboards tool)'
+          },
+          publish: {
+            type: 'boolean',
+            description: 'true = publish to production (visible to all users), false = whitelist-only mode (visible to whitelist users only) (REQUIRED)'
+          }
+        },
+        required: ['id', 'publish']
+      }
+    },
 
     // 🔑 User Data Tools (requires TDS_MCP_MAC_TOKEN)
     {
