@@ -58,7 +58,7 @@ class TapTapMinigameMCPServer {
     this.server = new Server(
       {
         name: 'taptap-minigame-mcp',
-        version: '1.1.1',
+        version: '1.2.0',
       }
     );
 
@@ -212,40 +212,9 @@ class TapTapMinigameMCPServer {
    * 处理工具调用 - 路由到对应的处理器
    */
   private async handleToolCall(name: string, args: any): Promise<string> {
-    // Workflow guidance
-    if (name === 'start_leaderboard_integration') {
-      return leaderboardHandlers.startLeaderboardIntegration(args, this.context);
-    }
-
-    // LeaderboardManager API documentation tools
-    if (name === 'get_leaderboard_manager') {
-      return leaderboardTools.getLeaderboardManager();
-    }
-    if (name === 'open_leaderboard') {
-      return leaderboardTools.openLeaderboard();
-    }
-    if (name === 'submit_scores') {
-      return leaderboardTools.submitScores();
-    }
-    if (name === 'load_leaderboard_scores') {
-      return leaderboardTools.loadLeaderboardScores();
-    }
-    if (name === 'load_current_player_score') {
-      return leaderboardTools.loadCurrentPlayerScore();
-    }
-    if (name === 'load_player_centered_scores') {
-      return leaderboardTools.loadPlayerCenteredScores();
-    }
-
-    // Helper tools
+    // Search tool (kept because Resources don't support dynamic parameters)
     if (name === 'search_leaderboard_docs') {
       return leaderboardTools.searchLeaderboardDocs(args);
-    }
-    if (name === 'get_leaderboard_overview') {
-      return leaderboardTools.getLeaderboardOverview();
-    }
-    if (name === 'get_leaderboard_patterns') {
-      return leaderboardTools.getLeaderboardPatterns();
     }
 
     // Environment check

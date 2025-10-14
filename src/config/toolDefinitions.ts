@@ -10,91 +10,10 @@ import { Tool } from '@modelcontextprotocol/sdk/types.js';
  */
 export function getToolDefinitions(): Tool[] {
   return [
-    // 🎯 Workflow Guidance Tool
-    {
-      name: 'start_leaderboard_integration',
-      description: `⚠️ DEPRECATED: Use Prompt "leaderboard-integration" instead for better experience.
-
-START HERE when user asks about integrating leaderboards, implementing rankings, or "接入排行榜".
-
-This tool guides the complete leaderboard integration workflow:
-1. Check if leaderboards already exist on server
-2. Guide user to create one if needed (server-side only, via this MCP tool)
-3. Provide client-side implementation code and docs
-
-IMPORTANT: TapTap leaderboard integration does NOT require npm packages or external JS SDKs!
-- Client code uses the global 'tap' object (provided by TapTap runtime)
-- Access via: tap.getLeaderboardManager()
-- No imports or dependencies needed
-- Works directly in TapTap minigame environment
-
-Use this as the first step for any leaderboard integration request.`,
-      inputSchema: {
-        type: 'object',
-        properties: {
-          purpose: {
-            type: 'string',
-            description: 'What the user wants to do with leaderboards (optional, for context)'
-          }
-        }
-      }
-    },
-
-    // 📖 Core LeaderboardManager API Documentation Tools (one tool per API)
-    // ⚠️ DEPRECATED: Please use Resources instead for better performance
-    {
-      name: 'get_leaderboard_manager',
-      description: '⚠️ DEPRECATED: Use Resource "docs://leaderboard/api/get-manager" instead.\n\nGet documentation for tap.getLeaderboardManager() - how to obtain the LeaderboardManager instance.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    {
-      name: 'open_leaderboard',
-      description: '⚠️ DEPRECATED: Use Resource "docs://leaderboard/api/open" instead.\n\nGet documentation for leaderboardManager.openLeaderboard() - how to display the TapTap leaderboard UI.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    {
-      name: 'submit_scores',
-      description: '⚠️ DEPRECATED: Use Resource "docs://leaderboard/api/submit-scores" instead.\n\nGet documentation for leaderboardManager.submitScores() - how to submit player scores to leaderboards.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    {
-      name: 'load_leaderboard_scores',
-      description: '⚠️ DEPRECATED: Use Resource "docs://leaderboard/api/load-scores" instead.\n\nGet documentation for leaderboardManager.loadLeaderboardScores() - how to retrieve paginated leaderboard data.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    {
-      name: 'load_current_player_score',
-      description: '⚠️ DEPRECATED: Use Resource "docs://leaderboard/api/load-player-score" instead.\n\nGet documentation for leaderboardManager.loadCurrentPlayerLeaderboardScore() - how to get current player\'s score and rank.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    {
-      name: 'load_player_centered_scores',
-      description: '⚠️ DEPRECATED: Use Resource "docs://leaderboard/api/load-centered-scores" instead.\n\nGet documentation for leaderboardManager.loadPlayerCenteredScores() - how to load scores of players near current user.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-
-    // 🔍 Helper Tools
+    // 🔍 Search Tool (kept because Resources don't support dynamic parameters)
     {
       name: 'search_leaderboard_docs',
-      description: 'Search all leaderboard documentation by keyword. Use this when user asks a general question or you\'re not sure which specific API they need.',
+      description: 'Search all leaderboard documentation by keyword. Use this when user asks a general question or you\'re not sure which specific API they need. For specific API docs, use Resources like "docs://leaderboard/api/submit-scores".',
       inputSchema: {
         type: 'object',
         properties: {
@@ -104,22 +23,6 @@ Use this as the first step for any leaderboard integration request.`,
           }
         },
         required: ['query']
-      }
-    },
-    {
-      name: 'get_leaderboard_overview',
-      description: '⚠️ DEPRECATED: Use Resource "docs://leaderboard/overview" instead.\n\nGet comprehensive overview of all TapTap leaderboard APIs and features.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    {
-      name: 'get_leaderboard_patterns',
-      description: '⚠️ DEPRECATED: Use Resource "docs://leaderboard/patterns" instead.\n\nGet complete implementation examples and best practices for leaderboards.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
       }
     },
 

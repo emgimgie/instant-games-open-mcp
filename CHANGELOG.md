@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-10-14
+
+### ⚠️ BREAKING CHANGES
+- 🗑️ **Removed 9 deprecated documentation Tools** - Forces AI agents to use Resources and Prompts
+  - Removed: `start_leaderboard_integration` → Use Prompt `leaderboard-integration`
+  - Removed: `get_leaderboard_manager` → Use Resource `docs://leaderboard/api/get-manager`
+  - Removed: `open_leaderboard` → Use Resource `docs://leaderboard/api/open`
+  - Removed: `submit_scores` → Use Resource `docs://leaderboard/api/submit-scores`
+  - Removed: `load_leaderboard_scores` → Use Resource `docs://leaderboard/api/load-scores`
+  - Removed: `load_current_player_score` → Use Resource `docs://leaderboard/api/load-player-score`
+  - Removed: `load_player_centered_scores` → Use Resource `docs://leaderboard/api/load-centered-scores`
+  - Removed: `get_leaderboard_overview` → Use Resource `docs://leaderboard/overview`
+  - Removed: `get_leaderboard_patterns` → Use Resource `docs://leaderboard/patterns`
+
+### Changed
+- 📊 **New tool count: 8 tools** (down from 17)
+  - Kept only operational tools (create, list, publish, etc.)
+  - Kept `search_leaderboard_docs` (requires dynamic parameters)
+  - All documentation now exclusively through Resources (8 resources)
+  - All workflows now exclusively through Prompts (2 prompts)
+
+### Improved
+- 🚀 **Forces proper MCP architecture** - AI agents must use the right primitives
+  - Resources for read-only documentation
+  - Prompts for user-triggered workflows
+  - Tools only for operations with side effects
+- ⚡ **Better performance** - Resources are cacheable by MCP clients
+- 🎯 **Clearer separation of concerns** - Follows MCP design philosophy
+
+### Migration Guide
+If you were using the removed Tools, update to:
+- Documentation: Use `readResource("docs://leaderboard/api/...")`
+- Workflows: Use `getPrompt("leaderboard-integration")`
+- Operations: Continue using Tools like `create_leaderboard`
+
 ## [1.1.1] - 2025-10-14
 
 ### Changed
