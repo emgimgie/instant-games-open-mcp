@@ -301,10 +301,10 @@ leaderboardManager.loadCurrentPlayerLeaderboardScore({
         },
         {
           name: "loadPlayerCenteredScores",
-          method: "leaderboardManager.loadPlayerCenteredScores({ leaderBoardId, collection, maxCount, periodToken, callback })",
-          description: "Retrieve scores for the current user and nearby players on a leaderboard, useful for showing surrounding competitors. ⚠️ NOTE: Parameter name is 'leaderBoardId' (capital B), not 'leaderboardId'.",
+          method: "leaderboardManager.loadPlayerCenteredScores({ leaderboardId, collection, maxCount, periodToken, callback })",
+          description: "Retrieve scores for the current user and nearby players on a leaderboard, useful for showing surrounding competitors",
           parameters: {
-            "leaderBoardId": "string (required) - Unique identifier for the leaderboard (⚠️ Note: capital 'B')",
+            "leaderboardId": "string (required) - Unique identifier for the leaderboard",
             "collection": "string (required) - Leaderboard type: 'friends' or 'public'",
             "maxCount": "number (required) - Limit results between 1-25 players",
             "periodToken": "string (required) - Time period identifier for the leaderboard",
@@ -317,7 +317,7 @@ leaderboardManager.loadCurrentPlayerLeaderboardScore({
 const leaderboardManager = tap.getLeaderboardManager();
 
 leaderboardManager.loadPlayerCenteredScores({
-  leaderBoardId: "your_leaderboardId",  // ⚠️ Note: capital 'B'
+  leaderboardId: "your_leaderboardId",
   collection: "friends",
   maxCount: 10,
   periodToken: "",
@@ -338,7 +338,7 @@ leaderboardManager.loadPlayerCenteredScores({
 
 // Load surrounding players on global leaderboard
 leaderboardManager.loadPlayerCenteredScores({
-  leaderBoardId: "global_ranking",  // ⚠️ Note: capital 'B'
+  leaderboardId: "global_ranking",
   collection: "public",
   maxCount: 20,
   periodToken: "",
