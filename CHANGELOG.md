@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2025-10-15
+
+### Note
+- 🔄 **Re-release of v1.1.3 fixes without Resources/Prompts**
+  - v1.1.3 was already published with Resources/Prompts
+  - v1.1.4 contains the same API fixes but removes Resources/Prompts
+  - Simplified to Tools-only architecture for production stability
+
+## [1.1.3] - 2025-10-15
+
+### Fixed
+- 🔧 **Critical API documentation fixes** - Aligned with LeaderboardManager source code
+  - Fixed method signatures: all methods use object parameters `({ param1, param2 })`
+  - Fixed parameter names: `continuationToken` → `nextPage`
+  - Fixed parameter names: unified `leaderboardId` (lowercase 'b')
+  - Added complete parameter examples including `undefined` values
+  - Prevents AI from generating incomplete or incorrect code
+
+### Removed
+- 🗑️ **Removed Resources and Prompts** - Simplified to Tools-only architecture
+  - Removed all Resources support (8 resources deleted)
+  - Removed all Prompts support (2 prompts deleted)
+  - Deleted files: resourceDefinitions.ts, promptDefinitions.ts, promptHandlers.ts
+  - Back to simple, reliable Tools-only approach
+  - Reduces complexity and potential confusion
+
+### Added
+- ⚠️ **Important usage notes in documentation**
+  - Emphasized: 'tap' is a GLOBAL object (NO imports needed)
+  - Emphasized: NO npm packages required
+  - Emphasized: All methods accept SINGLE object parameter
+  - Works in TapTap Minigame AND H5 game environments
+
+### Changed
+- 📝 **Updated description** - Now supports both Minigame and H5 games
+  - Package description: "TapTap Open API MCP Server - Documentation and Management APIs for TapTap Minigame and H5 Games"
+  - API title: "TapTap Leaderboard API (Minigame & H5)"
+- 📊 **Simplified architecture** - Tools-only (17 tools)
+  - Easier to understand and use
+  - Proven to work reliably
+  - For experimental Resources/Prompts, see v1.2.0-beta versions
+
 ## [1.1.2] - 2025-10-14
 
 ### Fixed
