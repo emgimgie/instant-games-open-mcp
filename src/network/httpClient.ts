@@ -16,7 +16,7 @@ export class ApiConfig {
 
   public macToken: MacToken;  // Changed from readonly to allow runtime updates
   public readonly clientId: string;
-  public readonly clientSecret: string;
+  public readonly signingKey: string;  // API request signature key (HMAC-SHA256)
   public readonly apiBaseUrl: string;
   public readonly environment: 'rnd' | 'production';
 
@@ -24,7 +24,7 @@ export class ApiConfig {
     // Required environment variables (TDS_MCP_* prefix for consistency)
     const macTokenStr = process.env.TDS_MCP_MAC_TOKEN || '';
     this.clientId = process.env.TDS_MCP_CLIENT_ID || '';
-    this.clientSecret = process.env.TDS_MCP_CLIENT_TOKEN || '';  // Using CLIENT_TOKEN to match tapcode-mcp-h5
+    this.signingKey = process.env.TDS_MCP_CLIENT_TOKEN || '';  // HMAC signing key for API requests
 
     // Parse MAC Token from JSON string (optional now, can be set later via Device Flow)
     try {
@@ -53,13 +53,13 @@ export class ApiConfig {
       missing.push('TDS_MCP_CLIENT_ID');
     }
 
-    if (!this.clientSecret) {
+    if (!this.signingKey) {
       missing.push('TDS_MCP_CLIENT_TOKEN');
     }
 
     if (missing.length > 0) {
       process.stderr.write(`❌ Missing required environment variables: ${missing.join(', ')}\n\n`);
-      process.stderr.write('These are required for both OAuth flow and manual configuration.\n');
+      process.stderr.write('These are required for API authentication and request signing.\n');
       process.exit(1);
     }
   }
@@ -79,14 +79,14 @@ export class ApiConfig {
   }
 
   public isConfigured(): boolean {
-    return !!(this.macToken.kid && this.macToken.mac_key && this.clientId && this.clientSecret);
+    return !!(this.macToken.kid && this.macToken.mac_key && this.clientId && this.signingKey);
   }
 
   public getConfigStatus(): Record<string, string> {
     return {
       'TDS_MCP_MAC_TOKEN': this.macToken.kid ? `✅ 已配置 (kid: ${this.macToken.kid.substring(0, 8)}...)` : '❌ 未配置',
       'TDS_MCP_CLIENT_ID': this.clientId ? '✅ 已配置' : '❌ 未配置',
-      'TDS_MCP_CLIENT_TOKEN': this.clientSecret ? '✅ 已配置' : '❌ 未配置',
+      'TDS_MCP_CLIENT_TOKEN': this.signingKey ? '✅ 已配置' : '❌ 未配置',
       'TDS_MCP_ENV': `${this.environment} (${this.apiBaseUrl})`,
     };
   }
@@ -338,7 +338,7 @@ export class HttpClient {
 
   /**
    * Generate request signature for X-Tap-Sign header
-   * Format: HMAC-SHA256(method + url + headers + body, CLIENT_SECRET)
+   * Format: HMAC-SHA256(method + url + headers + body, signing_key)
    */
   private generateSignature(
     method: string,
@@ -353,7 +353,7 @@ export class HttpClient {
       const bodyPart = body;
       const signParts = `${methodPart}\n${urlPart}\n${headersPart}\n${bodyPart}\n`;
 
-      const hmacResult = cryptoJS.HmacSHA256(signParts, this.config.clientSecret);
+      const hmacResult = cryptoJS.HmacSHA256(signParts, this.config.signingKey);
       const signatureBase64 = cryptoJS.enc.Base64.stringify(hmacResult);
 
       return signatureBase64;
