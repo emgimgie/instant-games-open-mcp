@@ -128,6 +128,7 @@ export async function createLeaderboard(params: CreateLeaderboardParams): Promis
 export interface CraftItem {
   app_id: number;
   app_title: string;
+  miniapp_id?: string;  // Minigame/H5 预览 ID
   category?: string;
   is_published?: boolean;
 }
@@ -209,7 +210,8 @@ export async function getAppInfo(projectPath?: string, autoSelect: boolean = tru
       developer_id: firstDeveloper.developer_id,
       developer_name: firstDeveloper.developer_name,
       app_id: firstApp.app_id,
-      app_title: firstApp.app_title
+      app_title: firstApp.app_title,
+      miniapp_id: firstApp.miniapp_id
     };
 
     // Save to cache
@@ -289,7 +291,8 @@ export async function selectApp(developerId: number, appId: number, projectPath?
       developer_id: developer.developer_id,
       developer_name: developer.developer_name,
       app_id: app.app_id,
-      app_title: app.app_title
+      app_title: app.app_title,
+      miniapp_id: app.miniapp_id
     };
 
     // Save to cache

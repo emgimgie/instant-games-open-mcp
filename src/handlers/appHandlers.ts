@@ -36,6 +36,10 @@ export async function listDevelopersAndApps(context: HandlerContext): Promise<st
         output += `- 应用列表:\n`;
         developer.levels.forEach((app, appIndex) => {
           output += `  ${appIndex + 1}. **${app.app_title}** (App ID: ${app.app_id})\n`;
+          if (app.miniapp_id) {
+            output += `     Miniapp ID: ${app.miniapp_id}\n`;
+            output += `     预览链接: https://minigame.taptap.cn/${app.miniapp_id}\n`;
+          }
           if (app.category) {
             output += `     类别: ${app.category}\n`;
           }
@@ -69,13 +73,23 @@ export async function selectApp(
   try {
     const result = await selectAppApi(args.developer_id, args.app_id, context.projectPath);
 
-    return `✅ 已选择应用!\n\n` +
+    let message = `✅ 已选择应用!\n\n` +
            `📱 应用信息:\n` +
            `- 开发者: ${result.developer_name} (ID: ${result.developer_id})\n` +
-           `- 应用: ${result.app_title} (ID: ${result.app_id})\n\n` +
-           `💾 此选择已缓存，后续操作将默认使用此应用。\n\n` +
-           `🎮 下一步:\n` +
-           `您现在可以使用 create_leaderboard 或 list_leaderboards 等工具来管理排行榜了。`;
+           `- 应用: ${result.app_title} (ID: ${result.app_id})\n`;
+
+    if (result.miniapp_id) {
+      message += `- Miniapp ID: ${result.miniapp_id}\n` +
+                 `\n🔗 预览链接:\n` +
+                 `- Minigame: https://minigame.taptap.cn/${result.miniapp_id}\n` +
+                 `- H5: https://h5.taptap.cn/${result.miniapp_id}\n`;
+    }
+
+    message += `\n💾 此选择已缓存，后续操作将默认使用此应用。\n\n` +
+               `🎮 下一步:\n` +
+               `您现在可以使用 create_leaderboard 或 list_leaderboards 等工具来管理排行榜了。`;
+
+    return message;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
     return `❌ 选择应用失败:\n${errorMsg}\n\n请使用 list_developers_and_apps 查看可用的开发者和应用列表。`;
