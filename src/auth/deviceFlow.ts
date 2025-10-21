@@ -104,22 +104,41 @@ export class DeviceFlowAuth {
       }
     }
 
-    // 3. Start Device Code Flow
-    process.stderr.write('\n🔐 No valid authentication found, starting OAuth flow...\n\n');
-    return await this.startDeviceFlow();
-  }
+    // 3. No token found - generate auth URL and throw immediately (non-blocking!)
+    process.stderr.write('\n🔐 No valid authentication found, generating authorization URL...\n\n');
 
-  /**
-   * Start Device Code Flow
-   * Returns authorization URL for user to complete (non-blocking)
-   */
-  async getAuthorizationUrl(): Promise<string> {
     // Get device code
     const deviceCodeData = await this.requestDeviceCode();
 
     // Generate authorization URL
     const authUrl = this.config.qrcodeBaseUrl + encodeURIComponent(deviceCodeData.qrcode_url);
 
+    // Output to stderr for terminal users
+    process.stderr.write(`🔗 授权链接: ${authUrl}\n\n`);
+
+    // Throw error with URL (for MCP clients like Claude Code)
+    throw new Error(
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `🔐 TapTap 授权登录\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n` +
+      `请在浏览器中打开以下链接完成授权：\n\n` +
+      `🔗 ${authUrl}\n\n` +
+      `授权步骤：\n` +
+      `1. 点击或复制上面的链接\n` +
+      `2. 在浏览器中打开\n` +
+      `3. 使用 TapTap App 扫描二维码\n` +
+      `4. 授权成功后，重新执行此操作\n\n` +
+      `💾 Token 将自动保存到: ${this.tokenPath}\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`
+    );
+  }
+
+  /**
+   * Get authorization URL (for manual auth flow)
+   */
+  async getAuthorizationUrl(): Promise<string> {
+    const deviceCodeData = await this.requestDeviceCode();
+    const authUrl = this.config.qrcodeBaseUrl + encodeURIComponent(deviceCodeData.qrcode_url);
     return authUrl;
   }
 
