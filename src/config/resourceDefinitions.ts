@@ -89,7 +89,7 @@ export function getResourceDefinitions(): ResourceDefinition[] {
     {
       uri: 'guide://leaderboard/integration-workflow',
       name: 'Complete Leaderboard Integration Workflow',
-      description: 'COMPLETE step-by-step workflow from zero to production - READ THIS FIRST when user wants to integrate/add/setup/implement leaderboard. Covers: server creation, client code (NO SDK!), common pitfalls, testing. Essential reading before starting any leaderboard work.',
+      description: '🎯 MUST READ FIRST when user says: "接入排行榜", "integrate leaderboard", "add ranking", "setup leaderboard". Complete workflow: server setup AND client code (NO SDK!). Read BEFORE making plans. Covers: server creation, client code (NO SDK!), common pitfalls, testing. Essential reading before starting any leaderboard work.',
       mimeType: 'text/markdown'
     }
   ];
