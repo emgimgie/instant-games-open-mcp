@@ -102,7 +102,17 @@ class TapTapMinigameMCPServer {
 
         if (authRequiredTools.includes(name)) {
           // Trigger OAuth if needed (non-blocking on startup, blocking here)
-          await this.ensureAuth();
+          try {
+            await this.ensureAuth();
+          } catch (authError) {
+            const errorMsg = authError instanceof Error ? authError.message : String(authError);
+
+            // If it's an OAuth error, provide user-friendly message
+            throw new McpError(
+              ErrorCode.InternalError,
+              `🔐 需要 TapTap 授权\n\n${errorMsg}\n\n授权完成后，请重新执行此操作。`
+            );
+          }
         }
 
         const result = await this.handleToolCall(name, args || {});
@@ -308,6 +318,7 @@ let authInProgress = false;
 
 /**
  * Lazy load authentication when needed (non-blocking)
+ * Returns authorization URL if auth is needed, or completes silently if token exists
  */
 async function ensureAuthenticated(): Promise<void> {
   const apiConfig = ApiConfig.getInstance();
@@ -317,33 +328,27 @@ async function ensureAuthenticated(): Promise<void> {
     return;
   }
 
-  // Auth already in progress, wait for it
+  // Auth already in progress
   if (authInProgress) {
-    process.stderr.write('⏳ OAuth authorization in progress, please wait...\n');
-    while (authInProgress) {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-    }
+    throw new Error('⏳ OAuth 授权正在进行中...\n\n另一个工具正在等待授权，请完成授权后重试。');
+  }
+
+  // Need to start OAuth flow
+  if (!deviceAuth) {
+    deviceAuth = new DeviceFlowAuth(apiConfig.environment);
+  }
+
+  // Try to load from local file first
+  const macToken = await deviceAuth.initialize();
+
+  // If initialize succeeded, we got token from file
+  if (macToken) {
+    apiConfig.setMacToken(macToken);
     return;
   }
 
-  // Start OAuth flow
-  authInProgress = true;
-
-  try {
-    if (!deviceAuth) {
-      deviceAuth = new DeviceFlowAuth(apiConfig.environment);
-    }
-
-    process.stderr.write('\n🔐 Authentication required, starting OAuth Device Flow...\n\n');
-    const macToken = await deviceAuth.initialize();
-    apiConfig.setMacToken(macToken);
-    process.stderr.write('\n✅ Authentication successful!\n\n');
-  } catch (error) {
-    authInProgress = false;
-    throw new Error(`Authentication failed: ${error instanceof Error ? error.message : String(error)}`);
-  } finally {
-    authInProgress = false;
-  }
+  // Need OAuth authorization - throw error with URL
+  throw new Error('OAuth authorization required');
 }
 
 // 启动服务器

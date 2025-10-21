@@ -111,6 +111,20 @@ export class DeviceFlowAuth {
 
   /**
    * Start Device Code Flow
+   * Returns authorization URL for user to complete (non-blocking)
+   */
+  async getAuthorizationUrl(): Promise<string> {
+    // Get device code
+    const deviceCodeData = await this.requestDeviceCode();
+
+    // Generate authorization URL
+    const authUrl = this.config.qrcodeBaseUrl + encodeURIComponent(deviceCodeData.qrcode_url);
+
+    return authUrl;
+  }
+
+  /**
+   * Start Device Code Flow (blocking version for terminal use)
    */
   private async startDeviceFlow(): Promise<MacToken> {
     // Step 1: Get device code
