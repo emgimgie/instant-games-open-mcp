@@ -314,6 +314,32 @@ export class DeviceFlowAuth {
   }
 
   /**
+   * Complete authorization by polling for token
+   * Call this after user has completed authorization in browser
+   */
+  async completeAuthorization(): Promise<MacToken> {
+    if (!this.deviceCode) {
+      throw new Error('No pending authorization. Please call a tool that requires authentication first to get the authorization URL.');
+    }
+
+    process.stderr.write('⏳ Polling for authorization result...\n');
+
+    // Poll for token (with timeout)
+    this.macToken = await this.pollForToken();
+
+    // Save to local file
+    this.saveToken(this.macToken);
+
+    process.stderr.write('\n✅ 授权成功！Token 已保存\n');
+    process.stderr.write(`📁 Token 位置: ${this.tokenPath}\n\n`);
+
+    // Clear device code
+    this.deviceCode = '';
+
+    return this.macToken;
+  }
+
+  /**
    * Get current MAC token
    */
   getToken(): MacToken | undefined {

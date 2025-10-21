@@ -36,6 +36,16 @@ export function getToolDefinitions(): Tool[] {
       }
     },
 
+    // 🔐 OAuth Authorization Tool
+    {
+      name: 'complete_oauth_authorization',
+      description: 'Complete OAuth authorization after user has scanned QR code. Call this after user confirms they have completed authorization in browser. This tool will poll for the authorization result and save the token.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+
     // 📱 Developer & App Management Tools
     {
       name: 'list_developers_and_apps',

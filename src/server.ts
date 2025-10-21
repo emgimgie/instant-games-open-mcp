@@ -107,10 +107,15 @@ class TapTapMinigameMCPServer {
           } catch (authError) {
             const errorMsg = authError instanceof Error ? authError.message : String(authError);
 
-            // If it's an OAuth error, provide user-friendly message
+            // If it's an OAuth error, provide user-friendly message with next steps
             throw new McpError(
               ErrorCode.InternalError,
-              `🔐 需要 TapTap 授权\n\n${errorMsg}\n\n授权完成后，请重新执行此操作。`
+              `🔐 需要 TapTap 授权\n\n${errorMsg}\n\n` +
+              `📋 授权步骤：\n` +
+              `1. 在浏览器中打开上面的授权链接\n` +
+              `2. 使用 TapTap App 扫码授权\n` +
+              `3. 授权成功后，调用 complete_oauth_authorization 工具完成授权\n` +
+              `4. 然后重新执行此操作`
             );
           }
         }
@@ -248,6 +253,30 @@ class TapTapMinigameMCPServer {
     // Environment check
     if (name === 'check_environment') {
       return environmentHandlers.checkEnvironment(this.context);
+    }
+
+    // OAuth authorization completion
+    if (name === 'complete_oauth_authorization') {
+      if (!deviceAuth) {
+        return '❌ No pending authorization found.\n\nPlease call a tool that requires authentication (like list_developers_and_apps) first to start the authorization flow.';
+      }
+
+      try {
+        const macToken = await deviceAuth.completeAuthorization();
+        const apiConfig = ApiConfig.getInstance();
+        apiConfig.setMacToken(macToken);
+
+        return '✅ 授权完成！\n\n' +
+               'Token 已成功保存，现在可以使用所有需要认证的功能了。\n\n' +
+               '请重新执行之前失败的操作。';
+      } catch (error) {
+        return `❌ 授权失败: ${error instanceof Error ? error.message : String(error)}\n\n` +
+               '请确认：\n' +
+               '1. 已在浏览器中打开授权链接\n' +
+               '2. 已使用 TapTap App 扫码授权\n' +
+               '3. 授权页面显示成功\n\n' +
+               '如果仍然失败，请重新调用需要认证的工具获取新的授权链接。';
+      }
     }
 
     // App management tools
