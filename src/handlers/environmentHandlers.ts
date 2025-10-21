@@ -27,5 +27,18 @@ export async function checkEnvironment(context: HandlerContext): Promise<string>
     .map(([key, value]) => `${key}: ${value}`)
     .join('\n');
 
-  return `🔧 环境配置检查结果:\n\n${envResult}\n\n✨ 所有必需配置已就绪，可以使用完整功能`;
+  // Check if MAC Token is configured
+  const hasMacToken = apiConfig.macToken.kid && apiConfig.macToken.mac_key;
+
+  let statusMessage = '';
+  if (hasMacToken) {
+    statusMessage = '\n✅ 认证配置完整，可以使用所有功能';
+  } else {
+    statusMessage = '\n⚠️  MAC Token 未配置\n' +
+                   '   📖 文档功能可用（Resources, Prompts, 搜索等）\n' +
+                   '   🔐 管理功能需要授权（创建排行榜、列表等）\n' +
+                   '   💡 首次调用管理工具时将自动触发 OAuth 授权流程';
+  }
+
+  return `🔧 环境配置检查结果:\n\n${envResult}${statusMessage}`;
 }
