@@ -213,32 +213,45 @@ export async function createLeaderboard(
       const publishErrorMsg = publishError instanceof Error ? publishError.message : String(publishError);
       return `✅ 排行榜创建成功!\n\n` +
              `📊 排行榜信息:\n` +
-             `- Leaderboard ID: ${result.id}\n` +
-             `- Open ID: ${result.leaderboard_open_id}\n` +
-             `- Title: ${result.title}\n\n` +
+             `- 🆔 数据库 ID: ${result.id} (仅后台管理使用)\n` +
+             `- 🎮 客户端 ID: \`${result.leaderboard_open_id}\` ⭐ (游戏代码中使用这个!)\n` +
+             `- 📝 名称: ${result.title}\n\n` +
              `📝 应用信息（已缓存）:\n` +
              `- Developer ID: ${developerId}\n` +
              `- App ID: ${appId}\n\n` +
              `⚠️ **注意：** 排行榜创建成功，但自动发布失败。\n` +
              `错误信息: ${publishErrorMsg}\n` +
              `排行榜当前处于白名单模式，您可以稍后使用 publish_leaderboard 工具手动发布。\n\n` +
-             `🎮 使用方法:\n` +
-             `在小游戏中使用 leaderboardId "${result.leaderboard_open_id}" 来调用排行榜 API`;
+             `🎮 **客户端代码示例**:\n` +
+             `\`\`\`javascript\n` +
+             `// ⚠️ 使用客户端 ID，不是数字 ID！\n` +
+             `leaderboardManager.submitScores({\n` +
+             `  scores: [{ leaderboardId: "${result.leaderboard_open_id}", score: 100 }]\n` +
+             `});\n` +
+             `\`\`\``;
     }
 
     return `✅ 排行榜创建成功并已自动发布上线!\n\n` +
            `📊 排行榜信息:\n` +
-           `- Leaderboard ID: ${result.id}\n` +
-           `- Open ID: ${result.leaderboard_open_id}\n` +
-           `- Title: ${result.title}\n` +
-           `- 状态: 🚀 已发布（所有用户可见）\n\n` +
+           `- 🆔 数据库 ID: ${result.id} (仅后台管理使用)\n` +
+           `- 🎮 客户端 ID: \`${result.leaderboard_open_id}\` ⭐ (游戏代码中使用这个!)\n` +
+           `- 📝 名称: ${result.title}\n` +
+           `- 🚀 状态: 已发布（所有用户可见）\n\n` +
            `📝 应用信息（已缓存）:\n` +
            `- Developer ID: ${developerId}\n` +
            `- App ID: ${appId}\n\n` +
-           `🎮 使用方法:\n` +
-           `在小游戏中使用 leaderboardId "${result.leaderboard_open_id}" 来调用排行榜 API\n\n` +
-           `💡 **提示：**\n` +
-           `排行榜已自动发布上线，所有用户都可以看到和使用此排行榜。`;
+           `🎮 **客户端代码示例**:\n` +
+           `\`\`\`javascript\n` +
+           `// ⚠️ 使用客户端 ID（字符串），不是数据库 ID（数字）！\n` +
+           `const leaderboardManager = tap.getLeaderboardManager();\n\n` +
+           `leaderboardManager.submitScores({\n` +
+           `  scores: [{\n` +
+           `    leaderboardId: "${result.leaderboard_open_id}",  // ← 使用这个字符串 ID\n` +
+           `    score: playerScore\n` +
+           `  }]\n` +
+           `});\n` +
+           `\`\`\`\n\n` +
+           `💡 **提示：** 排行榜已自动发布上线，所有用户都可以看到和使用。`;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
 
@@ -304,11 +317,15 @@ export async function listLeaderboards(
 
     result.list.forEach((item, index) => {
       output += `${index + 1}. **${item.title}**\n`;
-      output += `   - ID: ${item.id}\n`;
-      output += `   - Open ID: ${item.leaderboard_open_id}\n`;
-      output += `   - Period: ${item.period}\n`;
-      output += `   - Default: ${item.is_default ? 'Yes' : 'No'}\n\n`;
+      output += `   - 🆔 数据库 ID: ${item.id} (⚠️ 仅后台管理使用)\n`;
+      output += `   - 🎮 客户端 ID: \`${item.leaderboard_open_id}\` ⭐ (游戏代码中使用这个)\n`;
+      output += `   - 📅 周期: ${item.period}\n`;
+      output += `   - 🔧 默认: ${item.is_default ? 'Yes' : 'No'}\n\n`;
     });
+
+    output += `⚠️ **重要提示**：\n`;
+    output += `- 在客户端代码中使用 **客户端 ID**（leaderboard_open_id）\n`;
+    output += `- 例如：\`leaderboardManager.submitScores({ scores: [{ leaderboardId: "${result.list[0]?.leaderboard_open_id}", score: 100 }] })\`\n\n`;
 
     const currentPage = args.page || 1;
     const pageSize = args.page_size || 10;
