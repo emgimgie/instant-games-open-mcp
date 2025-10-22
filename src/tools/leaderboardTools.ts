@@ -107,7 +107,35 @@ async function searchLeaderboardDocs(args: ToolArgs): Promise<string> {
   const results = searchDocs(query);
 
   if (results.length === 0) {
-    return `No results found for "${query}".\n\nTry searching for: initialization, open, submit, load, score, ranking, leaderboard`;
+    // Suggest relevant Resources based on query
+    let suggestions = `No results found for "${query}".\n\n`;
+    suggestions += `💡 **建议：直接读取相关 Resources 获取完整文档**\n\n`;
+
+    const query_lower = query.toLowerCase();
+
+    if (query_lower.includes('init') || query_lower.includes('start') || query_lower.includes('get') || query_lower.includes('manager')) {
+      suggestions += `- docs://leaderboard/api/get-manager - 如何获取 LeaderboardManager 实例\n`;
+    }
+    if (query_lower.includes('submit') || query_lower.includes('upload') || query_lower.includes('save') || query_lower.includes('score')) {
+      suggestions += `- docs://leaderboard/api/submit-scores - 如何提交分数\n`;
+    }
+    if (query_lower.includes('open') || query_lower.includes('show') || query_lower.includes('display') || query_lower.includes('ui')) {
+      suggestions += `- docs://leaderboard/api/open - 如何显示排行榜 UI\n`;
+    }
+    if (query_lower.includes('load') || query_lower.includes('get') || query_lower.includes('fetch') || query_lower.includes('rank')) {
+      suggestions += `- docs://leaderboard/api/load-scores - 如何加载排行榜数据\n`;
+    }
+    if (query_lower.includes('integrate') || query_lower.includes('setup') || query_lower.includes('接入') || query_lower.includes('workflow')) {
+      suggestions += `- guide://leaderboard/integration-workflow - 完整接入工作流\n`;
+    }
+
+    if (suggestions === `No results found for "${query}".\n\n💡 **建议：直接读取相关 Resources 获取完整文档**\n\n`) {
+      suggestions += `\n或查看完整概览：\n`;
+      suggestions += `- docs://leaderboard/overview - 排行榜完整概览\n`;
+      suggestions += `- guide://leaderboard/integration-workflow - 完整接入工作流\n`;
+    }
+
+    return suggestions;
   }
 
   return `**🏆 Search Results for "${query}"**\n\n` + results.join('\n---\n\n');
