@@ -282,7 +282,7 @@ class TapTapMinigameMCPServer {
     const resources = getResourceDefinitions();
     
 
-    process.stderr.write('🚀 TapTap Open API MCP Server Started (Minigame & H5) [LOCAL-DEBUG]\n');
+    process.stderr.write('🚀 TapTap Open API MCP Server v1.2.0-beta.11 (Minigame & H5)\n');
     process.stderr.write(`📚 Providing ${tools.length} tools, ${resources.length} resources\n`);
     process.stderr.write('🏆 Features: Leaderboard Documentation & Management API\n');
     process.stderr.write(`🌍 Environment: ${apiConfig.environment}\n`);
