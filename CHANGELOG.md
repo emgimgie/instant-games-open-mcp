@@ -5,6 +5,58 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0-beta.10] - 2025-10-22
+
+### 🎯 Major Architecture Refactoring - Minimalist Design
+
+**Final Architecture**: 10 Tools + 7 Resources (Prompts removed)
+
+### Added
+- 🔐 **OAuth 2.0 Device Code Flow** - Zero-config authentication
+  - Lazy loading: Server starts immediately, auth triggered when needed
+  - Token saved to `~/.config/taptap-minigame/token.json`
+  - `complete_oauth_authorization` tool to complete auth flow
+  - Perfect for Cursor/Claude Code (no environment variables needed)
+
+- 📱 **New Tools for better UX**
+  - `get_integration_guide` - Complete workflow guide (replaces Prompt)
+  - `get_current_app_info` - Current app information with miniapp_id
+
+### Removed
+- 🗑️ **All Prompts** (AI doesn't auto-use them per MCP spec)
+- 🗑️ **search_leaderboard_docs Tool** (AI should read Resources instead)
+- 🗑️ **Redundant Resources**: patterns, quickstart, workflow, app-info
+
+### Changed
+- 📊 **Extreme Simplification**
+  - Tools: 17 → 10 (unified entry points)
+  - Resources: 11 → 7 (API docs only)
+  - Prompts: 2 → 0 (removed, AI doesn't use)
+
+- 🎯 **Clear Responsibilities**
+  - Tools: Entry points for AI (guides + operations)
+  - Resources: API documentation (reference material)
+
+- 🔧 **check_environment Enhancement**
+  - Now checks local token file
+  - Shows correct status even without env vars
+
+- 🌍 **miniapp_id Support**
+  - Cached and displayed in all relevant tools
+  - Used for building preview links
+
+### Fixed
+- ✅ **OAuth Non-Blocking** - Server starts in < 1 second
+- ✅ **VSCode Compatibility** - AI calls `get_integration_guide` Tool
+- ✅ **Claude Code Compatibility** - AI reads Resources
+- ✅ **API Documentation** - Aligned with source code
+- ✅ **NO SDK Emphasis** - Multiple reinforcements
+
+### Migration from beta.1-beta.9
+- Replace Prompt usage → Call `get_integration_guide` Tool
+- Replace Resource `guide://leaderboard/integration-workflow` → Call Tool
+- Replace Resource `app://current-app-info` → Call `get_current_app_info` Tool
+
 ## [1.2.0] - 2025-10-15
 
 ### ⚠️ BREAKING CHANGES

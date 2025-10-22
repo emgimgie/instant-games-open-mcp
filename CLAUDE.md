@@ -4,10 +4,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概述
 
-这是一个基于 Model Context Protocol (MCP) 的 TapTap 小游戏 Open API MCP 服务器。项目提供 TapTap 小游戏 Open API 的完整文档、代码示例和服务端管理功能。
+这是一个基于 Model Context Protocol (MCP) 的 TapTap Open API MCP 服务器。项目为 **TapTap Minigame 和 H5 游戏**提供完整的排行榜 API 文档和服务端管理功能。
 
-**当前功能：**
+**核心特性：**
 - 🏆 **排行榜系统** - 完整的排行榜 API 文档和服务端管理
+- 🔐 **OAuth 2.0 Device Code Flow** - 零配置认证（扫码即用）
+- 🎯 **极简架构** - 10 Tools + 7 Resources
+- 🌍 **双平台支持** - Minigame & H5 游戏
 
 **未来计划：**
 - ☁️ 云存档系统
@@ -17,6 +20,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 **官方 API 文档：** https://developer.taptap.cn/minigameapidoc/dev/api/open-api/leaderboard/
 
 **NPM 包：** `@mikoto_zero/minigame-open-mcp`
+
+**版本说明：**
+- `latest` (v1.1.4): Tools-only 稳定版（17 tools）
+- `beta` (v1.2.0-beta.10): 极简架构（10 tools + 7 resources + OAuth）
 
 ## 架构概览
 
@@ -193,42 +200,71 @@ node dist/server.js
 
 **注意**: 完全零安装，通过 npx 自动下载和运行！
 
-### 工具分类
+### 工具分类（10 Tools）
 
-#### 🎯 工作流引导工具
-- **`start_leaderboard_integration`** - 排行榜接入工作流引导（推荐作为起点）
-  - 自动检查现有排行榜
-  - 引导创建或选择排行榜
-  - 提供后续实现步骤
+#### 🎯 流程指引工具（1个）
+- **`get_integration_guide`** ⭐ 完整接入工作流指引
+  - 返回从零到生产的完整步骤
+  - 强调客户端无需安装 SDK
+  - 列出所有可用的 Resources（API 文档）
+  - **推荐：AI 在开始接入前必读**
 
-#### 📖 LeaderboardManager API 文档工具（6个）
-每个工具提供一个特定 API 的完整文档：
-- **`get_leaderboard_manager`** - 获取 LeaderboardManager 实例
-- **`open_leaderboard`** - 打开排行榜 UI
-- **`submit_scores`** - 提交玩家分数
-- **`load_leaderboard_scores`** - 加载排行榜数据
-- **`load_current_player_score`** - 获取当前玩家分数和排名
-- **`load_player_centered_scores`** - 加载当前玩家周围的玩家分数
+#### 📱 信息查询工具（2个）
+- **`get_current_app_info`** - 获取当前选择的应用信息
+  - 返回 developer_id, app_id, miniapp_id, app_name
+  - 用于确认当前操作的应用
+  - 用于构建预览链接
 
-#### ⚙️ 排行榜管理工具（2个）
-- **`create_leaderboard`** - 创建排行榜
+- **`check_environment`** - 检查环境配置和认证状态
+  - 检查环境变量和本地文件中的 token
+  - 显示认证状态和可用功能
+
+#### 🔐 认证工具（1个）
+- **`complete_oauth_authorization`** - 完成 OAuth 授权
+  - 用户扫码后调用此工具完成授权
+  - 轮询获取授权结果并保存 token
+  - 配合懒加载 OAuth 流程使用
+
+#### 📁 应用管理工具（2个）
+- **`list_developers_and_apps`** - 列出所有开发者和应用
+  - 显示 miniapp_id 用于构建预览链接
+  - 自动检测多应用场景
+
+- **`select_app`** - 选择要使用的应用
+  - 缓存选择，后续操作自动使用
+
+#### ⚙️ 排行榜管理工具（4个）
+- **`create_leaderboard`** - 创建新排行榜
   - 自动获取 developer_id 和 app_id
-  - 支持所有配置参数（周期、分数类型、排序等）
-  - 返回 leaderboard_id 供客户端使用
+  - 支持所有配置参数
+  - 返回 leaderboard_id
 
-- **`list_leaderboards`** - 查询已创建的排行榜列表
-  - 自动获取 developer_id 和 app_id
+- **`list_leaderboards`** - 列出所有排行榜
+  - 显示排行榜 ID 和配置
   - 支持分页
-  - 显示排行榜 ID 和配置信息
 
-#### 🔍 辅助工具（3个）
-- **`search_leaderboard_docs`** - 搜索排行榜文档
-- **`get_leaderboard_overview`** - 获取排行榜 API 完整概览
-- **`get_leaderboard_patterns`** - 获取集成模式和最佳实践
+- **`publish_leaderboard`** - 发布排行榜
+  - 控制排行榜可见性
 
-#### 🔧 系统工具（2个）
-- **`check_environment`** - 检查环境变量配置和认证状态
-- **`get_user_leaderboard_scores`** - 获取用户实际排行榜分数数据（需要 MAC Token）
+- **`get_user_leaderboard_scores`** - 获取用户分数数据
+
+### Resources 分类（7 Resources）
+
+#### 📖 API 详细文档（6个）
+每个 Resource 提供一个 LeaderboardManager API 的完整文档：
+- **`docs://leaderboard/api/get-manager`** - tap.getLeaderboardManager()
+- **`docs://leaderboard/api/open`** - openLeaderboard()
+- **`docs://leaderboard/api/submit-scores`** - submitScores()
+- **`docs://leaderboard/api/load-scores`** - loadLeaderboardScores()
+- **`docs://leaderboard/api/load-player-score`** - loadCurrentPlayerLeaderboardScore()
+- **`docs://leaderboard/api/load-centered-scores`** - loadPlayerCenteredScores()
+
+#### 📚 概览文档（1个）
+- **`docs://leaderboard/overview`** - 所有 API 的完整概览
+
+**使用说明**：
+- Claude Code：AI 会自动读取这些 Resources
+- VSCode/Cursor：如果不支持，使用 `get_integration_guide` Tool 中的代码示例
 
 ## 核心技术栈
 
@@ -244,26 +280,38 @@ node dist/server.js
 
 ### 环境变量详解
 
-**核心环境变量（必需）**：
-- `TDS_MCP_MAC_TOKEN`: 用户 MAC Token，JSON 字符串格式
-  ```json
-  {"kid":"abc123","token_type":"mac","mac_key":"secret","mac_algorithm":"hmac-sha-1"}
-  ```
-- `TDS_MCP_CLIENT_ID`: 客户端 ID，用于 API 调用
-- `TDS_MCP_CLIENT_TOKEN`: 客户端密钥，用于请求签名
+**认证方式（二选一）**：
+
+**方式 A: OAuth 2.0 Device Code Flow（推荐，零配置）**
+```bash
+# 无需配置环境变量！
+npx @mikoto_zero/minigame-open-mcp@beta
+
+# 首次使用会提示扫码授权
+# Token 自动保存到: ~/.config/taptap-minigame/token.json
+```
+
+**方式 B: 环境变量（手动配置）**
+```bash
+export TDS_MCP_MAC_TOKEN='{"kid":"abc123","token_type":"mac","mac_key":"secret","mac_algorithm":"hmac-sha-1"}'
+export TDS_MCP_CLIENT_ID="your_client_id"
+export TDS_MCP_CLIENT_TOKEN="your_client_token"
+```
+
+**必需环境变量（内置默认值）**：
+- `TDS_MCP_CLIENT_ID`: 客户端 ID（已内置，可覆盖）
+- `TDS_MCP_CLIENT_TOKEN`: 请求签名密钥（已内置，可覆盖）
 
 **可选配置**：
+- `TDS_MCP_MAC_TOKEN`: 用户 MAC Token（可选，否则使用 OAuth）
 - `TDS_MCP_ENV`: 环境选择，`production`（默认）或 `rnd`
   - production: `https://agent.tapapis.cn`
   - rnd: `https://agent.api.xdrnd.cn`
 - `TDS_MCP_PROJECT_PATH`: 项目路径，用于本地缓存
-- `TAPTAP_MINIGAME_MCP_VERBOSE`: 详细日志模式，设置为 `true` 或 `1` 启用
-  - 记录所有工具调用的输入和输出
-  - 记录所有 HTTP 请求和响应
-  - 用于调试和问题排查
+- `TAPTAP_MINIGAME_MCP_VERBOSE`: 详细日志模式（`true` 或 `1`）
 
 **环境检查**：
-使用 `check_environment` 工具检查所有环境变量的配置状态。
+使用 `check_environment` 工具检查认证状态（包括本地文件中的 token）。
 
 ## 日志和调试
 
