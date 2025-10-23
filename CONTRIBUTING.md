@@ -281,6 +281,82 @@ git commit -m "feat: 添加云存档功能"
 
 ---
 
+## 🔄 技术细节
+
+### 数据流向 - Tools 调用
+
+```
+MCP Client (Claude Code/VSCode)
+    ↓
+MCP Protocol: tools/call
+    ↓
+server.ts → 自动路由
+    ↓
+查找模块中的 tool.handler
+    ↓ 如果 requiresAuth=true
+ensureAuth() → OAuth 懒加载
+    ↓
+执行 handler(args, context)
+    ↓
+features/[feature]/handlers.ts
+    ↓
+features/[feature]/api.ts
+    ↓
+core/network/httpClient.ts
+    ↓
+TapTap API
+```
+
+### 数据流向 - Resources 读取
+
+```
+MCP Client (Claude Code)
+    ↓
+MCP Protocol: resources/read
+    ↓
+server.ts → 自动路由
+    ↓
+查找模块中的 resource.handler
+    ↓
+执行 handler()
+    ↓
+features/[feature]/docTools.ts
+    ↓
+features/[feature]/docs.ts
+    ↓
+返回文档内容
+```
+
+### 模块依赖关系
+
+```
+features/[feature]/
+    ↓ 依赖
+core/ (共享代码)
+    ↓ 不依赖
+features/* (其他模块)
+```
+
+**依赖规则**：
+- ✅ 功能模块可以依赖 core/
+- ❌ 功能模块不能相互依赖
+- ✅ core/ 不依赖任何功能模块
+
+### 代码度量
+
+当前项目（v1.2.0-beta.11）：
+
+| 模块 | 文件数 | 代码行数 |
+|------|-------|---------|
+| leaderboard | 7 | ~1800 行 |
+| core | 8 | ~800 行 |
+| server.ts | 1 | ~300 行 |
+| **总计** | **16** | **~2900 行** |
+
+模块化后代码减少了约 15%（清理了重复）
+
+---
+
 ## 🎊 享受模块化开发！
 
 模块化架构让添加新功能变得简单快捷！

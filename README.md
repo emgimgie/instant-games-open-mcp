@@ -272,7 +272,6 @@ const allModules = [leaderboardModule, cloudSaveModule];
 - **README.md** - 本文件（用户指南）
 - **CLAUDE.md** - Claude Code 集成指南
 - **CONTRIBUTING.md** - 开发者贡献指南（添加新功能）
-- **ARCHITECTURE.md** - 详细架构文档
 - **CHANGELOG.md** - 版本变更历史
 
 ## 🤝 贡献
