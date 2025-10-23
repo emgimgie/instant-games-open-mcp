@@ -27,32 +27,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 架构概览
 
-项目采用分层架构设计：
+项目采用**模块化架构设计** (v1.2.0-beta.11+)：
 
-### 核心服务器层
-- **`src/server.ts`** - 主 MCP 服务器，使用标准 MCP 协议（stdio 模式）
+### 功能模块层
+- **`src/features/`** - 功能模块（代码完全内聚）
+  - `leaderboard/` - 排行榜模块
+    - `index.ts` - 模块定义和注册
+    - `tools.ts` - Tools 定义 + 处理器
+    - `resources.ts` - Resources 定义 + 处理器
+    - `docs.ts` - 文档内容
+    - `docTools.ts` - 文档工具函数
+    - `handlers.ts` - 业务逻辑
+    - `api.ts` - API 调用
+  - 未来: `cloudSave/`, `share/` 等
+
+### 核心共享层
+- **`src/core/`** - 跨模块共享代码
+  - `auth/` - OAuth 2.0 Device Code Flow
+  - `network/` - HTTP Client（MAC 认证 + 签名）
+  - `handlers/` - 通用处理器（app, environment）
+  - `utils/` - 工具函数（cache, logger）
+  - `types/` - 类型定义
+
+### 服务器层
+- **`src/server.ts`** - 主服务器（自动注册所有模块）
 - **`bin/minigame-open-mcp`** - NPM 可执行入口点
 
-### 网络请求层
-- **`src/network/`** - 网络请求模块
-  - `httpClient.ts` - 通用 HTTP 客户端，支持 MAC 认证和请求签名
-  - `leaderboardApi.ts` - 排行榜服务端 API（创建、查询排行榜）
-
-### 文档工具层
-- **`src/tools/`** - 文档工具集
-  - `leaderboardTools.ts` - 排行榜 API 文档工具（每个 API 一个独立工具）
-
-### 数据层
-- **`src/data/`** - 静态文档数据（TypeScript）
-  - `leaderboardDocs.ts` - 排行榜 API 完整文档、示例代码和最佳实践
-
-### 工具层
-- **`src/utils/`** - 工具函数
-  - `cache.ts` - 本地缓存（自动缓存 developer_id 和 app_id）
-
-### 类型定义
-- **`src/types/`** - TypeScript 类型定义
-  - `index.ts` - MacToken 等核心类型
+### 优势
+- ✅ **代码内聚** - 每个功能的所有代码在一个目录
+- ✅ **独立开发** - 多人可并行开发不同功能
+- ✅ **自动注册** - 添加新功能只需导入模块
+- ✅ **易于维护** - 清晰的模块边界
 
 ## 常用命令
 
