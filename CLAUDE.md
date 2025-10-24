@@ -31,10 +31,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 功能模块层
 - **`src/features/`** - 功能模块（代码完全内聚）
-  - `leaderboard/` - 排行榜模块
+  - `app/` - **应用管理模块（基础功能）**
     - `index.ts` - 模块定义和注册
-    - `tools.ts` - Tools 定义 + 处理器
-    - `resources.ts` - Resources 定义 + 处理器
+    - `tools.ts` - 5 个工具（统一格式：definition + handler）
+    - `handlers.ts` - 业务逻辑
+    - `api.ts` - API 调用
+  - `leaderboard/` - **排行榜模块**
+    - `index.ts` - 模块定义和注册
+    - `tools.ts` - Tools 定义 + 处理器（统一格式）
+    - `resources.ts` - Resources 定义 + 处理器（统一格式）
     - `docs.ts` - 文档内容
     - `docTools.ts` - 文档工具函数
     - `handlers.ts` - 业务逻辑
@@ -45,19 +50,59 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **`src/core/`** - 跨模块共享代码
   - `auth/` - OAuth 2.0 Device Code Flow
   - `network/` - HTTP Client（MAC 认证 + 签名）
-  - `handlers/` - 通用处理器（app, environment）
-  - `utils/` - 工具函数（cache, logger）
-  - `types/` - 类型定义
+  - `handlers/` - 通用处理器（environment）
+  - `utils/` - 工具函数（cache, logger, docHelpers）
+  - `types/` - 类型定义（ToolRegistration, ResourceRegistration 等）
 
 ### 服务器层
 - **`src/server.ts`** - 主服务器（自动注册所有模块）
 - **`bin/minigame-open-mcp`** - NPM 可执行入口点
 
-### 优势
+### 架构优势
 - ✅ **代码内聚** - 每个功能的所有代码在一个目录
 - ✅ **独立开发** - 多人可并行开发不同功能
 - ✅ **自动注册** - 添加新功能只需导入模块
 - ✅ **易于维护** - 清晰的模块边界
+- ✅ **基础功能复用** - app 模块可被其他模块复用
+
+### 关键设计模式
+
+**1. 统一格式（v1.2.0-beta.11+）**
+- Tools 和 Resources 采用统一对象数组格式
+- 每个工具包含 `definition` + `handler`，永不不匹配
+- 类型安全的参数定义
+
+```typescript
+// Tools 统一格式
+export const myTools: ToolRegistration[] = [
+  {
+    definition: { name: 'my_tool', ... },
+    handler: async (args: { param: string }, context) => { ... }
+  }
+];
+
+// Resources 统一格式
+export const myResources: ResourceRegistration[] = [
+  {
+    uri: 'docs://my-feature/api',
+    name: 'API Doc',
+    handler: async () => { ... }
+  }
+];
+```
+
+**2. 模块依赖规则**
+```
+业务模块 (leaderboard, cloudSave)
+    ↓ 可依赖
+基础模块 (app)
+    ↓ 依赖
+核心层 (core)
+```
+
+- ✅ 业务模块可依赖 `core/` 和 `features/app/`
+- ❌ 业务模块之间不能相互依赖
+- ✅ app 模块只依赖 core，不依赖其他业务模块
 
 ## 常用命令
 
@@ -473,15 +518,42 @@ HMAC-SHA256(method\nurl\nx-tap-headers\nbody\n, CLIENT_SECRET)
 - 通过 `/level/v1/list` API 自动获取
 - 避免重复输入参数
 
-### 项目结构
-- `src/server.ts` - 主服务器入口和工具注册
-- `src/network/` - 网络请求模块（HTTP 客户端和 API 封装）
-- `src/tools/` - 工具处理函数实现
-- `src/data/` - 文档数据定义
-- `src/utils/` - 工具函数（缓存等）
-- `src/types/` - 类型定义
-- `bin/` - NPM 可执行文件
-- `dist/` - 编译输出目录
+### 添加新功能
+
+使用脚手架快速创建新功能模块：
+
+```bash
+# 1. 运行脚手架脚本
+./scripts/create-feature.sh
+
+# 2. 按提示输入信息
+# - Feature Key: cloud-save (kebab-case)
+# - Feature Name: 云存档 (中文描述)
+# - 是否需要 Resources: yes/no
+# - 是否需要 Prompts: yes/no
+
+# 3. 自动生成完整模块结构
+src/features/cloudSave/
+  ├── index.ts      # 模块定义
+  ├── tools.ts      # 统一格式的工具定义
+  ├── handlers.ts   # 业务逻辑（含示例代码）
+  └── api.ts        # API调用（含ensureAppInfo示例）
+
+# 4. 实现业务逻辑（参考TODO注释）
+
+# 5. 在 server.ts 注册模块
+import { cloudSaveModule } from './features/cloudSave/index.js';
+const allModules = [appModule, leaderboardModule, cloudSaveModule];
+
+# 6. 编译测试
+npm run build
+node dist/server.js
+```
+
+**关键点**：
+- 使用 `ensureAppInfo()` 获取 developer_id/app_id（从 `../app/api.js` 导入）
+- 工具采用统一格式：`ToolRegistration[]`（definition + handler）
+- 参考 leaderboard 模块的实现模式
 
 ## 项目特色功能
 
