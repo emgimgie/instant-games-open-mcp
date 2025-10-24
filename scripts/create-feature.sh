@@ -26,14 +26,34 @@ echo -e "${GREEN}📝 请输入功能信息${NC}"
 echo ""
 
 # 询问 Feature Key
-read -p "Feature Key (小写短横线格式，如 cloud-save): " FEATURE_KEY
+echo -e "${BLUE}Feature Key 说明：${NC}"
+echo "  - 用于目录名和变量名（如 cloud-save）"
+echo "  - 格式：小写字母 + 短横线分隔"
+echo "  - 示例：cloud-save, user-profile, friend-system"
+echo ""
+read -p "Feature Key: " FEATURE_KEY
 if [ -z "$FEATURE_KEY" ]; then
   echo -e "${RED}❌ Feature Key 不能为空${NC}"
   exit 1
 fi
 
+# 验证 Feature Key 格式
+if ! echo "$FEATURE_KEY" | grep -qE '^[a-z]+(-[a-z]+)*$'; then
+  echo -e "${RED}❌ Feature Key 格式错误！必须是小写字母和短横线（如 cloud-save）${NC}"
+  exit 1
+fi
+
+echo ""
+
 # 询问 Feature Name
-read -p "Feature Name (显示名称，如 Cloud Save): " FEATURE_NAME
+echo -e "${BLUE}Feature Name 说明：${NC}"
+echo "  - 用于代码注释和 API 文档（如 Cloud Save）"
+echo "  - 格式：英文，首字母大写"
+echo "  - 会出现在：工具描述、文档标题、代码注释"
+echo "  - ⚠️  建议使用英文以保持 MCP 工具描述的专业性"
+echo "  - 示例：Cloud Save, User Profile, Friend System"
+echo ""
+read -p "Feature Name (英文): " FEATURE_NAME
 if [ -z "$FEATURE_NAME" ]; then
   echo -e "${RED}❌ Feature Name 不能为空${NC}"
   exit 1
