@@ -65,9 +65,9 @@ app/
 
 #### `src/core/handlers/appHandlers.ts`
 **变更**：
-- 简化为仅导出 `../../features/app/handlers.js` 的函数
-- 添加 `@deprecated` 标记，保留用于向后兼容
-- 文件从 94 行减少到 9 行（减少 85 行）
+- 🗑️ **已删除** - 不再需要此文件
+- 所有功能已迁移到 `src/features/app/handlers.ts`
+- 文件从 94 行减少到 0 行（完全删除）
 
 #### `src/server.ts`
 **变更**：
@@ -120,14 +120,8 @@ leaderboard 模块 (依赖 app 模块)
 - **减少**:
   - `leaderboard/api.ts`: -200 行
   - `leaderboard/tools.ts`: -79 行
-  - `core/handlers/appHandlers.ts`: -85 行
-- **净增加**: ~66 行（新增模块结构）
-
-### 向后兼容性
-✅ **完全兼容**
-- `core/handlers/appHandlers.ts` 保留为兼容层
-- 所有现有导入路径继续有效
-- API 签名未改变
+  - `core/handlers/appHandlers.ts`: -94 行（完全删除）
+- **净减少**: ~57 行（代码更简洁！）
 
 ### 测试结果
 ```bash
