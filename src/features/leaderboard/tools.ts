@@ -1,9 +1,9 @@
 /**
- * Leaderboard Tools Definitions and Handlers
+ * Leaderboard Tools
+ * Unified definitions and handlers (no more manual sync required!)
  */
 
-import { Tool } from '@modelcontextprotocol/sdk/types.js';
-import type { HandlerContext } from '../../core/types/index.js';
+import type { ToolRegistration, HandlerContext } from '../../core/types/index.js';
 
 // Import handlers from core (shared)
 import * as appHandlers from '../../core/handlers/appHandlers.js';
@@ -11,231 +11,241 @@ import * as environmentHandlers from '../../core/handlers/environmentHandlers.js
 
 // Import from this module
 import * as leaderboardHandlers from './handlers.js';
-import { leaderboardTools } from './docTools.js';
+import { leaderboardTools as leaderboardDocTools } from './docTools.js';
 
 /**
- * Tool Definitions (JSON Schema)
+ * Leaderboard Tools
+ * Each tool combines its definition and handler in one place
  */
-export const leaderboardToolDefinitions: Tool[] = [
+export const leaderboardTools: ToolRegistration[] = [
   // 🎯 Integration Guide
   {
-    name: 'get_integration_guide',
-    description: '⭐ READ THIS FIRST when user wants to integrate/接入/setup/add leaderboard功能. Returns complete step-by-step workflow. CRITICAL: Emphasizes NO SDK installation - tap is global object. Call this BEFORE making any implementation plans.',
-    inputSchema: {
-      type: 'object',
-      properties: {}
+    definition: {
+      name: 'get_integration_guide',
+      description: '⭐ READ THIS FIRST when user wants to integrate/接入/setup/add leaderboard功能. Returns complete step-by-step workflow. CRITICAL: Emphasizes NO SDK installation - tap is global object. Call this BEFORE making any implementation plans.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    handler: async (args, context) => {
+      return leaderboardDocTools.getIntegrationWorkflow();
     }
   },
 
-  // 📱 Information Tools
+  // 📱 Get Current App Info
   {
-    name: 'get_current_app_info',
-    description: 'Get currently selected app/game information including developer_id, app_id, miniapp_id, and app name. Use this when you need to know which app is being used or to build preview links.',
-    inputSchema: {
-      type: 'object',
-      properties: {}
+    definition: {
+      name: 'get_current_app_info',
+      description: 'Get currently selected app/game information including developer_id, app_id, miniapp_id, and app name. Use this when you need to know which app is being used or to build preview links.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    handler: async (args, context) => {
+      return leaderboardDocTools.getCurrentAppInfo();
     }
   },
 
+  // 📱 Check Environment
   {
-    name: 'check_environment',
-    description: 'Check environment configuration and user authentication status. Use this to verify if TDS_MCP_MAC_TOKEN and TDS_MCP_CLIENT_ID are configured.',
-    inputSchema: {
-      type: 'object',
-      properties: {}
+    definition: {
+      name: 'check_environment',
+      description: 'Check environment configuration and user authentication status. Use this to verify if TDS_MCP_MAC_TOKEN and TDS_MCP_CLIENT_ID are configured.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    handler: async (args, context) => {
+      return environmentHandlers.checkEnvironment(context);
     }
   },
 
-  // 🔐 OAuth Tool
+  // 🔐 Complete OAuth Authorization
   {
-    name: 'complete_oauth_authorization',
-    description: 'Complete OAuth authorization after user has scanned QR code. Call this after user confirms they have completed authorization in browser. This tool will poll for the authorization result and save the token.',
-    inputSchema: {
-      type: 'object',
-      properties: {}
+    definition: {
+      name: 'complete_oauth_authorization',
+      description: 'Complete OAuth authorization after user has scanned QR code. Call this after user confirms they have completed authorization in browser. This tool will poll for the authorization result and save the token.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    handler: async (args, context) => {
+      // This handler is replaced in server.ts (needs access to deviceAuth)
+      throw new Error('This handler is implemented in server.ts');
     }
   },
 
-  // 📁 App Management
+  // 📁 List Developers and Apps
   {
-    name: 'list_developers_and_apps',
-    description: 'List all developers and their apps/games for the current user. Use this when multiple developers or apps exist and you need to let user/AI choose which one to use.',
-    inputSchema: {
-      type: 'object',
-      properties: {}
+    definition: {
+      name: 'list_developers_and_apps',
+      description: 'List all developers and their apps/games for the current user. Use this when multiple developers or apps exist and you need to let user/AI choose which one to use.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    handler: async (args, context) => {
+      return appHandlers.listDevelopersAndApps(context);
     }
   },
 
+  // 📁 Select App
   {
-    name: 'select_app',
-    description: 'Select a specific developer and app to use for subsequent operations. This will cache the selection. Use this after listing developers and apps with list_developers_and_apps.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        developer_id: {
-          type: 'number',
-          description: 'Developer ID to select (required)'
+    definition: {
+      name: 'select_app',
+      description: 'Select a specific developer and app to use for subsequent operations. This will cache the selection. Use this after listing developers and apps with list_developers_and_apps.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          developer_id: {
+            type: 'number',
+            description: 'Developer ID to select (required)'
+          },
+          app_id: {
+            type: 'number',
+            description: 'App/Game ID to select (required)'
+          }
         },
-        app_id: {
-          type: 'number',
-          description: 'App/Game ID to select (required)'
-        }
-      },
-      required: ['developer_id', 'app_id']
+        required: ['developer_id', 'app_id']
+      }
+    },
+    handler: async (args: { developer_id: number; app_id: number }, context) => {
+      return appHandlers.selectApp(args, context);
     }
   },
 
-  // ⚙️ Leaderboard Management
+  // ⚙️ Create Leaderboard
   {
-    name: 'create_leaderboard',
-    description: 'Create a new leaderboard on TapTap server. Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for client-side APIs.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        title: {
-          type: 'string',
-          description: 'Leaderboard title/name (REQUIRED)'
+    definition: {
+      name: 'create_leaderboard',
+      description: 'Create a new leaderboard on TapTap server. Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for client-side APIs.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          title: {
+            type: 'string',
+            description: 'Leaderboard title/name (REQUIRED)'
+          },
+          period_type: {
+            type: 'number',
+            description: 'Reset period: 1=Always, 2=Daily, 3=Weekly, 4=Monthly (REQUIRED)',
+            enum: [1, 2, 3, 4]
+          },
+          score_type: {
+            type: 'number',
+            description: 'Score type: 1=Integer, 2=Time (REQUIRED)',
+            enum: [1, 2]
+          },
+          score_order: {
+            type: 'number',
+            description: 'Score order: 1=Descending (high to low), 2=Ascending (low to high) (REQUIRED)',
+            enum: [1, 2]
+          },
+          calc_type: {
+            type: 'number',
+            description: 'Calculation type: 1=Sum, 2=Best, 3=Latest (REQUIRED)',
+            enum: [1, 2, 3]
+          },
+          display_limit: {
+            type: 'number',
+            description: 'Display limit (optional, default 100)'
+          },
+          period_time: {
+            type: 'string',
+            description: 'Reset time like "08:00:00" (required if period_type is not 1)'
+          }
         },
-        period_type: {
-          type: 'number',
-          description: 'Reset period: 1=Always, 2=Daily, 3=Weekly, 4=Monthly (REQUIRED)',
-          enum: [1, 2, 3, 4]
-        },
-        score_type: {
-          type: 'number',
-          description: 'Score type: 1=Integer, 2=Time (REQUIRED)',
-          enum: [1, 2]
-        },
-        score_order: {
-          type: 'number',
-          description: 'Score order: 1=Descending (high to low), 2=Ascending (low to high) (REQUIRED)',
-          enum: [1, 2]
-        },
-        calc_type: {
-          type: 'number',
-          description: 'Calculation type: 1=Sum, 2=Best, 3=Latest (REQUIRED)',
-          enum: [1, 2, 3]
-        },
-        display_limit: {
-          type: 'number',
-          description: 'Display limit (optional, default 100)'
-        },
-        period_time: {
-          type: 'string',
-          description: 'Reset time like "08:00:00" (required if period_type is not 1)'
-        }
-      },
-      required: ['title', 'period_type', 'score_type', 'score_order', 'calc_type']
+        required: ['title', 'period_type', 'score_type', 'score_order', 'calc_type']
+      }
+    },
+    handler: async (args: {
+      title: string;
+      period_type: 1 | 2 | 3 | 4;
+      score_type: 1 | 2;
+      score_order: 1 | 2;
+      calc_type: 1 | 2 | 3;
+      display_limit?: number;
+      period_time?: string;
+    }, context) => {
+      return leaderboardHandlers.createLeaderboard(args, context);
     }
   },
 
+  // ⚙️ List Leaderboards
   {
-    name: 'list_leaderboards',
-    description: 'List all leaderboards for current app. Auto-fetches developer_id and app_id.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        page: {
-          type: 'number',
-          description: 'Page number (optional, default 1)'
-        },
-        page_size: {
-          type: 'number',
-          description: 'Page size (optional, default 10)'
+    definition: {
+      name: 'list_leaderboards',
+      description: 'List all leaderboards for current app. Auto-fetches developer_id and app_id.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          page: {
+            type: 'number',
+            description: 'Page number (optional, default 1)'
+          },
+          page_size: {
+            type: 'number',
+            description: 'Page size (optional, default 10)'
+          }
         }
       }
+    },
+    handler: async (args: { page?: number; page_size?: number }, context) => {
+      return leaderboardHandlers.listLeaderboards(args, context);
     }
   },
 
+  // ⚙️ Publish Leaderboard
   {
-    name: 'publish_leaderboard',
-    description: 'Publish leaderboard or set to whitelist-only mode.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        id: {
-          type: 'number',
-          description: 'Leaderboard database ID (required)'
+    definition: {
+      name: 'publish_leaderboard',
+      description: 'Publish leaderboard or set to whitelist-only mode.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          id: {
+            type: 'number',
+            description: 'Leaderboard database ID (required)'
+          },
+          publish: {
+            type: 'boolean',
+            description: 'true=publish (public), false=whitelist only (required)'
+          }
         },
-        whitelist_only: {
-          type: 'boolean',
-          description: 'true=whitelist mode, false=public (required)'
-        }
-      },
-      required: ['id', 'whitelist_only']
+        required: ['id', 'publish']
+      }
+    },
+    handler: async (args: { id: number; publish: boolean }, context) => {
+      return leaderboardHandlers.publishLeaderboard(args, context);
     }
   },
 
+  // ⚙️ Get User Leaderboard Scores
   {
-    name: 'get_user_leaderboard_scores',
-    description: 'Get user leaderboard scores. Requires MAC Token authentication.',
-    inputSchema: {
-      type: 'object',
-      properties: {
-        leaderboardId: {
-          type: 'string',
-          description: 'Leaderboard ID'
-        },
-        limit: {
-          type: 'number',
-          description: 'Max entries (default 10)'
+    definition: {
+      name: 'get_user_leaderboard_scores',
+      description: 'Get user leaderboard scores. Requires MAC Token authentication.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          leaderboardId: {
+            type: 'string',
+            description: 'Leaderboard ID'
+          },
+          limit: {
+            type: 'number',
+            description: 'Max entries (default 10)'
+          }
         }
       }
+    },
+    handler: async (args: { leaderboardId?: string; limit?: number }, context) => {
+      return leaderboardHandlers.getUserLeaderboardScores(args, context);
     }
-  }
-];
-
-/**
- * Tool Handlers (must match order of definitions above)
- */
-export const leaderboardToolHandlers = [
-  // get_integration_guide
-  async (args: any, context: HandlerContext) => {
-    return leaderboardTools.getIntegrationWorkflow();
-  },
-
-  // get_current_app_info
-  async (args: any, context: HandlerContext) => {
-    return leaderboardTools.getCurrentAppInfo();
-  },
-
-  // check_environment
-  async (args: any, context: HandlerContext) => {
-    return environmentHandlers.checkEnvironment(context);
-  },
-
-  // complete_oauth_authorization - handled in server.ts (needs access to deviceAuth)
-  async (args: any, context: HandlerContext) => {
-    throw new Error('This handler is implemented in server.ts');
-  },
-
-  // list_developers_and_apps
-  async (args: any, context: HandlerContext) => {
-    return appHandlers.listDevelopersAndApps(context);
-  },
-
-  // select_app
-  async (args: any, context: HandlerContext) => {
-    return appHandlers.selectApp(args, context);
-  },
-
-  // create_leaderboard
-  async (args: any, context: HandlerContext) => {
-    return leaderboardHandlers.createLeaderboard(args, context);
-  },
-
-  // list_leaderboards
-  async (args: any, context: HandlerContext) => {
-    return leaderboardHandlers.listLeaderboards(args, context);
-  },
-
-  // publish_leaderboard
-  async (args: any, context: HandlerContext) => {
-    return leaderboardHandlers.publishLeaderboard(args, context);
-  },
-
-  // get_user_leaderboard_scores
-  async (args: any, context: HandlerContext) => {
-    return leaderboardHandlers.getUserLeaderboardScores(args, context);
   }
 ];
