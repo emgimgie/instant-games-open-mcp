@@ -5,6 +5,71 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0-beta.12] - 2025-10-24
+
+### 🏗️ Major Architecture Refactoring - App Module Abstraction
+
+**This is a significant architectural improvement separating application management from business features.**
+
+### Added
+- 🎯 **App Module** - New independent application management module
+  - `features/app/` - Dedicated module for app operations
+  - 5 tools: `get_current_app_info`, `check_environment`, `complete_oauth_authorization`, `list_developers_and_apps`, `select_app`
+  - Reusable by all business features (leaderboard, future cloudSave, etc.)
+  - Clean separation of concerns
+
+- ✨ **Unified Format** (v1.2.0-beta.11+)
+  - Tools/Resources use unified object array format
+  - `ToolRegistration[]` - definition + handler combined
+  - `ResourceRegistration[]` - uri + handler combined
+  - Eliminates manual sync issues
+
+- 📚 **Generic Documentation Helpers**
+  - `core/utils/docHelpers.ts` - Reusable doc generation utilities
+  - `generateAPIDoc()`, `generateOverview()`, `searchDocumentation()`
+  - Reduces code duplication across features
+
+### Changed
+- 📦 **Module Structure**
+  - `app`: 5 tools, 0 resources (foundation module)
+  - `leaderboard`: 5 tools, 7 resources (depends on app module)
+  - Clean dependency hierarchy: business → app → core
+
+- 📝 **Documentation Consolidation**
+  - Integrated architecture docs into CLAUDE.md
+  - Simplified CONTRIBUTING.md (393→277 lines, -30%)
+  - Deleted temporary architecture docs (docs/architecture/)
+  - Single source of truth for developers
+
+- 🔧 **Scaffolding Script Enhanced**
+  - `create-feature.sh` updated with `ensureAppInfo` examples
+  - Generates unified format code templates
+  - Better developer experience
+
+### Removed
+- 🗑️ **Deprecated Compatibility Layer**
+  - Deleted `core/handlers/appHandlers.ts` (compatibility layer)
+  - All app operations now through `features/app/` module
+  - No legacy code burden
+
+### Technical Details
+- **Code Impact**: Net -57 lines (cleaner architecture)
+  - New: `features/app/` (~430 lines)
+  - Removed: redundant code (~487 lines)
+- **Module Count**: 2 feature modules (app + leaderboard)
+- **Dependency Flow**: `leaderboard → app → core`
+
+### Migration
+- No breaking changes for end users
+- Developers: Import `ensureAppInfo` from `../app/api.js` (not `../leaderboard/api.js`)
+- New features can now reuse app module for common operations
+
+### Documentation
+- ✅ README.md - Updated architecture diagram
+- ✅ CLAUDE.md - Added design patterns and dev guide
+- ✅ CONTRIBUTING.md - Simplified to high-level guidance
+- ✅ Scaffolding script - Updated templates
+
 ## [1.2.0-beta.10] - 2025-10-22
 
 ### 🎯 Major Architecture Refactoring - Minimalist Design
