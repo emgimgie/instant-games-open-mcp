@@ -93,7 +93,7 @@ echo ""
 
 if [ "$CURRENT_BRANCH" = "$TARGET_BRANCH" ]; then
   echo -e "${YELLOW}⚠️  当前已在 $TARGET_BRANCH 分支${NC}"
-  read -p "是否继续在当前分支创建？(y/n, 默认 y): " CONTINUE_CURRENT
+  read -p "是否继续在当前分支创建? (y/n, 默认 y): " CONTINUE_CURRENT
   CONTINUE_CURRENT=${CONTINUE_CURRENT:-y}
 
   if [ "$CONTINUE_CURRENT" != "y" ]; then
@@ -104,7 +104,7 @@ else
   # 检查目标分支是否已存在
   if git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH"; then
     echo -e "${YELLOW}⚠️  分支 $TARGET_BRANCH 已存在${NC}"
-    read -p "是否切换到该分支？(y/n, 默认 y): " SWITCH_EXISTING
+    read -p "是否切换到该分支? (y/n, 默认 y): " SWITCH_EXISTING
     SWITCH_EXISTING=${SWITCH_EXISTING:-y}
 
     if [ "$SWITCH_EXISTING" = "y" ]; then
@@ -114,7 +114,7 @@ else
       echo -e "${YELLOW}⚠️  保持在当前分支 $CURRENT_BRANCH${NC}"
     fi
   else
-    read -p "是否创建并切换到新分支 $TARGET_BRANCH？(y/n, 默认 y): " CREATE_BRANCH
+    read -p "是否创建并切换到新分支 $TARGET_BRANCH? (y/n, 默认 y): " CREATE_BRANCH
     CREATE_BRANCH=${CREATE_BRANCH:-y}
 
     if [ "$CREATE_BRANCH" = "y" ]; then
@@ -153,7 +153,7 @@ echo ""
 # 检查目录是否已存在
 if [ -d "$FEATURE_DIR" ]; then
   echo -e "${YELLOW}⚠️  目录 $FEATURE_DIR 已存在${NC}"
-  read -p "是否覆盖？(y/n, 默认 n): " OVERWRITE
+  read -p "是否覆盖? (y/n, 默认 n): " OVERWRITE
   OVERWRITE=${OVERWRITE:-n}
 
   if [ "$OVERWRITE" != "y" ]; then
