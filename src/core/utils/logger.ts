@@ -1,9 +1,37 @@
 /**
- * Logger utility for TapTap Minigame MCP Server
- * Controlled by TAPTAP_MINIGAME_MCP_VERBOSE environment variable
+ * MCP-compliant Logger for TapTap Minigame MCP Server
+ * Supports RFC 5424 log levels and dual output mode (stderr + MCP notifications)
  */
 
 import process from 'node:process';
+import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
+
+/**
+ * RFC 5424 log levels (syslog severity levels)
+ */
+export type LogLevel =
+  | 'debug'     // 7 - Debug-level messages
+  | 'info'      // 6 - Informational messages
+  | 'notice'    // 5 - Normal but significant condition
+  | 'warning'   // 4 - Warning conditions
+  | 'error'     // 3 - Error conditions
+  | 'critical'  // 2 - Critical conditions
+  | 'alert'     // 1 - Action must be taken immediately
+  | 'emergency';// 0 - System is unusable
+
+/**
+ * Log level priorities (lower number = higher severity)
+ */
+const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
+  'emergency': 0,
+  'alert': 1,
+  'critical': 2,
+  'error': 3,
+  'warning': 4,
+  'notice': 5,
+  'info': 6,
+  'debug': 7,
+};
 
 /**
  * Check if verbose logging is enabled
@@ -31,39 +59,117 @@ function getTimestamp(): string {
 }
 
 /**
- * Logger class for structured logging
+ * Sanitize sensitive data from objects
+ */
+function sanitizeData(data: any): any {
+  if (!data || typeof data !== 'object') {
+    return data;
+  }
+
+  const sensitiveKeys = ['password', 'token', 'secret', 'key', 'authorization', 'auth'];
+  const sanitized = Array.isArray(data) ? [...data] : { ...data };
+
+  for (const key in sanitized) {
+    const lowerKey = key.toLowerCase();
+    if (sensitiveKeys.some(sk => lowerKey.includes(sk))) {
+      sanitized[key] = '***REDACTED***';
+    } else if (typeof sanitized[key] === 'object' && sanitized[key] !== null) {
+      sanitized[key] = sanitizeData(sanitized[key]);
+    }
+  }
+
+  return sanitized;
+}
+
+/**
+ * MCP-compliant Logger class
  */
 export class Logger {
   private verbose: boolean;
+  private currentLevel: LogLevel = 'info';
+  private server?: Server;
+  private transport?: 'stdio' | 'sse';
 
   constructor() {
     this.verbose = isVerboseEnabled();
   }
 
   /**
-   * Log informational message
+   * Initialize logger with MCP server instance
    */
-  info(message: string, data?: any): void {
-    if (!this.verbose) return;
+  initialize(server: Server, transport: 'stdio' | 'sse'): void {
+    this.server = server;
+    this.transport = transport;
+  }
 
-    process.stderr.write(`[${getTimestamp()}] [INFO] ${message}\n`);
-    if (data !== undefined) {
-      process.stderr.write(`${formatObject(data)}\n`);
+  /**
+   * Set log level (implements MCP logging/setLevel)
+   */
+  setLevel(level: LogLevel): void {
+    this.currentLevel = level;
+    if (this.verbose) {
+      process.stderr.write(`[${getTimestamp()}] [LOGGER] Log level set to: ${level}\n`);
     }
   }
 
   /**
-   * Log error message
+   * Get current log level
    */
-  error(message: string, error?: any): void {
-    if (!this.verbose) return;
+  getLevel(): LogLevel {
+    return this.currentLevel;
+  }
 
-    process.stderr.write(`[${getTimestamp()}] [ERROR] ${message}\n`);
-    if (error !== undefined) {
-      if (error instanceof Error) {
-        process.stderr.write(`${error.message}\n${error.stack || ''}\n`);
-      } else {
-        process.stderr.write(`${formatObject(error)}\n`);
+  /**
+   * Check if a message should be logged based on current level
+   */
+  private shouldLog(messageLevel: LogLevel): boolean {
+    return LOG_LEVEL_PRIORITY[messageLevel] <= LOG_LEVEL_PRIORITY[this.currentLevel];
+  }
+
+  /**
+   * Core logging method with dual output
+   */
+  private async log(
+    level: LogLevel,
+    loggerName: string,
+    message: string,
+    data?: any
+  ): Promise<void> {
+    // Check if we should log this level
+    if (!this.shouldLog(level)) {
+      return;
+    }
+
+    const timestamp = getTimestamp();
+    const sanitized = data ? sanitizeData(data) : undefined;
+
+    // Output 1: stderr (for local debugging)
+    if (this.verbose) {
+      process.stderr.write(`[${timestamp}] [${level.toUpperCase()}] [${loggerName}] ${message}\n`);
+      if (sanitized !== undefined) {
+        process.stderr.write(`${formatObject(sanitized)}\n`);
+      }
+    }
+
+    // Output 2: MCP notifications (for client)
+    // Important for HTTP/SSE mode where client can't capture stderr
+    if (this.server) {
+      try {
+        await this.server.notification({
+          method: 'notifications/message',
+          params: {
+            level,
+            logger: loggerName,
+            data: sanitized !== undefined
+              ? { message, timestamp, ...sanitized }
+              : { message, timestamp }
+          }
+        });
+      } catch (error) {
+        // Silently ignore notification errors to prevent logging loops
+        if (this.verbose) {
+          process.stderr.write(`[${timestamp}] [WARNING] Failed to send log notification: ${error}\n`);
+        }
       }
     }
   }
@@ -71,79 +177,141 @@ export class Logger {
   /**
    * Log debug message
    */
-  debug(message: string, data?: any): void {
-    if (!this.verbose) return;
+  async debug(message: string, data?: any, loggerName: string = 'server'): Promise<void> {
+    await this.log('debug', loggerName, message, data);
+  }
 
-    process.stderr.write(`[${getTimestamp()}] [DEBUG] ${message}\n`);
-    if (data !== undefined) {
-      process.stderr.write(`${formatObject(data)}\n`);
-    }
+  /**
+   * Log info message
+   */
+  async info(message: string, data?: any, loggerName: string = 'server'): Promise<void> {
+    await this.log('info', loggerName, message, data);
+  }
+
+  /**
+   * Log notice message
+   */
+  async notice(message: string, data?: any, loggerName: string = 'server'): Promise<void> {
+    await this.log('notice', loggerName, message, data);
+  }
+
+  /**
+   * Log warning message
+   */
+  async warning(message: string, data?: any, loggerName: string = 'server'): Promise<void> {
+    await this.log('warning', loggerName, message, data);
+  }
+
+  /**
+   * Log error message
+   */
+  async error(message: string, error?: any, loggerName: string = 'server'): Promise<void> {
+    const data = error instanceof Error
+      ? { error: error.message, stack: error.stack }
+      : { error };
+    await this.log('error', loggerName, message, data);
+  }
+
+  /**
+   * Log critical message
+   */
+  async critical(message: string, data?: any, loggerName: string = 'server'): Promise<void> {
+    await this.log('critical', loggerName, message, data);
+  }
+
+  /**
+   * Log alert message
+   */
+  async alert(message: string, data?: any, loggerName: string = 'server'): Promise<void> {
+    await this.log('alert', loggerName, message, data);
+  }
+
+  /**
+   * Log emergency message
+   */
+  async emergency(message: string, data?: any, loggerName: string = 'server'): Promise<void> {
+    await this.log('emergency', loggerName, message, data);
   }
 
   /**
    * Log tool call with input arguments
    */
-  logToolCall(toolName: string, args: any): void {
+  async logToolCall(toolName: string, args: any): Promise<void> {
     if (!this.verbose) return;
 
     process.stderr.write(`\n${'='.repeat(80)}\n`);
     process.stderr.write(`[${getTimestamp()}] [TOOL CALL] ${toolName}\n`);
     process.stderr.write(`${'='.repeat(80)}\n`);
-    process.stderr.write(`📥 Input:\n${formatObject(args)}\n`);
+    process.stderr.write(`📥 Input:\n${formatObject(sanitizeData(args))}\n`);
+
+    // Send as info level notification
+    await this.info(`Tool called: ${toolName}`, { tool: toolName, args: sanitizeData(args) }, 'tools');
   }
 
   /**
    * Log tool response with output
    */
-  logToolResponse(toolName: string, output: any, success: boolean = true): void {
+  async logToolResponse(toolName: string, output: any, success: boolean = true): Promise<void> {
     if (!this.verbose) return;
 
     process.stderr.write(`\n${'-'.repeat(80)}\n`);
     process.stderr.write(`[${getTimestamp()}] [TOOL RESPONSE] ${toolName} - ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
     process.stderr.write(`${'-'.repeat(80)}\n`);
-    process.stderr.write(`📤 Output:\n${typeof output === 'string' ? output.substring(0, 500) + (output.length > 500 ? '...(truncated)' : '') : formatObject(output)}\n`);
+
+    const truncatedOutput = typeof output === 'string'
+      ? output.substring(0, 500) + (output.length > 500 ? '...(truncated)' : '')
+      : formatObject(output);
+
+    process.stderr.write(`📤 Output:\n${truncatedOutput}\n`);
     process.stderr.write(`${'='.repeat(80)}\n\n`);
+
+    // Send as appropriate level notification
+    const level: LogLevel = success ? 'info' : 'error';
+    await this.log(
+      level,
+      'tools',
+      `Tool ${success ? 'completed' : 'failed'}: ${toolName}`,
+      { tool: toolName, success, output: typeof output === 'string' ? output.substring(0, 200) : output }
+    );
   }
 
   /**
    * Log HTTP request
    */
-  logRequest(method: string, url: string, headers: Record<string, string>, body?: string): void {
+  async logRequest(method: string, url: string, headers: Record<string, string>, body?: string): Promise<void> {
     if (!this.verbose) return;
 
     process.stderr.write(`\n${'='.repeat(100)}\n`);
     process.stderr.write(`[${getTimestamp()}] [HTTP REQUEST]\n`);
     process.stderr.write(`${'='.repeat(100)}\n`);
 
-    // 请求基本信息
+    // Request basic info
     process.stderr.write(`📤 Method: ${method}\n`);
     process.stderr.write(`📤 URL: ${url}\n`);
     process.stderr.write(`\n`);
 
-    // 过滤敏感信息
+    // Sanitize sensitive headers
     const safeHeaders = { ...headers };
     if (safeHeaders['Authorization']) {
       const authHeader = safeHeaders['Authorization'];
-      // 保留完整的 Authorization header 结构，只隐藏 mac 签名
       safeHeaders['Authorization'] = authHeader.replace(/mac="[^"]+"/g, 'mac="***REDACTED***"');
-      // 显示原始的 Authorization（脱敏后）
       process.stderr.write(`🔐 Authorization:\n${safeHeaders['Authorization']}\n\n`);
     }
     if (safeHeaders['X-Tap-Sign']) {
       safeHeaders['X-Tap-Sign'] = '***REDACTED***';
     }
 
-    // 完整的 Headers
+    // Full headers
     process.stderr.write(`📋 Headers (${Object.keys(headers).length} total):\n`);
     process.stderr.write(`${formatObject(safeHeaders)}\n`);
 
-    // Body 内容
+    // Body content
     if (body) {
       let parsedBody: any;
       try {
         parsedBody = JSON.parse(body);
         process.stderr.write(`\n📦 Request Body (JSON):\n`);
-        process.stderr.write(`${formatObject(parsedBody)}\n`);
+        process.stderr.write(`${formatObject(sanitizeData(parsedBody))}\n`);
       } catch {
         process.stderr.write(`\n📦 Request Body (Raw):\n`);
         process.stderr.write(`${body}\n`);
@@ -151,49 +319,72 @@ export class Logger {
     } else {
       process.stderr.write(`\n📦 Request Body: (empty)\n`);
     }
+
+    // Send as debug level notification
+    await this.debug(
+      `HTTP ${method} ${url}`,
+      { method, url, headers: safeHeaders, body: body ? sanitizeData(body) : undefined },
+      'http'
+    );
   }
 
   /**
    * Log HTTP response
    */
-  logResponse(method: string, url: string, status: number, statusText: string, body: any, success: boolean = true, responseHeaders?: Record<string, string>): void {
+  async logResponse(
+    method: string,
+    url: string,
+    status: number,
+    statusText: string,
+    body: any,
+    success: boolean = true,
+    responseHeaders?: Record<string, string>
+  ): Promise<void> {
     if (!this.verbose) return;
 
     process.stderr.write(`\n${'-'.repeat(100)}\n`);
     process.stderr.write(`[${getTimestamp()}] [HTTP RESPONSE] ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
     process.stderr.write(`${'-'.repeat(100)}\n`);
 
-    // 响应基本信息
+    // Response basic info
     process.stderr.write(`📥 Method: ${method}\n`);
     process.stderr.write(`📥 URL: ${url}\n`);
     process.stderr.write(`📥 Status: ${status} ${statusText}\n`);
     process.stderr.write(`\n`);
 
-    // 响应头（如果提供）
+    // Response headers
     if (responseHeaders && Object.keys(responseHeaders).length > 0) {
       process.stderr.write(`📋 Response Headers (${Object.keys(responseHeaders).length} total):\n`);
       process.stderr.write(`${formatObject(responseHeaders)}\n\n`);
     }
 
-    // 响应体
+    // Response body
     if (typeof body === 'string') {
-      // 尝试解析为 JSON
       try {
         const parsedBody = JSON.parse(body);
         process.stderr.write(`📦 Response Body (JSON):\n`);
-        process.stderr.write(`${formatObject(parsedBody)}\n`);
+        process.stderr.write(`${formatObject(sanitizeData(parsedBody))}\n`);
       } catch {
         process.stderr.write(`📦 Response Body (Text):\n`);
         process.stderr.write(`${body}\n`);
       }
     } else if (body !== undefined && body !== null) {
       process.stderr.write(`📦 Response Body (Object):\n`);
-      process.stderr.write(`${formatObject(body)}\n`);
+      process.stderr.write(`${formatObject(sanitizeData(body))}\n`);
     } else {
       process.stderr.write(`📦 Response Body: (empty)\n`);
     }
 
     process.stderr.write(`${'='.repeat(100)}\n\n`);
+
+    // Send as appropriate level notification
+    const level: LogLevel = success ? 'debug' : 'error';
+    await this.log(
+      level,
+      'http',
+      `HTTP ${method} ${url} - ${status} ${statusText}`,
+      { method, url, status, statusText, body: sanitizeData(body) }
+    );
   }
 
   /**

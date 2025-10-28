@@ -12,6 +12,7 @@ import {
   ListToolsRequestSchema,
   ListResourcesRequestSchema,
   ReadResourceRequestSchema,
+  SetLevelRequestSchema,
   McpError,
   ErrorCode
 } from '@modelcontextprotocol/sdk/types.js';
@@ -52,12 +53,12 @@ class TapTapMinigameMCPServer {
   private ensureAuth: () => Promise<void>;
 
   constructor(ensureAuthFn: () => Promise<void>) {
-    this.server = new Server(
-      {
-        name: 'taptap-minigame-mcp',
-        version: VERSION,
-      }
-    );
+    // Server automatically declares capabilities based on registered handlers
+    // logging capability will be declared because we register SetLevelRequestSchema
+    this.server = new Server({
+      name: 'taptap-minigame-mcp',
+      version: VERSION,
+    });
 
     this.context = {
       projectPath: TDS_MCP_PROJECT_PATH,
@@ -72,6 +73,13 @@ class TapTapMinigameMCPServer {
    * 设置请求处理器
    */
   private setupHandlers(): void {
+    // 设置日志级别处理器 (MCP logging/setLevel)
+    this.server.setRequestHandler(SetLevelRequestSchema, async (request) => {
+      const { level } = request.params;
+      logger.setLevel(level);
+      return {};
+    });
+
     // 设置工具列表处理器 - 从所有模块收集
     this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
       tools: allModules.flatMap(m => m.tools.map(t => t.definition))
@@ -251,6 +259,9 @@ class TapTapMinigameMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
 
+    // Initialize logger with server instance
+    logger.initialize(this.server, 'stdio');
+
     process.stderr.write(`🚀 TapTap Open API MCP Server v${VERSION} (Minigame & H5)\n`);
     process.stderr.write('🔌 Transport: stdio\n');
     process.stderr.write(`📚 Providing ${totalTools} tools, ${totalResources} resources\n`);
@@ -280,6 +291,9 @@ class TapTapMinigameMCPServer {
    * 启动 SSE 传输服务器
    */
   private async startSSEServer(totalTools: number, totalResources: number): Promise<void> {
+    // Initialize logger with server instance (before any connections)
+    logger.initialize(this.server, 'sse');
+
     const sessions = new Map<string, SSEServerTransport>();
 
     const httpServer = http.createServer(async (req, res) => {
