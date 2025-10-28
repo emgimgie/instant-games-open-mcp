@@ -21,10 +21,20 @@ export class ApiConfig {
   public readonly environment: 'rnd' | 'production';
 
   private constructor() {
-    // Required environment variables (TDS_MCP_* prefix for consistency)
+    // Optional: default to production
+    this.environment = (process.env.TDS_MCP_ENV === 'rnd') ? 'rnd' : 'production';
+
+    // Built-in OAuth Client ID (public, safe to include)
+    // These match the values in deviceFlow.ts for OAuth consistency
+    const DEFAULT_CLIENT_ID = this.environment === 'production'
+      ? 'cadxxoz247zw0ug5i2'  // Production OAuth client ID (public)
+      : 'm2dnabebip3fpardnm';  // RND OAuth client ID (public)
+
+    // Environment variables (TDS_MCP_* prefix for consistency)
     const macTokenStr = process.env.TDS_MCP_MAC_TOKEN || '';
-    this.clientId = process.env.TDS_MCP_CLIENT_ID || '';
-    this.signingKey = process.env.TDS_MCP_CLIENT_TOKEN || '';  // HMAC signing key for API requests
+    this.clientId = process.env.TDS_MCP_CLIENT_ID || DEFAULT_CLIENT_ID;
+    // CLIENT_TOKEN must be provided via environment variable (keep it secret!)
+    this.signingKey = process.env.TDS_MCP_CLIENT_TOKEN || '';
 
     // Parse MAC Token from JSON string (optional now, can be set later via Device Flow)
     try {
@@ -34,33 +44,29 @@ export class ApiConfig {
       this.macToken = {} as MacToken;
     }
 
-    // Optional: default to production
-    this.environment = (process.env.TDS_MCP_ENV === 'rnd') ? 'rnd' : 'production';
-
     // Set API base URL based on environment
     this.apiBaseUrl = this.environment === 'production'
       ? 'https://agent.tapapis.cn'
       : 'https://agent.api.xdrnd.cn';
 
-    // Validate CLIENT_ID and CLIENT_SECRET (MAC Token can be set later)
+    // Validate configuration
     this.validateConfig();
   }
 
   private validateConfig(): void {
-    const missing: string[] = [];
-
-    if (!this.clientId) {
-      missing.push('TDS_MCP_CLIENT_ID');
-    }
-
+    // Client Token is required for API signing (keep it secret!)
     if (!this.signingKey) {
-      missing.push('TDS_MCP_CLIENT_TOKEN');
+      process.stderr.write('❌ Missing required environment variable: TDS_MCP_CLIENT_TOKEN\n\n');
+      process.stderr.write('This is the API request signing key (keep it secret!).\n');
+      process.stderr.write('Please set it before starting the server:\n\n');
+      process.stderr.write('  export TDS_MCP_CLIENT_TOKEN="your_signing_key"\n\n');
+      process.stderr.write('Contact TapTap support to get your CLIENT_TOKEN.\n\n');
+      process.exit(1);
     }
 
-    if (missing.length > 0) {
-      process.stderr.write(`❌ Missing required environment variables: ${missing.join(', ')}\n\n`);
-      process.stderr.write('These are required for API authentication and request signing.\n');
-      process.exit(1);
+    // Show info about CLIENT_ID
+    if (!process.env.TDS_MCP_CLIENT_ID) {
+      process.stderr.write(`ℹ️  Using built-in OAuth CLIENT_ID: ${this.clientId}\n`);
     }
   }
 
