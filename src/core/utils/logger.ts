@@ -128,14 +128,13 @@ export class Logger {
 
   /**
    * Core logging method with dual output
-   * Only handles simple stderr output and MCP notifications
+   * Pure dual-write: simple stderr + MCP notification
    */
   private async log(
     level: LogLevel,
     loggerName: string,
     message: string,
-    data?: any,
-    skipSimpleStderr: boolean = false  // Skip simple stderr (when caller already output enhanced format)
+    data?: any
   ): Promise<void> {
     // Check if we should log this level
     if (!this.shouldLog(level)) {
@@ -145,15 +144,15 @@ export class Logger {
     const timestamp = getTimestamp();
     const sanitized = data ? sanitizeData(data) : undefined;
 
-    // Output 1: Simple stderr (for general logs, can be skipped)
-    if (this.verbose && !skipSimpleStderr) {
+    // Output 1: Simple stderr (for local debugging)
+    if (this.verbose) {
       process.stderr.write(`[${timestamp}] [${level.toUpperCase()}] [${loggerName}] ${message}\n`);
       if (sanitized !== undefined) {
         process.stderr.write(`${formatObject(sanitized)}\n`);
       }
     }
 
-    // Output 2: MCP notifications (for client, always send if available)
+    // Output 2: MCP notifications (for client)
     if (this.server) {
       try {
         await this.server.notification({
@@ -168,9 +167,6 @@ export class Logger {
         });
       } catch (error) {
         // Silently ignore notification errors to prevent logging loops
-        if (this.verbose) {
-          process.stderr.write(`[${timestamp}] [WARNING] Failed to send log notification: ${error}\n`);
-        }
       }
     }
   }
@@ -238,65 +234,64 @@ export class Logger {
    * Log tool call with input arguments
    */
   async logToolCall(toolName: string, args: any): Promise<void> {
-    const timestamp = getTimestamp();
     const sanitizedArgs = sanitizeData(args);
 
-    // Output 1: Enhanced stderr format (verbose mode only)
+    // Context: Opening border (stderr only)
     if (this.verbose) {
       process.stderr.write(`\n${'='.repeat(80)}\n`);
-      process.stderr.write(`[${timestamp}] [TOOL CALL] ${toolName}\n`);
-      process.stderr.write(`${'='.repeat(80)}\n`);
-      process.stderr.write(`📥 Input:\n${formatObject(sanitizedArgs)}\n`);
     }
 
-    // Output 2: MCP notification via unified log method
+    // Key info: Tool call (dual output: stderr + MCP notification)
     await this.log(
       'info',
       'tools',
       `Tool called: ${toolName}`,
-      { tool: toolName, args: sanitizedArgs },
-      true  // Skip simple stderr (we already output enhanced format above)
+      { tool: toolName, args: sanitizedArgs }
     );
+
+    // Context: Input details + closing border (stderr only)
+    if (this.verbose) {
+      process.stderr.write(`📥 Input:\n${formatObject(sanitizedArgs)}\n`);
+      process.stderr.write(`${'='.repeat(80)}\n\n`);
+    }
   }
 
   /**
    * Log tool response with output
    */
   async logToolResponse(toolName: string, output: any, success: boolean = true): Promise<void> {
-    const timestamp = getTimestamp();
     const truncatedOutput = typeof output === 'string'
       ? output.substring(0, 200)
       : output;
 
-    // Output 1: Enhanced stderr format (verbose mode only)
+    // Context: Opening border (stderr only)
+    if (this.verbose) {
+      process.stderr.write(`\n${'-'.repeat(80)}\n`);
+    }
+
+    // Key info: Tool response (dual output: stderr + MCP notification)
+    await this.log(
+      success ? 'info' : 'error',
+      'tools',
+      `Tool ${success ? 'completed' : 'failed'}: ${toolName}`,
+      { tool: toolName, success, output: truncatedOutput }
+    );
+
+    // Context: Output details + closing border (stderr only)
     if (this.verbose) {
       const displayOutput = typeof output === 'string'
         ? output.substring(0, 500) + (output.length > 500 ? '...(truncated)' : '')
         : formatObject(output);
 
-      process.stderr.write(`\n${'-'.repeat(80)}\n`);
-      process.stderr.write(`[${timestamp}] [TOOL RESPONSE] ${toolName} - ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
-      process.stderr.write(`${'-'.repeat(80)}\n`);
       process.stderr.write(`📤 Output:\n${displayOutput}\n`);
       process.stderr.write(`${'='.repeat(80)}\n\n`);
     }
-
-    // Output 2: MCP notification via unified log method
-    await this.log(
-      success ? 'info' : 'error',
-      'tools',
-      `Tool ${success ? 'completed' : 'failed'}: ${toolName}`,
-      { tool: toolName, success, output: truncatedOutput },
-      true  // Skip simple stderr (we already output enhanced format above)
-    );
   }
 
   /**
    * Log HTTP request
    */
   async logRequest(method: string, url: string, headers: Record<string, string>, body?: string): Promise<void> {
-    const timestamp = getTimestamp();
-
     // Sanitize sensitive headers
     const safeHeaders = { ...headers };
     if (safeHeaders['Authorization']) {
@@ -309,15 +304,24 @@ export class Logger {
 
     const sanitizedBody = body ? sanitizeData(body) : undefined;
 
-    // Output 1: Enhanced stderr format (verbose mode only)
+    // Context: Opening border + method/url (stderr only)
     if (this.verbose) {
       process.stderr.write(`\n${'='.repeat(100)}\n`);
-      process.stderr.write(`[${timestamp}] [HTTP REQUEST]\n`);
-      process.stderr.write(`${'='.repeat(100)}\n`);
       process.stderr.write(`📤 Method: ${method}\n`);
       process.stderr.write(`📤 URL: ${url}\n`);
       process.stderr.write(`\n`);
+    }
 
+    // Key info: HTTP request summary (dual output: stderr + MCP notification)
+    await this.log(
+      'debug',
+      'http',
+      `HTTP ${method} ${url}`,
+      { method, url, headers: safeHeaders, body: sanitizedBody }
+    );
+
+    // Context: Headers + body details (stderr only)
+    if (this.verbose) {
       if (safeHeaders['Authorization']) {
         process.stderr.write(`🔐 Authorization:\n${safeHeaders['Authorization']}\n\n`);
       }
@@ -337,16 +341,9 @@ export class Logger {
       } else {
         process.stderr.write(`\n📦 Request Body: (empty)\n`);
       }
-    }
 
-    // Output 2: MCP notification via unified log method
-    await this.log(
-      'debug',
-      'http',
-      `HTTP ${method} ${url}`,
-      { method, url, headers: safeHeaders, body: sanitizedBody },
-      true  // Skip simple stderr (we already output enhanced format above)
-    );
+      process.stderr.write(`${'='.repeat(100)}\n\n`);
+    }
   }
 
   /**
@@ -361,19 +358,27 @@ export class Logger {
     success: boolean = true,
     responseHeaders?: Record<string, string>
   ): Promise<void> {
-    const timestamp = getTimestamp();
     const sanitizedBody = sanitizeData(body);
 
-    // Output 1: Enhanced stderr format (verbose mode only)
+    // Context: Opening border + method/url/status (stderr only)
     if (this.verbose) {
       process.stderr.write(`\n${'-'.repeat(100)}\n`);
-      process.stderr.write(`[${timestamp}] [HTTP RESPONSE] ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
-      process.stderr.write(`${'-'.repeat(100)}\n`);
       process.stderr.write(`📥 Method: ${method}\n`);
       process.stderr.write(`📥 URL: ${url}\n`);
       process.stderr.write(`📥 Status: ${status} ${statusText}\n`);
       process.stderr.write(`\n`);
+    }
 
+    // Key info: HTTP response summary (dual output: stderr + MCP notification)
+    await this.log(
+      success ? 'debug' : 'error',
+      'http',
+      `HTTP ${method} ${url} - ${status} ${statusText}`,
+      { method, url, status, statusText, body: sanitizedBody, headers: responseHeaders }
+    );
+
+    // Context: Headers + body details (stderr only)
+    if (this.verbose) {
       if (responseHeaders && Object.keys(responseHeaders).length > 0) {
         process.stderr.write(`📋 Response Headers (${Object.keys(responseHeaders).length} total):\n`);
         process.stderr.write(`${formatObject(responseHeaders)}\n\n`);
@@ -397,15 +402,6 @@ export class Logger {
 
       process.stderr.write(`${'='.repeat(100)}\n\n`);
     }
-
-    // Output 2: MCP notification via unified log method
-    await this.log(
-      success ? 'debug' : 'error',
-      'http',
-      `HTTP ${method} ${url} - ${status} ${statusText}`,
-      { method, url, status, statusText, body: sanitizedBody, headers: responseHeaders },
-      true  // Skip simple stderr (we already output enhanced format above)
-    );
   }
 
   /**
