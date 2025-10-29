@@ -237,50 +237,91 @@ export class Logger {
    * Log tool call with input arguments
    */
   async logToolCall(toolName: string, args: any): Promise<void> {
-    // Enhanced stderr output for verbose mode
+    const timestamp = getTimestamp();
+    const sanitizedArgs = sanitizeData(args);
+
+    // Output 1: Enhanced stderr output (verbose mode only)
     if (this.verbose) {
       process.stderr.write(`\n${'='.repeat(80)}\n`);
-      process.stderr.write(`[${getTimestamp()}] [TOOL CALL] ${toolName}\n`);
+      process.stderr.write(`[${timestamp}] [TOOL CALL] ${toolName}\n`);
       process.stderr.write(`${'='.repeat(80)}\n`);
-      process.stderr.write(`📥 Input:\n${formatObject(sanitizeData(args))}\n`);
+      process.stderr.write(`📥 Input:\n${formatObject(sanitizedArgs)}\n`);
     }
 
-    // Send as info level notification (uses unified log method)
-    await this.info(`Tool called: ${toolName}`, { tool: toolName, args: sanitizeData(args) }, 'tools');
+    // Output 2: MCP notification (always send if server is available)
+    if (this.server) {
+      try {
+        await this.server.notification({
+          method: 'notifications/message',
+          params: {
+            level: 'info',
+            logger: 'tools',
+            data: {
+              message: `Tool called: ${toolName}`,
+              timestamp,
+              tool: toolName,
+              args: sanitizedArgs
+            }
+          }
+        });
+      } catch (error) {
+        // Silently ignore notification errors
+      }
+    }
   }
 
   /**
    * Log tool response with output
    */
   async logToolResponse(toolName: string, output: any, success: boolean = true): Promise<void> {
-    // Enhanced stderr output for verbose mode
+    const timestamp = getTimestamp();
+    const truncatedOutput = typeof output === 'string'
+      ? output.substring(0, 200)
+      : output;
+
+    // Output 1: Enhanced stderr output (verbose mode only)
     if (this.verbose) {
       process.stderr.write(`\n${'-'.repeat(80)}\n`);
-      process.stderr.write(`[${getTimestamp()}] [TOOL RESPONSE] ${toolName} - ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
+      process.stderr.write(`[${timestamp}] [TOOL RESPONSE] ${toolName} - ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
       process.stderr.write(`${'-'.repeat(80)}\n`);
 
-      const truncatedOutput = typeof output === 'string'
+      const displayOutput = typeof output === 'string'
         ? output.substring(0, 500) + (output.length > 500 ? '...(truncated)' : '')
         : formatObject(output);
 
-      process.stderr.write(`📤 Output:\n${truncatedOutput}\n`);
+      process.stderr.write(`📤 Output:\n${displayOutput}\n`);
       process.stderr.write(`${'='.repeat(80)}\n\n`);
     }
 
-    // Send as appropriate level notification (uses unified log method)
-    const level: LogLevel = success ? 'info' : 'error';
-    await this.log(
-      level,
-      'tools',
-      `Tool ${success ? 'completed' : 'failed'}: ${toolName}`,
-      { tool: toolName, success, output: typeof output === 'string' ? output.substring(0, 200) : output }
-    );
+    // Output 2: MCP notification (always send if server is available)
+    if (this.server) {
+      try {
+        await this.server.notification({
+          method: 'notifications/message',
+          params: {
+            level: success ? 'info' : 'error',
+            logger: 'tools',
+            data: {
+              message: `Tool ${success ? 'completed' : 'failed'}: ${toolName}`,
+              timestamp,
+              tool: toolName,
+              success,
+              output: truncatedOutput
+            }
+          }
+        });
+      } catch (error) {
+        // Silently ignore notification errors
+      }
+    }
   }
 
   /**
    * Log HTTP request
    */
   async logRequest(method: string, url: string, headers: Record<string, string>, body?: string): Promise<void> {
+    const timestamp = getTimestamp();
+
     // Sanitize sensitive headers
     const safeHeaders = { ...headers };
     if (safeHeaders['Authorization']) {
@@ -291,10 +332,12 @@ export class Logger {
       safeHeaders['X-Tap-Sign'] = '***REDACTED***';
     }
 
-    // Enhanced stderr output for verbose mode
+    const sanitizedBody = body ? sanitizeData(body) : undefined;
+
+    // Output 1: Enhanced stderr output (verbose mode only)
     if (this.verbose) {
       process.stderr.write(`\n${'='.repeat(100)}\n`);
-      process.stderr.write(`[${getTimestamp()}] [HTTP REQUEST]\n`);
+      process.stderr.write(`[${timestamp}] [HTTP REQUEST]\n`);
       process.stderr.write(`${'='.repeat(100)}\n`);
       process.stderr.write(`📤 Method: ${method}\n`);
       process.stderr.write(`📤 URL: ${url}\n`);
@@ -321,12 +364,28 @@ export class Logger {
       }
     }
 
-    // Send as debug level notification (uses unified log method)
-    await this.debug(
-      `HTTP ${method} ${url}`,
-      { method, url, headers: safeHeaders, body: body ? sanitizeData(body) : undefined },
-      'http'
-    );
+    // Output 2: MCP notification (always send if server is available)
+    if (this.server) {
+      try {
+        await this.server.notification({
+          method: 'notifications/message',
+          params: {
+            level: 'debug',
+            logger: 'http',
+            data: {
+              message: `HTTP ${method} ${url}`,
+              timestamp,
+              method,
+              url,
+              headers: safeHeaders,
+              body: sanitizedBody
+            }
+          }
+        });
+      } catch (error) {
+        // Silently ignore notification errors
+      }
+    }
   }
 
   /**
@@ -341,10 +400,13 @@ export class Logger {
     success: boolean = true,
     responseHeaders?: Record<string, string>
   ): Promise<void> {
-    // Enhanced stderr output for verbose mode
+    const timestamp = getTimestamp();
+    const sanitizedBody = sanitizeData(body);
+
+    // Output 1: Enhanced stderr output (verbose mode only)
     if (this.verbose) {
       process.stderr.write(`\n${'-'.repeat(100)}\n`);
-      process.stderr.write(`[${getTimestamp()}] [HTTP RESPONSE] ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
+      process.stderr.write(`[${timestamp}] [HTTP RESPONSE] ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
       process.stderr.write(`${'-'.repeat(100)}\n`);
       process.stderr.write(`📥 Method: ${method}\n`);
       process.stderr.write(`📥 URL: ${url}\n`);
@@ -367,7 +429,7 @@ export class Logger {
         }
       } else if (body !== undefined && body !== null) {
         process.stderr.write(`📦 Response Body (Object):\n`);
-        process.stderr.write(`${formatObject(sanitizeData(body))}\n`);
+        process.stderr.write(`${formatObject(sanitizedBody)}\n`);
       } else {
         process.stderr.write(`📦 Response Body: (empty)\n`);
       }
@@ -375,14 +437,30 @@ export class Logger {
       process.stderr.write(`${'='.repeat(100)}\n\n`);
     }
 
-    // Send as appropriate level notification (uses unified log method)
-    const level: LogLevel = success ? 'debug' : 'error';
-    await this.log(
-      level,
-      'http',
-      `HTTP ${method} ${url} - ${status} ${statusText}`,
-      { method, url, status, statusText, body: sanitizeData(body), headers: responseHeaders }
-    );
+    // Output 2: MCP notification (always send if server is available)
+    if (this.server) {
+      try {
+        await this.server.notification({
+          method: 'notifications/message',
+          params: {
+            level: success ? 'debug' : 'error',
+            logger: 'http',
+            data: {
+              message: `HTTP ${method} ${url} - ${status} ${statusText}`,
+              timestamp,
+              method,
+              url,
+              status,
+              statusText,
+              body: sanitizedBody,
+              headers: responseHeaders
+            }
+          }
+        });
+      } catch (error) {
+        // Silently ignore notification errors
+      }
+    }
   }
 
   /**
