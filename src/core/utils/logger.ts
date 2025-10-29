@@ -37,7 +37,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
  * Check if verbose logging is enabled
  */
 function isVerboseEnabled(): boolean {
-  return process.env.TAPTAP_MINIGAME_MCP_VERBOSE === 'true' || process.env.TAPTAP_MINIGAME_MCP_VERBOSE === '1';
+  return process.env.TDS_MCP_VERBOSE === 'true' || process.env.TDS_MCP_VERBOSE === '1';
 }
 
 /**
@@ -237,14 +237,15 @@ export class Logger {
    * Log tool call with input arguments
    */
   async logToolCall(toolName: string, args: any): Promise<void> {
-    if (!this.verbose) return;
+    // Enhanced stderr output for verbose mode
+    if (this.verbose) {
+      process.stderr.write(`\n${'='.repeat(80)}\n`);
+      process.stderr.write(`[${getTimestamp()}] [TOOL CALL] ${toolName}\n`);
+      process.stderr.write(`${'='.repeat(80)}\n`);
+      process.stderr.write(`📥 Input:\n${formatObject(sanitizeData(args))}\n`);
+    }
 
-    process.stderr.write(`\n${'='.repeat(80)}\n`);
-    process.stderr.write(`[${getTimestamp()}] [TOOL CALL] ${toolName}\n`);
-    process.stderr.write(`${'='.repeat(80)}\n`);
-    process.stderr.write(`📥 Input:\n${formatObject(sanitizeData(args))}\n`);
-
-    // Send as info level notification
+    // Send as info level notification (uses unified log method)
     await this.info(`Tool called: ${toolName}`, { tool: toolName, args: sanitizeData(args) }, 'tools');
   }
 
@@ -252,20 +253,21 @@ export class Logger {
    * Log tool response with output
    */
   async logToolResponse(toolName: string, output: any, success: boolean = true): Promise<void> {
-    if (!this.verbose) return;
+    // Enhanced stderr output for verbose mode
+    if (this.verbose) {
+      process.stderr.write(`\n${'-'.repeat(80)}\n`);
+      process.stderr.write(`[${getTimestamp()}] [TOOL RESPONSE] ${toolName} - ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
+      process.stderr.write(`${'-'.repeat(80)}\n`);
 
-    process.stderr.write(`\n${'-'.repeat(80)}\n`);
-    process.stderr.write(`[${getTimestamp()}] [TOOL RESPONSE] ${toolName} - ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
-    process.stderr.write(`${'-'.repeat(80)}\n`);
+      const truncatedOutput = typeof output === 'string'
+        ? output.substring(0, 500) + (output.length > 500 ? '...(truncated)' : '')
+        : formatObject(output);
 
-    const truncatedOutput = typeof output === 'string'
-      ? output.substring(0, 500) + (output.length > 500 ? '...(truncated)' : '')
-      : formatObject(output);
+      process.stderr.write(`📤 Output:\n${truncatedOutput}\n`);
+      process.stderr.write(`${'='.repeat(80)}\n\n`);
+    }
 
-    process.stderr.write(`📤 Output:\n${truncatedOutput}\n`);
-    process.stderr.write(`${'='.repeat(80)}\n\n`);
-
-    // Send as appropriate level notification
+    // Send as appropriate level notification (uses unified log method)
     const level: LogLevel = success ? 'info' : 'error';
     await this.log(
       level,
@@ -279,48 +281,47 @@ export class Logger {
    * Log HTTP request
    */
   async logRequest(method: string, url: string, headers: Record<string, string>, body?: string): Promise<void> {
-    if (!this.verbose) return;
-
-    process.stderr.write(`\n${'='.repeat(100)}\n`);
-    process.stderr.write(`[${getTimestamp()}] [HTTP REQUEST]\n`);
-    process.stderr.write(`${'='.repeat(100)}\n`);
-
-    // Request basic info
-    process.stderr.write(`📤 Method: ${method}\n`);
-    process.stderr.write(`📤 URL: ${url}\n`);
-    process.stderr.write(`\n`);
-
     // Sanitize sensitive headers
     const safeHeaders = { ...headers };
     if (safeHeaders['Authorization']) {
       const authHeader = safeHeaders['Authorization'];
       safeHeaders['Authorization'] = authHeader.replace(/mac="[^"]+"/g, 'mac="***REDACTED***"');
-      process.stderr.write(`🔐 Authorization:\n${safeHeaders['Authorization']}\n\n`);
     }
     if (safeHeaders['X-Tap-Sign']) {
       safeHeaders['X-Tap-Sign'] = '***REDACTED***';
     }
 
-    // Full headers
-    process.stderr.write(`📋 Headers (${Object.keys(headers).length} total):\n`);
-    process.stderr.write(`${formatObject(safeHeaders)}\n`);
+    // Enhanced stderr output for verbose mode
+    if (this.verbose) {
+      process.stderr.write(`\n${'='.repeat(100)}\n`);
+      process.stderr.write(`[${getTimestamp()}] [HTTP REQUEST]\n`);
+      process.stderr.write(`${'='.repeat(100)}\n`);
+      process.stderr.write(`📤 Method: ${method}\n`);
+      process.stderr.write(`📤 URL: ${url}\n`);
+      process.stderr.write(`\n`);
 
-    // Body content
-    if (body) {
-      let parsedBody: any;
-      try {
-        parsedBody = JSON.parse(body);
-        process.stderr.write(`\n📦 Request Body (JSON):\n`);
-        process.stderr.write(`${formatObject(sanitizeData(parsedBody))}\n`);
-      } catch {
-        process.stderr.write(`\n📦 Request Body (Raw):\n`);
-        process.stderr.write(`${body}\n`);
+      if (safeHeaders['Authorization']) {
+        process.stderr.write(`🔐 Authorization:\n${safeHeaders['Authorization']}\n\n`);
       }
-    } else {
-      process.stderr.write(`\n📦 Request Body: (empty)\n`);
+
+      process.stderr.write(`📋 Headers (${Object.keys(headers).length} total):\n`);
+      process.stderr.write(`${formatObject(safeHeaders)}\n`);
+
+      if (body) {
+        try {
+          const parsedBody = JSON.parse(body);
+          process.stderr.write(`\n📦 Request Body (JSON):\n`);
+          process.stderr.write(`${formatObject(sanitizeData(parsedBody))}\n`);
+        } catch {
+          process.stderr.write(`\n📦 Request Body (Raw):\n`);
+          process.stderr.write(`${body}\n`);
+        }
+      } else {
+        process.stderr.write(`\n📦 Request Body: (empty)\n`);
+      }
     }
 
-    // Send as debug level notification
+    // Send as debug level notification (uses unified log method)
     await this.debug(
       `HTTP ${method} ${url}`,
       { method, url, headers: safeHeaders, body: body ? sanitizeData(body) : undefined },
@@ -340,50 +341,47 @@ export class Logger {
     success: boolean = true,
     responseHeaders?: Record<string, string>
   ): Promise<void> {
-    if (!this.verbose) return;
+    // Enhanced stderr output for verbose mode
+    if (this.verbose) {
+      process.stderr.write(`\n${'-'.repeat(100)}\n`);
+      process.stderr.write(`[${getTimestamp()}] [HTTP RESPONSE] ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
+      process.stderr.write(`${'-'.repeat(100)}\n`);
+      process.stderr.write(`📥 Method: ${method}\n`);
+      process.stderr.write(`📥 URL: ${url}\n`);
+      process.stderr.write(`📥 Status: ${status} ${statusText}\n`);
+      process.stderr.write(`\n`);
 
-    process.stderr.write(`\n${'-'.repeat(100)}\n`);
-    process.stderr.write(`[${getTimestamp()}] [HTTP RESPONSE] ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
-    process.stderr.write(`${'-'.repeat(100)}\n`);
-
-    // Response basic info
-    process.stderr.write(`📥 Method: ${method}\n`);
-    process.stderr.write(`📥 URL: ${url}\n`);
-    process.stderr.write(`📥 Status: ${status} ${statusText}\n`);
-    process.stderr.write(`\n`);
-
-    // Response headers
-    if (responseHeaders && Object.keys(responseHeaders).length > 0) {
-      process.stderr.write(`📋 Response Headers (${Object.keys(responseHeaders).length} total):\n`);
-      process.stderr.write(`${formatObject(responseHeaders)}\n\n`);
-    }
-
-    // Response body
-    if (typeof body === 'string') {
-      try {
-        const parsedBody = JSON.parse(body);
-        process.stderr.write(`📦 Response Body (JSON):\n`);
-        process.stderr.write(`${formatObject(sanitizeData(parsedBody))}\n`);
-      } catch {
-        process.stderr.write(`📦 Response Body (Text):\n`);
-        process.stderr.write(`${body}\n`);
+      if (responseHeaders && Object.keys(responseHeaders).length > 0) {
+        process.stderr.write(`📋 Response Headers (${Object.keys(responseHeaders).length} total):\n`);
+        process.stderr.write(`${formatObject(responseHeaders)}\n\n`);
       }
-    } else if (body !== undefined && body !== null) {
-      process.stderr.write(`📦 Response Body (Object):\n`);
-      process.stderr.write(`${formatObject(sanitizeData(body))}\n`);
-    } else {
-      process.stderr.write(`📦 Response Body: (empty)\n`);
+
+      if (typeof body === 'string') {
+        try {
+          const parsedBody = JSON.parse(body);
+          process.stderr.write(`📦 Response Body (JSON):\n`);
+          process.stderr.write(`${formatObject(sanitizeData(parsedBody))}\n`);
+        } catch {
+          process.stderr.write(`📦 Response Body (Text):\n`);
+          process.stderr.write(`${body}\n`);
+        }
+      } else if (body !== undefined && body !== null) {
+        process.stderr.write(`📦 Response Body (Object):\n`);
+        process.stderr.write(`${formatObject(sanitizeData(body))}\n`);
+      } else {
+        process.stderr.write(`📦 Response Body: (empty)\n`);
+      }
+
+      process.stderr.write(`${'='.repeat(100)}\n\n`);
     }
 
-    process.stderr.write(`${'='.repeat(100)}\n\n`);
-
-    // Send as appropriate level notification
+    // Send as appropriate level notification (uses unified log method)
     const level: LogLevel = success ? 'debug' : 'error';
     await this.log(
       level,
       'http',
       `HTTP ${method} ${url} - ${status} ${statusText}`,
-      { method, url, status, statusText, body: sanitizeData(body) }
+      { method, url, status, statusText, body: sanitizeData(body), headers: responseHeaders }
     );
   }
 

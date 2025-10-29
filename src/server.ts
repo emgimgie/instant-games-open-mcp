@@ -287,11 +287,11 @@ class TapTapMinigameMCPServer {
     });
 
     if (logger.isVerbose()) {
-      process.stderr.write('\n🔍 Verbose logging enabled (TAPTAP_MINIGAME_MCP_VERBOSE=true)\n');
+      process.stderr.write('\n🔍 Verbose logging enabled (TDS_MCP_VERBOSE=true)\n');
       process.stderr.write('   - Tool call inputs and outputs will be logged\n');
       process.stderr.write('   - HTTP requests and responses will be logged\n');
     } else {
-      process.stderr.write('\n💡 Tip: Set TAPTAP_MINIGAME_MCP_VERBOSE=true for detailed logs\n');
+      process.stderr.write('\n💡 Tip: Set TDS_MCP_VERBOSE=true for detailed logs\n');
     }
   }
 
@@ -364,11 +364,11 @@ class TapTapMinigameMCPServer {
       });
 
       if (logger.isVerbose()) {
-        process.stderr.write('\n🔍 Verbose logging enabled (TAPTAP_MINIGAME_MCP_VERBOSE=true)\n');
+        process.stderr.write('\n🔍 Verbose logging enabled (TDS_MCP_VERBOSE=true)\n');
         process.stderr.write('   - Tool call inputs and outputs will be logged\n');
         process.stderr.write('   - HTTP requests and responses will be logged\n');
       } else {
-        process.stderr.write('\n💡 Tip: Set TAPTAP_MINIGAME_MCP_VERBOSE=true for detailed logs\n');
+        process.stderr.write('\n💡 Tip: Set TDS_MCP_VERBOSE=true for detailed logs\n');
       }
     });
 

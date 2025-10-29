@@ -140,7 +140,7 @@ npm start
 npx @mikoto_zero/minigame-open-mcp
 
 # 启用详细日志模式（用于调试）
-TAPTAP_MINIGAME_MCP_VERBOSE=true npm start
+TDS_MCP_VERBOSE=true npm start
 
 # ========== SSE/HTTP 模式 ==========
 
@@ -154,7 +154,7 @@ TDS_MCP_TRANSPORT=http npm start
 TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=8080 npm start
 
 # SSE 模式 + 详细日志
-TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TAPTAP_MINIGAME_MCP_VERBOSE=true npm start
+TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true npm start
 ```
 
 **Streamable HTTP 模式 Endpoints：**
@@ -192,7 +192,7 @@ npm start
         "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
         "TDS_MCP_ENV": "production",
         "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
+        "TDS_MCP_VERBOSE": "false"
       }
     }
   }
@@ -212,7 +212,7 @@ npm start
         "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
         "TDS_MCP_ENV": "production",
         "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "true"
+        "TDS_MCP_VERBOSE": "true"
       }
     }
   }
@@ -251,7 +251,7 @@ node dist/server.js
         "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
         "TDS_MCP_CLIENT_ID": "your_client_id",
         "TDS_MCP_CLIENT_TOKEN": "your_secret",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
+        "TDS_MCP_VERBOSE": "false"
       }
     }
   }
@@ -269,7 +269,7 @@ node dist/server.js
         "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
         "TDS_MCP_CLIENT_ID": "your_client_id",
         "TDS_MCP_CLIENT_TOKEN": "your_secret",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "true"
+        "TDS_MCP_VERBOSE": "true"
       }
     }
   }
@@ -386,7 +386,7 @@ export TDS_MCP_CLIENT_TOKEN="your_client_token"
   - production: `https://agent.tapapis.cn`
   - rnd: `https://agent.api.xdrnd.cn`
 - `TDS_MCP_PROJECT_PATH`: 项目路径，用于本地缓存
-- `TAPTAP_MINIGAME_MCP_VERBOSE`: 详细日志模式（`true` 或 `1`）
+- `TDS_MCP_VERBOSE`: 详细日志模式（`true` 或 `1`）
 - `TDS_MCP_TRANSPORT`: 传输协议，`stdio`（默认）或 `sse`/`http`
   - stdio: 标准输入输出，适合本地集成（如 Claude Desktop）
   - sse/http: Server-Sent Events，适合远程访问和多客户端
@@ -399,14 +399,14 @@ export TDS_MCP_CLIENT_TOKEN="your_client_token"
 
 ### 详细日志模式
 
-项目支持详细日志模式，通过环境变量 `TAPTAP_MINIGAME_MCP_VERBOSE` 控制。
+项目支持详细日志模式，通过环境变量 `TDS_MCP_VERBOSE` 控制。
 
 **启用方式：**
 ```bash
 # 启用详细日志
-export TAPTAP_MINIGAME_MCP_VERBOSE=true
+export TDS_MCP_VERBOSE=true
 # 或
-export TAPTAP_MINIGAME_MCP_VERBOSE=1
+export TDS_MCP_VERBOSE=1
 
 # 然后启动服务器
 npm start

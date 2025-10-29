@@ -99,7 +99,7 @@ npx @mikoto_zero/minigame-open-mcp@beta
       "env": {
         "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
         "TDS_MCP_ENV": "production",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
+        "TDS_MCP_VERBOSE": "false"
       }
     }
   }
@@ -120,7 +120,7 @@ npx @mikoto_zero/minigame-open-mcp@beta
         "TDS_MCP_CLIENT_TOKEN": "your_client_token",
         "TDS_MCP_ENV": "production",
         "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
+        "TDS_MCP_VERBOSE": "false"
       }
     }
   }
@@ -141,14 +141,14 @@ npx @mikoto_zero/minigame-open-mcp@beta
 **其他配置：**
 - `TDS_MCP_ENV` - 环境选择：`production`（默认）或 `rnd`
 - `TDS_MCP_PROJECT_PATH` - 项目路径，用于本地缓存
-- `TAPTAP_MINIGAME_MCP_VERBOSE` - 详细日志：`true` 或 `false`（默认）
+- `TDS_MCP_VERBOSE` - 详细日志：`true` 或 `false`（默认）
 
 **调试模式：**
 
 启用详细日志查看所有工具调用、HTTP 请求/响应：
 
 ```bash
-export TAPTAP_MINIGAME_MCP_VERBOSE=true
+export TDS_MCP_VERBOSE=true
 npm start
 ```
 
