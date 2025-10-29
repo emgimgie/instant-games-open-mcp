@@ -133,7 +133,8 @@ export class Logger {
     level: LogLevel,
     loggerName: string,
     message: string,
-    data?: any
+    data?: any,
+    skipStderr: boolean = false  // Flag to skip stderr output
   ): Promise<void> {
     // Check if we should log this level
     if (!this.shouldLog(level)) {
@@ -143,8 +144,8 @@ export class Logger {
     const timestamp = getTimestamp();
     const sanitized = data ? sanitizeData(data) : undefined;
 
-    // Output 1: stderr (for local debugging)
-    if (this.verbose) {
+    // Output 1: stderr (for local debugging) - can be skipped
+    if (this.verbose && !skipStderr) {
       process.stderr.write(`[${timestamp}] [${level.toUpperCase()}] [${loggerName}] ${message}\n`);
       if (sanitized !== undefined) {
         process.stderr.write(`${formatObject(sanitized)}\n`);
@@ -240,7 +241,7 @@ export class Logger {
     const timestamp = getTimestamp();
     const sanitizedArgs = sanitizeData(args);
 
-    // Output 1: Enhanced stderr output (verbose mode only)
+    // Enhanced stderr output (verbose mode only)
     if (this.verbose) {
       process.stderr.write(`\n${'='.repeat(80)}\n`);
       process.stderr.write(`[${timestamp}] [TOOL CALL] ${toolName}\n`);
@@ -248,26 +249,14 @@ export class Logger {
       process.stderr.write(`📥 Input:\n${formatObject(sanitizedArgs)}\n`);
     }
 
-    // Output 2: MCP notification (always send if server is available)
-    if (this.server) {
-      try {
-        await this.server.notification({
-          method: 'notifications/message',
-          params: {
-            level: 'info',
-            logger: 'tools',
-            data: {
-              message: `Tool called: ${toolName}`,
-              timestamp,
-              tool: toolName,
-              args: sanitizedArgs
-            }
-          }
-        });
-      } catch (error) {
-        // Silently ignore notification errors
-      }
-    }
+    // Send MCP notification using unified log method (skipStderr=true to avoid duplication)
+    await this.log(
+      'info',
+      'tools',
+      `Tool called: ${toolName}`,
+      { tool: toolName, args: sanitizedArgs },
+      true  // Skip stderr since we already output above
+    );
   }
 
   /**
@@ -279,7 +268,7 @@ export class Logger {
       ? output.substring(0, 200)
       : output;
 
-    // Output 1: Enhanced stderr output (verbose mode only)
+    // Enhanced stderr output (verbose mode only)
     if (this.verbose) {
       process.stderr.write(`\n${'-'.repeat(80)}\n`);
       process.stderr.write(`[${timestamp}] [TOOL RESPONSE] ${toolName} - ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
@@ -293,27 +282,14 @@ export class Logger {
       process.stderr.write(`${'='.repeat(80)}\n\n`);
     }
 
-    // Output 2: MCP notification (always send if server is available)
-    if (this.server) {
-      try {
-        await this.server.notification({
-          method: 'notifications/message',
-          params: {
-            level: success ? 'info' : 'error',
-            logger: 'tools',
-            data: {
-              message: `Tool ${success ? 'completed' : 'failed'}: ${toolName}`,
-              timestamp,
-              tool: toolName,
-              success,
-              output: truncatedOutput
-            }
-          }
-        });
-      } catch (error) {
-        // Silently ignore notification errors
-      }
-    }
+    // Send MCP notification using unified log method (skipStderr=true to avoid duplication)
+    await this.log(
+      success ? 'info' : 'error',
+      'tools',
+      `Tool ${success ? 'completed' : 'failed'}: ${toolName}`,
+      { tool: toolName, success, output: truncatedOutput },
+      true  // Skip stderr since we already output above
+    );
   }
 
   /**
@@ -334,7 +310,7 @@ export class Logger {
 
     const sanitizedBody = body ? sanitizeData(body) : undefined;
 
-    // Output 1: Enhanced stderr output (verbose mode only)
+    // Enhanced stderr output (verbose mode only)
     if (this.verbose) {
       process.stderr.write(`\n${'='.repeat(100)}\n`);
       process.stderr.write(`[${timestamp}] [HTTP REQUEST]\n`);
@@ -364,28 +340,14 @@ export class Logger {
       }
     }
 
-    // Output 2: MCP notification (always send if server is available)
-    if (this.server) {
-      try {
-        await this.server.notification({
-          method: 'notifications/message',
-          params: {
-            level: 'debug',
-            logger: 'http',
-            data: {
-              message: `HTTP ${method} ${url}`,
-              timestamp,
-              method,
-              url,
-              headers: safeHeaders,
-              body: sanitizedBody
-            }
-          }
-        });
-      } catch (error) {
-        // Silently ignore notification errors
-      }
-    }
+    // Send MCP notification using unified log method (skipStderr=true to avoid duplication)
+    await this.log(
+      'debug',
+      'http',
+      `HTTP ${method} ${url}`,
+      { method, url, headers: safeHeaders, body: sanitizedBody },
+      true  // Skip stderr since we already output above
+    );
   }
 
   /**
@@ -403,7 +365,7 @@ export class Logger {
     const timestamp = getTimestamp();
     const sanitizedBody = sanitizeData(body);
 
-    // Output 1: Enhanced stderr output (verbose mode only)
+    // Enhanced stderr output (verbose mode only)
     if (this.verbose) {
       process.stderr.write(`\n${'-'.repeat(100)}\n`);
       process.stderr.write(`[${timestamp}] [HTTP RESPONSE] ${success ? '✅ SUCCESS' : '❌ FAILED'}\n`);
@@ -437,30 +399,14 @@ export class Logger {
       process.stderr.write(`${'='.repeat(100)}\n\n`);
     }
 
-    // Output 2: MCP notification (always send if server is available)
-    if (this.server) {
-      try {
-        await this.server.notification({
-          method: 'notifications/message',
-          params: {
-            level: success ? 'debug' : 'error',
-            logger: 'http',
-            data: {
-              message: `HTTP ${method} ${url} - ${status} ${statusText}`,
-              timestamp,
-              method,
-              url,
-              status,
-              statusText,
-              body: sanitizedBody,
-              headers: responseHeaders
-            }
-          }
-        });
-      } catch (error) {
-        // Silently ignore notification errors
-      }
-    }
+    // Send MCP notification using unified log method (skipStderr=true to avoid duplication)
+    await this.log(
+      success ? 'debug' : 'error',
+      'http',
+      `HTTP ${method} ${url} - ${status} ${statusText}`,
+      { method, url, status, statusText, body: sanitizedBody, headers: responseHeaders },
+      true  // Skip stderr since we already output above
+    );
   }
 
   /**
