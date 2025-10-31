@@ -208,3 +208,162 @@ export async function getAllDevelopersAndApps(): Promise<LevelListResponse> {
     throw new Error(`Failed to get developers and apps list: ${String(error)}`);
   }
 }
+
+/**
+ * Create Developer Response
+ */
+export interface CreateDeveloperResponse {
+  developer_name: string;
+  developer_id: number;
+}
+
+/**
+ * Create unverified developer
+ */
+export async function createDeveloper(): Promise<CreateDeveloperResponse> {
+  const client = new HttpClient();
+  return await client.post<CreateDeveloperResponse>('/v1/developer/create-register');
+}
+
+/**
+ * Create App Response
+ */
+export interface CreateAppResponse {
+  app_id: number;
+  app_title: string;
+  display_app_title: string;
+}
+
+/**
+ * Create a new app/game
+ */
+export async function createAppForDeveloper(
+  developer_id: number,
+  title?: string,
+  genre?: string
+): Promise<CreateAppResponse> {
+  const client = new HttpClient();
+  return await client.post<CreateAppResponse>('/level/v1/create', {
+    body: {
+      developer_id,
+      title,
+      category: genre,
+    },
+  });
+}
+
+/**
+ * Edit App Response
+ */
+export interface EditAppResponse {
+  app_title?: string;
+  display_app_title?: string;
+}
+
+/**
+ * Edit app/game information
+ */
+export async function editAppInfo(
+  app_id: number,
+  developer_id: number,
+  package_id?: number,
+  appName?: string,
+  genre?: string,
+  description?: string,
+  chatting_label?: string,
+  chatting_number?: string,
+  screen_orientation?: number
+): Promise<EditAppResponse> {
+  const client = new HttpClient();
+  return await client.post<EditAppResponse>('/level/v1/submit', {
+    body: {
+      app_id,
+      developer_id,
+      package_id,
+      title: appName,
+      category: genre,
+      description,
+      chatting_label,
+      chatting_number,
+      screen_orientation,
+    },
+  });
+}
+
+/**
+ * App Status Response
+ */
+export interface AppStatusResponse {
+  review_status: number;
+}
+
+/**
+ * Get app review status
+ */
+export async function getAppStatus(app_id: number): Promise<AppStatusResponse> {
+  const client = new HttpClient();
+  return await client.get<AppStatusResponse>('/level/v1/status', {
+    params: {
+      app_id: app_id.toString(),
+    },
+  });
+}
+
+/**
+ * App Detail API Response
+ */
+export interface AppDetailAPIResponse {
+  level?: {
+    display_app_title?: string;
+    developer_id?: number;
+    developer_name?: string;
+  };
+  upload_level?: {
+    app_id: number;
+    form_data: {
+      info: {
+        title: string;
+      };
+    };
+  };
+}
+
+/**
+ * App Detail
+ */
+export interface AppDetail {
+  appId: number;
+  appTitle: string;
+  displayAppTitle: string;
+  developerId: number;
+  developerName: string;
+}
+
+/**
+ * Get app detail information
+ */
+export async function getAppDetail(appId: number): Promise<AppDetail | undefined> {
+  const client = new HttpClient();
+
+  try {
+    const response = await client.get<AppDetailAPIResponse>('/level/v1/latest', {
+      params: {
+        app_id: appId.toString(),
+      },
+    });
+
+    if (response.level && response.upload_level) {
+      return {
+        appId: response.upload_level.app_id,
+        appTitle: response.upload_level.form_data.info.title,
+        displayAppTitle: response.level.display_app_title || '',
+        developerId: response.level.developer_id || 0,
+        developerName: response.level.developer_name || '',
+      };
+    }
+
+    return undefined;
+  } catch (error) {
+    return undefined;
+  }
+}

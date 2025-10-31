@@ -97,3 +97,21 @@ export interface PromptRegistration {
     }>;
   }>;
 }
+
+/**
+ * Feature Module Interface
+ * Represents a complete feature module with tools, resources, and prompts
+ */
+export interface FeatureModule {
+  /** Module name */
+  name: string;
+
+  /** Tools provided by this module */
+  tools: ToolRegistration[];
+
+  /** Resources provided by this module */
+  resources: ResourceRegistration[];
+
+  /** Prompts provided by this module (optional) */
+  prompts?: PromptRegistration[];
+}

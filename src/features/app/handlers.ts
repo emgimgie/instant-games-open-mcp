@@ -5,6 +5,9 @@
 
 import type { HandlerContext } from '../../core/types/index.js';
 import { getAllDevelopersAndApps, selectApp as selectAppApi } from './api.js';
+import { clearAppCache } from '../../core/utils/cache.js';
+import { DeviceFlowAuth } from '../../core/auth/deviceFlow.js';
+import { ApiConfig } from '../../core/network/httpClient.js';
 
 /**
  * List all developers and apps for the current user
@@ -84,4 +87,54 @@ export async function selectApp(
     const errorMsg = error instanceof Error ? error.message : String(error);
     return `❌ 选择应用失败:\n${errorMsg}\n\n请使用 list_developers_and_apps 查看可用的开发者和应用列表。`;
   }
+}
+
+/**
+ * Clear authentication data and app cache
+ */
+export async function clearAuthData(
+  args: { clear_token?: boolean; clear_cache?: boolean },
+  context: HandlerContext
+): Promise<string> {
+  const clearToken = args.clear_token !== false; // Default true
+  const clearCache = args.clear_cache !== false; // Default true
+
+  let message = `🗑️ 清理认证数据\n\n`;
+  const clearedItems: string[] = [];
+
+  // Clear OAuth token file
+  if (clearToken) {
+    try {
+      const apiConfig = ApiConfig.getInstance();
+      const environment = apiConfig.environment;
+      const deviceAuth = new DeviceFlowAuth(environment);
+      deviceAuth.clearToken();
+
+      // Also clear in-memory token
+      apiConfig.setMacToken({} as any);
+
+      clearedItems.push('✅ OAuth Token 文件已清除');
+    } catch (error) {
+      clearedItems.push(`⚠️ OAuth Token 清除失败: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  // Clear app cache
+  if (clearCache) {
+    try {
+      clearAppCache(context.projectPath);
+      clearedItems.push('✅ 应用选择缓存已清除');
+    } catch (error) {
+      clearedItems.push(`⚠️ 缓存清除失败: ${error instanceof Error ? error.message : String(error)}`);
+    }
+  }
+
+  message += clearedItems.join('\n');
+  message += `\n\n📋 下一步：\n`;
+  message += `1. 调用需要认证的工具（如 list_developers_and_apps）\n`;
+  message += `2. 系统会自动生成新的授权链接\n`;
+  message += `3. 使用 TapTap App 扫码授权\n`;
+  message += `4. 调用 complete_oauth_authorization 完成授权`;
+
+  return message;
 }

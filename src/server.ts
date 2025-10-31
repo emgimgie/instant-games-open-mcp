@@ -28,7 +28,8 @@ import { VERSION } from './version.js';
 // 导入功能模块
 import { appModule } from './features/app/index.js';
 import { leaderboardModule } from './features/leaderboard/index.js';
-import type { HandlerContext } from './core/types/index.js';
+import { h5GameModule } from './features/h5Game/index.js';
+import type { HandlerContext, FeatureModule } from './core/types/index.js';
 
 // 环境变量配置
 const apiConfig = ApiConfig.getInstance();
@@ -38,9 +39,10 @@ const TDS_MCP_TRANSPORT = (process.env.TDS_MCP_TRANSPORT || 'stdio').toLowerCase
 const TDS_MCP_PORT = parseInt(process.env.TDS_MCP_PORT || '3000', 10);
 
 // 所有功能模块
-const allModules = [
+const allModules: FeatureModule[] = [
   appModule,        // App management (developer/app selection)
-  leaderboardModule // Leaderboard management
+  leaderboardModule,// Leaderboard management
+  h5GameModule      // H5 Game management (upload, publish, status)
   // Future: cloudSaveModule, shareModule, etc.
 ];
 

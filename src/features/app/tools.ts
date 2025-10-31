@@ -5,6 +5,7 @@
 
 import type { ToolRegistration, HandlerContext } from '../../core/types/index.js';
 import * as appHandlers from './handlers.js';
+import * as appApi from './api.js';
 import { leaderboardTools as leaderboardDocTools } from '../leaderboard/docTools.js';
 import * as environmentHandlers from '../../core/handlers/environmentHandlers.js';
 
@@ -17,7 +18,7 @@ export const appTools: ToolRegistration[] = [
   {
     definition: {
       name: 'get_current_app_info',
-      description: 'Get currently selected app/game information including developer_id, app_id, miniapp_id, and app name. Use this when you need to know which app is being used or to build preview links.',
+      description: '[General] Get currently selected app/game information including developer_id, app_id, miniapp_id, and app name. Use this for: 1) Checking current selection, 2) Building preview links, 3) Verifying cached app. Not for H5 upload workflow.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -63,7 +64,7 @@ export const appTools: ToolRegistration[] = [
   {
     definition: {
       name: 'list_developers_and_apps',
-      description: 'List all developers and their apps/games for the current user. Use this when multiple developers or apps exist and you need to let user/AI choose which one to use.',
+      description: '[General App Management] List all developers and their apps/games for the current user. Use this for: 1) Initial exploration of available apps, 2) Switching between apps, 3) General app management (not H5 upload workflow). For H5 game upload, use h5_game_info_gatherer instead.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -79,7 +80,7 @@ export const appTools: ToolRegistration[] = [
   {
     definition: {
       name: 'select_app',
-      description: 'Select a specific developer and app to use for subsequent operations. This will cache the selection. Use this after listing developers and apps with list_developers_and_apps.',
+      description: '[General] Select a specific developer and app to use for subsequent operations. This will cache the selection for all modules (leaderboard, H5, etc.). Use this for: 1) General app selection, 2) Switching accounts, 3) After listing with list_developers_and_apps. For H5 upload, you can also pass developerId/appId to h5_game_info_gatherer directly.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -99,5 +100,79 @@ export const appTools: ToolRegistration[] = [
       return appHandlers.selectApp(args, context);
     },
     requiresAuth: true
+  },
+
+  // 👤 Create Developer
+  {
+    definition: {
+      name: 'create_developer',
+      description: 'Create a new unverified developer identity on TapTap platform. Use this when user wants to create a new developer account.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    handler: async (args, context) => {
+      const result = await appApi.createDeveloper();
+      return `✅ 创建开发者身份成功！\n\n` +
+             `📋 开发者信息：\n` +
+             `- 名称: ${result.developer_name}\n` +
+             `- ID: ${result.developer_id}\n\n` +
+             `💡 下一步：使用 create_app 创建应用，或使用 select_app 选择此开发者。`;
+    },
+    requiresAuth: true
+  },
+
+  // 🎮 Get App Status
+  {
+    definition: {
+      name: 'get_app_status',
+      description: 'Get the review status of an app/game. Use this to check if the app is published, under review, or rejected.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          app_id: {
+            type: 'number',
+            description: 'App ID to check status for'
+          }
+        },
+        required: ['app_id']
+      }
+    },
+    handler: async (args: { app_id: number }, context) => {
+      const result = await appApi.getAppStatus(args.app_id);
+      const statusText = ['未发布', '审核中', '审核失败', '已上线'][result.review_status] || '未知状态';
+      return `📋 应用审核状态：${statusText}\n\n` +
+             `状态码: ${result.review_status}\n` +
+             `- 0: 未发布\n` +
+             `- 1: 审核中\n` +
+             `- 2: 审核失败\n` +
+             `- 3: 已上线`;
+    },
+    requiresAuth: true
+  },
+
+  // 🗑️ Clear Auth Data
+  {
+    definition: {
+      name: 'clear_auth_data',
+      description: 'Clear all cached authentication data and app selection. Use this when: 1) MAC Token expired or invalid, 2) Want to switch accounts, 3) Need to reset authentication. This will clear both OAuth token file and app cache.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          clear_token: {
+            type: 'boolean',
+            description: 'Clear OAuth token file (default: true)'
+          },
+          clear_cache: {
+            type: 'boolean',
+            description: 'Clear app selection cache (default: true)'
+          }
+        }
+      }
+    },
+    handler: async (args: { clear_token?: boolean; clear_cache?: boolean }, context) => {
+      return appHandlers.clearAuthData(args, context);
+    }
   }
 ];

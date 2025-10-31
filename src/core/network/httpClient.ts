@@ -96,6 +96,13 @@ export class ApiConfig {
       'TDS_MCP_ENV': `${this.environment} (${this.apiBaseUrl})`,
     };
   }
+
+  /**
+   * Get current environment
+   */
+  public getEnvironment(): 'rnd' | 'production' {
+    return this.environment;
+  }
 }
 
 /**
@@ -239,10 +246,51 @@ export class HttpClient {
           const errorData = await response.json() as any;
           errorBody = errorData;
           errorMessage += ` - ${errorData.message || errorData.error || JSON.stringify(errorData)}`;
+
+          // Check for access_denied error (token expired or invalid)
+          if (errorData.data?.error === 'access_denied' ||
+              errorData.error === 'access_denied' ||
+              response.status === 401) {
+            const authError = new Error(
+              `🔐 授权已失效\n\n` +
+              `您的 MAC Token 已过期或无效。\n\n` +
+              `📋 解决方案：\n` +
+              `1. 调用 clear_auth_data 工具清除过期的认证数据\n` +
+              `2. 调用需要认证的工具会自动触发新的授权流程\n` +
+              `3. 使用 TapTap App 扫码重新授权\n\n` +
+              `💡 提示：如果使用的是环境变量中的 Token，请更新 TDS_MCP_MAC_TOKEN 环境变量并重启服务器。`
+            );
+            (authError as any).isAuthError = true;
+
+            // Log auth error
+            await logger.logResponse(method, fullUrl, response.status, response.statusText, errorBody, false, responseHeaders);
+
+            throw authError;
+          }
         } else {
           const errorText = await response.text();
           errorBody = errorText;
           errorMessage += ` - ${errorText}`;
+
+          // Check for RBAC access denied (text/plain format)
+          if ((response.status === 403 || response.status === 401) &&
+              (errorText.includes('access denied') || errorText.includes('RBAC'))) {
+            const authError = new Error(
+              `🔐 授权已失效\n\n` +
+              `您的 MAC Token 已过期或无效。\n\n` +
+              `📋 解决方案：\n` +
+              `1. 调用 clear_auth_data 工具清除过期的认证数据\n` +
+              `2. 调用需要认证的工具会自动触发新的授权流程\n` +
+              `3. 使用 TapTap App 扫码重新授权\n\n` +
+              `💡 提示：如果使用的是环境变量中的 Token，请更新 TDS_MCP_MAC_TOKEN 环境变量并重启服务器。`
+            );
+            (authError as any).isAuthError = true;
+
+            // Log auth error
+            await logger.logResponse(method, fullUrl, response.status, response.statusText, errorBody, false, responseHeaders);
+
+            throw authError;
+          }
         }
 
         // Log error response with headers

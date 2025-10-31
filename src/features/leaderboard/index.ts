@@ -3,7 +3,7 @@
  * All leaderboard-related Tools, Resources, and Handlers in one place
  */
 
-import type { ToolRegistration, ResourceRegistration } from '../../core/types/index.js';
+import type { FeatureModule } from '../../core/types/index.js';
 
 // Import from leaderboard module
 import { leaderboardTools } from './tools.js';
@@ -12,9 +12,8 @@ import { leaderboardResources } from './resources.js';
 /**
  * Leaderboard Module Definition
  */
-export const leaderboardModule = {
+export const leaderboardModule: FeatureModule = {
   name: 'leaderboard',
-  description: 'TapTap Leaderboard功能 - 排行榜创建、管理和文档',
 
   // All Tools with their handlers (unified format)
   tools: leaderboardTools.map(tool => ({
@@ -26,8 +25,8 @@ export const leaderboardModule = {
       'publish_leaderboard',
       'get_user_leaderboard_scores'
     ].includes(tool.definition.name)
-  })) as ToolRegistration[],
+  })),
 
   // All Resources with their handlers (unified format)
-  resources: leaderboardResources as ResourceRegistration[]
+  resources: leaderboardResources
 };
