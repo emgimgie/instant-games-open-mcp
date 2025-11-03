@@ -1,6 +1,6 @@
 {
   "name": "@mikoto_zero/minigame-open-mcp",
-  "version": "1.1.4",
+  "version": "1.2.1",
   "type": "module",
   "description": "TapTap Open API MCP Server - Documentation and Management APIs for TapTap Minigame and H5 Games (Leaderboard, and more features coming)",
   "main": "dist/server.js",
@@ -10,7 +10,10 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/server.js",
-    "dev": "ts-node src/server.ts",
+    "dev": "tsx src/server.ts",
+    "serve:sse": "TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 node dist/server.js",
+    "serve:sse:dev": "TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true node dist/server.js",
+    "serve:http": "TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 node dist/server.js",
     "prepublishOnly": "npm run build",
     "test": "jest",
     "lint": "eslint src/**/*.ts",
@@ -35,20 +38,24 @@
     "node": ">=16.0.0"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^0.4.0",
-    "crypto-js": "^4.2.0"
+    "@modelcontextprotocol/sdk": "1.20.2",
+    "@types/archiver": "6.0.4",
+    "archiver": "7.0.1",
+    "crypto-js": "^4.2.0",
+    "dotenv": "17.2.3"
   },
   "devDependencies": {
-    "@types/node": "^20.0.0",
     "@types/crypto-js": "^4.2.0",
-    "typescript": "^5.0.0",
-    "ts-node": "^10.9.0",
-    "jest": "^29.0.0",
     "@types/jest": "^29.0.0",
-    "eslint": "^8.0.0",
+    "@types/node": "^20.0.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
-    "prettier": "^3.0.0"
+    "eslint": "^8.0.0",
+    "jest": "^29.0.0",
+    "prettier": "^3.0.0",
+    "ts-node": "^10.9.0",
+    "tsx": "4.20.6",
+    "typescript": "^5.0.0"
   },
   "files": [
     "dist/",

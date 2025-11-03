@@ -2,12 +2,57 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 全局工作指引
+
+**重要：Claude Code 在此项目中的工作规范**
+
+### 📝 文档更新规则
+
+- **自动更新文档**：当有重要代码改动时（新特性、架构变更、API 修改），必须同时更新：
+  - `CLAUDE.md` - 开发指南和技术文档
+  - `README.md` - 用户文档和使用说明
+  - `CHANGELOG.md` - 版本变更记录
+  - **不需要每次都问用户是否更新文档，主动更新即可**
+
+### 💾 Git 提交规则
+
+- **默认提交代码**：完成代码改动后，**自动创建 git commit**
+  - 使用清晰的 commit message（遵循 Conventional Commits）
+  - 除非用户明确说"不要提交"，否则默认提交
+  - 多个相关改动可以合并为一个 commit
+  - **不需要每次都问用户是否提交，主动提交即可**
+
+- **Commit Message 格式**：
+  - `feat:` - 新功能
+  - `fix:` - Bug 修复
+  - `docs:` - 文档更新
+  - `refactor:` - 代码重构
+  - `chore:` - 构建/工具/配置更新
+
+### 🎯 工作流程
+
+```
+代码改动 → 自动更新文档 → 自动 git commit → 告知用户完成
+```
+
+**例外情况**：
+- 用户明确说"不要提交" → 不自动 commit
+- 用户明确说"不要更新文档" → 不更新文档
+- 临时测试/实验性改动 → 询问用户是否提交
+
 ## 项目概述
 
-这是一个基于 Model Context Protocol (MCP) 的 TapTap 小游戏 Open API MCP 服务器。项目提供 TapTap 小游戏 Open API 的完整文档、代码示例和服务端管理功能。
+这是一个基于 Model Context Protocol (MCP) 的 TapTap Open API MCP 服务器。项目为 **TapTap Minigame 和 H5 游戏**提供完整的排行榜 API 文档和服务端管理功能。
 
-**当前功能：**
+**核心特性：**
 - 🏆 **排行榜系统** - 完整的排行榜 API 文档和服务端管理
+- 🎮 **H5 游戏管理** - H5 游戏上传、发布、状态查询
+- 🔐 **OAuth 2.0 Device Code Flow** - 零配置认证（扫码即用，SSE 模式支持自动授权）
+- 🎯 **完整功能集** - 17 Tools + 7 Resources
+- 🌍 **双平台支持** - Minigame & H5 游戏
+- 🚀 **MCP 2025 标准** - Streamable HTTP + RFC 5424 Logging
+- 📡 **三种传输协议** - stdio（本地）+ SSE（远程/实时）+ HTTP JSON（兼容）
+- 🔌 **多客户端并发** - 独立会话管理，无限并发
 
 **未来计划：**
 - ☁️ 云存档系统
@@ -18,34 +63,94 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **NPM 包：** `@mikoto_zero/minigame-open-mcp`
 
+**当前版本：** v1.2.0
+
+**主要特性：**
+- 17 tools + 7 resources（应用管理 + 排行榜 + H5 游戏）
+- OAuth 2.0 Device Code Flow（SSE 模式支持自动授权）
+- 三种传输协议（stdio + SSE Streaming + HTTP JSON）
+- 多客户端并发支持（独立会话管理）
+- MCP Logging 规范（RFC 5424）+ 连接日志
+- MCP SDK 1.20.2
+
 ## 架构概览
 
-项目采用分层架构设计：
+项目采用**模块化架构设计**：
 
-### 核心服务器层
-- **`src/server.ts`** - 主 MCP 服务器，使用标准 MCP 协议（stdio 模式）
+### 功能模块层
+- **`src/features/`** - 功能模块（代码完全内聚）
+  - `app/` - **应用管理模块（基础功能）**
+    - `index.ts` - 模块定义和注册
+    - `tools.ts` - 5 个工具（统一格式：definition + handler）
+    - `handlers.ts` - 业务逻辑
+    - `api.ts` - API 调用
+  - `leaderboard/` - **排行榜模块**
+    - `index.ts` - 模块定义和注册
+    - `tools.ts` - Tools 定义 + 处理器（统一格式）
+    - `resources.ts` - Resources 定义 + 处理器（统一格式）
+    - `docs.ts` - 文档内容
+    - `docTools.ts` - 文档工具函数
+    - `handlers.ts` - 业务逻辑
+    - `api.ts` - API 调用
+  - 未来: `cloudSave/`, `share/` 等
+
+### 核心共享层
+- **`src/core/`** - 跨模块共享代码
+  - `auth/` - OAuth 2.0 Device Code Flow
+  - `network/` - HTTP Client（MAC 认证 + 签名）
+  - `handlers/` - 通用处理器（environment）
+  - `utils/` - 工具函数（cache, logger, docHelpers）
+  - `types/` - 类型定义（ToolRegistration, ResourceRegistration 等）
+
+### 服务器层
+- **`src/server.ts`** - 主服务器（自动注册所有模块）
 - **`bin/minigame-open-mcp`** - NPM 可执行入口点
 
-### 网络请求层
-- **`src/network/`** - 网络请求模块
-  - `httpClient.ts` - 通用 HTTP 客户端，支持 MAC 认证和请求签名
-  - `leaderboardApi.ts` - 排行榜服务端 API（创建、查询排行榜）
+### 架构优势
+- ✅ **代码内聚** - 每个功能的所有代码在一个目录
+- ✅ **独立开发** - 多人可并行开发不同功能
+- ✅ **自动注册** - 添加新功能只需导入模块
+- ✅ **易于维护** - 清晰的模块边界
+- ✅ **基础功能复用** - app 模块可被其他模块复用
 
-### 文档工具层
-- **`src/tools/`** - 文档工具集
-  - `leaderboardTools.ts` - 排行榜 API 文档工具（每个 API 一个独立工具）
+### 关键设计模式
 
-### 数据层
-- **`src/data/`** - 静态文档数据（TypeScript）
-  - `leaderboardDocs.ts` - 排行榜 API 完整文档、示例代码和最佳实践
+**1. 统一格式**
+- Tools 和 Resources 采用统一对象数组格式
+- 每个工具包含 `definition` + `handler`，永不不匹配
+- 类型安全的参数定义
 
-### 工具层
-- **`src/utils/`** - 工具函数
-  - `cache.ts` - 本地缓存（自动缓存 developer_id 和 app_id）
+```typescript
+// Tools 统一格式
+export const myTools: ToolRegistration[] = [
+  {
+    definition: { name: 'my_tool', ... },
+    handler: async (args: { param: string }, context) => { ... }
+  }
+];
 
-### 类型定义
-- **`src/types/`** - TypeScript 类型定义
-  - `index.ts` - MacToken 等核心类型
+// Resources 统一格式
+export const myResources: ResourceRegistration[] = [
+  {
+    uri: 'docs://my-feature/api',
+    name: 'API Doc',
+    handler: async () => { ... }
+  }
+];
+```
+
+**2. 模块依赖规则**
+```
+业务模块 (leaderboard, cloudSave)
+    ↓ 可依赖
+基础模块 (app)
+    ↓ 依赖
+核心层 (core)
+```
+
+- ✅ 业务模块可依赖 `core/` 和 `features/app/`
+- ❌ 业务模块之间不能相互依赖
+- ✅ app 模块只依赖 core，不依赖其他业务模块
 
 ## 常用命令
 
@@ -62,77 +167,106 @@ npm install
 npm install -g @mikoto_zero/minigame-open-mcp
 ```
 
-### 启动服务器
+### 快速启动（npm scripts）
+
 ```bash
+# stdio 模式（默认，本地开发）
+npm start                  # 或 npm run dev
+
+# SSE 模式（远程部署，推荐用于 OpenHands）
+npm run serve:sse          # 基础模式（端口 3000）
+npm run serve:sse:dev      # 开发模式（详细日志）
+
+# HTTP JSON 模式（兼容普通 HTTP 客户端）
+npm run serve:http         # 端口 3000
+
+# 使用部署脚本（支持自定义端口）
+./scripts/serve-sse.sh 8080       # SSE 模式，端口 8080
+./scripts/serve-http.sh 3000 true # HTTP 模式，启用日志
+```
+
+### 启动服务器（传统方式）
+
+#### 传输协议选择
+
+MCP 服务器支持**三种传输模式**：
+
+| 模式 | 适用场景 | 响应格式 | 授权方式 | 进度反馈 | 多客户端 |
+|------|---------|---------|---------|---------|---------|
+| **stdio** | 本地集成（单客户端）、Claude Desktop、Cursor、VSCode | N/A | 两步式 | ❌ | N/A |
+| **sse** | 远程部署、多客户端、**OpenHands**、Claude Code、Cursor、VSCode | SSE 流 | **一步式自动** | ✅ 实时 | ✅ |
+| **http** | 普通 HTTP 客户端、不支持 SSE 的场景 | JSON | 两步式 | ❌ | ✅ |
+
+```bash
+# ========== stdio 模式（默认，最大兼容性）==========
+
 # 开发模式启动
 npm run dev
-
-# 编译并启动
-npm run build
-npm start
 
 # 通过 npx 直接运行（推荐）
 npx @mikoto_zero/minigame-open-mcp
 
-# 启用详细日志模式（用于调试）
-TAPTAP_MINIGAME_MCP_VERBOSE=true npm start
+# 启用详细日志
+TDS_MCP_VERBOSE=true npm start
+
+# ========== SSE 流式模式（推荐用于 OpenHands）==========
+
+# 基础启动（SSE 流式响应 + 自动授权）
+TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 npm start
+
+# SSE 模式 + 详细日志
+TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true npm start
+
+# 特性：
+# - ✅ 实时进度推送（压缩、上传、授权等）
+# - ✅ 一步式自动授权（无需手动调用 complete_oauth_authorization）
+# - ✅ 多客户端并发支持
+# - ✅ 客户端连接日志
+
+# ========== HTTP JSON 模式（兼容普通 HTTP 客户端）==========
+
+# JSON 单次响应模式
+TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 npm start
+
+# 特性：
+# - ✅ 返回 JSON 响应（Content-Type: application/json）
+# - ❌ 无实时进度（但功能完整）
+# - ✅ 两步式授权（避免长时间阻塞）
+# - ✅ 多客户端并发支持
 ```
 
-### 环境配置
+**Streamable HTTP 模式 Endpoints：**
+- MCP 请求：`GET/POST http://localhost:3000/` (统一 endpoint)
+- 健康检查：`GET http://localhost:3000/health`
+  - 返回活跃会话数、工具数、资源数等信息
 
-#### 必需的环境变量
+**重要说明**：
+- MCP SDK 要求客户端 Accept header 必须包含：`application/json, text/event-stream`
+- 服务器根据 `TDS_MCP_TRANSPORT` 决定实际返回格式（JSON 或 SSE）
+- SSE 模式下支持智能自动授权，HTTP 模式保持两步式授权
 
-```bash
-# MAC Token（JSON 字符串格式）
-export TDS_MCP_MAC_TOKEN='{"kid":"your_kid","token_type":"mac","mac_key":"your_mac_key","mac_algorithm":"hmac-sha-1"}'
+### 环境变量说明
 
-# 客户端配置
-export TDS_MCP_CLIENT_ID="your_client_id"
-export TDS_MCP_CLIENT_TOKEN="your_client_secret"
+#### 认证相关（可选 - 推荐使用 OAuth）
 
-# 启动服务器
-npm start
-```
+- `TDS_MCP_MAC_TOKEN`: 用户 MAC Token（JSON 格式，可选）
+  - 不配置则使用 OAuth 2.0 Device Code Flow
+  - Token 自动保存到 `~/.config/taptap-minigame/token.json`
 
-#### OpenHands 集成配置示例
-```json
-{
-  "mcpServers": {
-    "taptap-minigame": {
-      "command": "npx",
-      "args": ["@mikoto_zero/minigame-open-mcp"],
-      "env": {
-        "TDS_MCP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
-        "TDS_MCP_CLIENT_ID": "your_client_id",
-        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
-        "TDS_MCP_ENV": "production",
-        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
-      }
-    }
-  }
-}
-```
+#### 客户端配置（可选 - 已内置默认值）
 
-**开启调试模式：**
-```json
-{
-  "mcpServers": {
-    "taptap-minigame": {
-      "command": "npx",
-      "args": ["@mikoto_zero/minigame-open-mcp"],
-      "env": {
-        "TDS_MCP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
-        "TDS_MCP_CLIENT_ID": "your_client_id",
-        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
-        "TDS_MCP_ENV": "production",
-        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "true"
-      }
-    }
-  }
-}
-```
+- `TDS_MCP_CLIENT_ID`: 客户端 ID（已内置，一般无需配置）
+- `TDS_MCP_CLIENT_TOKEN`: 请求签名密钥（**必需**，已内置默认值）
+
+#### 环境和传输（可选）
+
+- `TDS_MCP_ENV`: 环境选择（默认 `production`）
+  - `production`: https://agent.tapapis.cn
+  - `rnd`: https://agent.api.xdrnd.cn
+- `TDS_MCP_PROJECT_PATH`: 项目路径，用于本地缓存
+- `TDS_MCP_VERBOSE`: 详细日志模式（`true` 或 `false`，默认 `false`）
+- `TDS_MCP_TRANSPORT`: 传输协议（`stdio` / `sse` / `http`，默认 `stdio`）
+- `TDS_MCP_PORT`: HTTP/SSE 模式端口（默认 `3000`）
 
 ### 测试和验证
 ```bash
@@ -166,7 +300,7 @@ node dist/server.js
         "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
         "TDS_MCP_CLIENT_ID": "your_client_id",
         "TDS_MCP_CLIENT_TOKEN": "your_secret",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "false"
+        "TDS_MCP_VERBOSE": "false"
       }
     }
   }
@@ -184,7 +318,7 @@ node dist/server.js
         "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
         "TDS_MCP_CLIENT_ID": "your_client_id",
         "TDS_MCP_CLIENT_TOKEN": "your_secret",
-        "TAPTAP_MINIGAME_MCP_VERBOSE": "true"
+        "TDS_MCP_VERBOSE": "true"
       }
     }
   }
@@ -193,90 +327,84 @@ node dist/server.js
 
 **注意**: 完全零安装，通过 npx 自动下载和运行！
 
-### 工具分类
+### 工具分类（17 Tools）
 
-#### 🎯 工作流引导工具
-- **`start_leaderboard_integration`** - 排行榜接入工作流引导（推荐作为起点）
-  - 自动检查现有排行榜
-  - 引导创建或选择排行榜
-  - 提供后续实现步骤
+#### 🎯 流程指引工具（1个）
+- **`get_integration_guide`** ⭐ 完整接入工作流指引
+  - 返回从零到生产的完整步骤
+  - 强调客户端无需安装 SDK
+  - 列出所有可用的 Resources（API 文档）
+  - **推荐：AI 在开始接入前必读**
 
-#### 📖 LeaderboardManager API 文档工具（6个）
-每个工具提供一个特定 API 的完整文档：
-- **`get_leaderboard_manager`** - 获取 LeaderboardManager 实例
-- **`open_leaderboard`** - 打开排行榜 UI
-- **`submit_scores`** - 提交玩家分数
-- **`load_leaderboard_scores`** - 加载排行榜数据
-- **`load_current_player_score`** - 获取当前玩家分数和排名
-- **`load_player_centered_scores`** - 加载当前玩家周围的玩家分数
+#### 📱 信息查询工具（2个）
+- **`get_current_app_info`** - 获取当前选择的应用信息
+  - 返回 developer_id, app_id, miniapp_id, app_name
+  - 用于确认当前操作的应用
+  - 用于构建预览链接
 
-#### ⚙️ 排行榜管理工具（2个）
-- **`create_leaderboard`** - 创建排行榜
+- **`check_environment`** - 检查环境配置和认证状态
+  - 检查环境变量和本地文件中的 token
+  - 显示认证状态和可用功能
+
+#### 🔐 认证工具（1个）
+- **`complete_oauth_authorization`** - 完成 OAuth 授权
+  - 用户扫码后调用此工具完成授权
+  - 轮询获取授权结果并保存 token
+  - 配合懒加载 OAuth 流程使用
+
+#### 📁 应用管理工具（2个）
+- **`list_developers_and_apps`** - 列出所有开发者和应用
+  - 显示 miniapp_id 用于构建预览链接
+  - 自动检测多应用场景
+
+- **`select_app`** - 选择要使用的应用
+  - 缓存选择，后续操作自动使用
+
+#### ⚙️ 排行榜管理工具（4个）
+- **`create_leaderboard`** - 创建新排行榜
   - 自动获取 developer_id 和 app_id
-  - 支持所有配置参数（周期、分数类型、排序等）
-  - 返回 leaderboard_id 供客户端使用
+  - 支持所有配置参数
+  - 返回 leaderboard_id
 
-- **`list_leaderboards`** - 查询已创建的排行榜列表
-  - 自动获取 developer_id 和 app_id
+- **`list_leaderboards`** - 列出所有排行榜
+  - 显示排行榜 ID 和配置
   - 支持分页
-  - 显示排行榜 ID 和配置信息
 
-#### 🔍 辅助工具（3个）
-- **`search_leaderboard_docs`** - 搜索排行榜文档
-- **`get_leaderboard_overview`** - 获取排行榜 API 完整概览
-- **`get_leaderboard_patterns`** - 获取集成模式和最佳实践
+- **`publish_leaderboard`** - 发布排行榜
+  - 控制排行榜可见性
 
-#### 🔧 系统工具（2个）
-- **`check_environment`** - 检查环境变量配置和认证状态
-- **`get_user_leaderboard_scores`** - 获取用户实际排行榜分数数据（需要 MAC Token）
+- **`get_user_leaderboard_scores`** - 获取用户分数数据
 
-## 核心技术栈
+### Resources 分类（7 Resources）
 
-- **MCP Framework**: 基于 Model Context Protocol 的工具服务
-- **运行时**: Node.js 16+ (ES Module 模式)
-- **编程语言**: TypeScript (类型安全)
-- **包管理**: NPM (依赖管理和分发)
-- **构建工具**: TypeScript Compiler (tsc)
-- **加密签名**: crypto-js (HMAC-SHA1 和 HMAC-SHA256)
-- **认证方式**: MAC Token Authentication
+#### 📖 API 详细文档（6个）
+每个 Resource 提供一个 LeaderboardManager API 的完整文档：
+- **`docs://leaderboard/api/get-manager`** - tap.getLeaderboardManager()
+- **`docs://leaderboard/api/open`** - openLeaderboard()
+- **`docs://leaderboard/api/submit-scores`** - submitScores()
+- **`docs://leaderboard/api/load-scores`** - loadLeaderboardScores()
+- **`docs://leaderboard/api/load-player-score`** - loadCurrentPlayerLeaderboardScore()
+- **`docs://leaderboard/api/load-centered-scores`** - loadPlayerCenteredScores()
 
-## 配置说明
+#### 📚 概览文档（1个）
+- **`docs://leaderboard/overview`** - 所有 API 的完整概览
 
-### 环境变量详解
-
-**核心环境变量（必需）**：
-- `TDS_MCP_MAC_TOKEN`: 用户 MAC Token，JSON 字符串格式
-  ```json
-  {"kid":"abc123","token_type":"mac","mac_key":"secret","mac_algorithm":"hmac-sha-1"}
-  ```
-- `TDS_MCP_CLIENT_ID`: 客户端 ID，用于 API 调用
-- `TDS_MCP_CLIENT_TOKEN`: 客户端密钥，用于请求签名
-
-**可选配置**：
-- `TDS_MCP_ENV`: 环境选择，`production`（默认）或 `rnd`
-  - production: `https://agent.tapapis.cn`
-  - rnd: `https://agent.api.xdrnd.cn`
-- `TDS_MCP_PROJECT_PATH`: 项目路径，用于本地缓存
-- `TAPTAP_MINIGAME_MCP_VERBOSE`: 详细日志模式，设置为 `true` 或 `1` 启用
-  - 记录所有工具调用的输入和输出
-  - 记录所有 HTTP 请求和响应
-  - 用于调试和问题排查
-
-**环境检查**：
-使用 `check_environment` 工具检查所有环境变量的配置状态。
+**使用说明**：
+- Claude Code：AI 会自动读取这些 Resources
+- VSCode/Cursor：如果不支持，使用 `get_integration_guide` Tool 中的代码示例
 
 ## 日志和调试
 
 ### 详细日志模式
 
-项目支持详细日志模式，通过环境变量 `TAPTAP_MINIGAME_MCP_VERBOSE` 控制。
+项目支持详细日志模式，通过环境变量 `TDS_MCP_VERBOSE` 控制。
 
 **启用方式：**
 ```bash
 # 启用详细日志
-export TAPTAP_MINIGAME_MCP_VERBOSE=true
+export TDS_MCP_VERBOSE=true
 # 或
-export TAPTAP_MINIGAME_MCP_VERBOSE=1
+export TDS_MCP_VERBOSE=1
 
 # 然后启动服务器
 npm start
@@ -420,69 +548,7 @@ HMAC-SHA256(method\nurl\nx-tap-headers\nbody\n, CLIENT_SECRET)
 - 通过 `/level/v1/list` API 自动获取
 - 避免重复输入参数
 
-### 项目结构
-- `src/server.ts` - 主服务器入口和工具注册
-- `src/network/` - 网络请求模块（HTTP 客户端和 API 封装）
-- `src/tools/` - 工具处理函数实现
-- `src/data/` - 文档数据定义
-- `src/utils/` - 工具函数（缓存等）
-- `src/types/` - 类型定义
-- `bin/` - NPM 可执行文件
-- `dist/` - 编译输出目录
 
-## 项目特色功能
-
-### 智能工作流
-`start_leaderboard_integration` 工具提供完整的排行榜接入流程：
-1. 自动检查现有排行榜
-2. 如果没有排行榜，引导创建
-3. 如果有排行榜，列出供用户选择
-4. 提供后续实现步骤指引
-
-### 自动 ID 管理
-- 首次调用管理工具时自动从 `/level/v1/list` 获取应用信息
-- 缓存 developer_id 和 app_id 到本地
-- 后续调用无需再提供这些参数
-- 支持项目级和全局级缓存
-
-### 每个 API 独立工具
-- 每个 LeaderboardManager API 都有独立的文档工具
-- 一步到位获取特定 API 的完整文档
-- 避免信息过载，提高 AI Agent 效率
-
-### 双重认证机制
-- **MAC Token 认证** - 使用 mac_key 进行 HMAC-SHA1 签名
-- **请求签名** - 使用 CLIENT_SECRET 进行 HMAC-SHA256 签名
-- 完全参考 `tapcode-mcp-h5` 项目的成熟实现
-
-## 工具使用指南
-
-### 推荐工作流程
-
-1. **用户询问接入排行榜**
-   - AI 调用 `start_leaderboard_integration`
-   - 系统自动检查和引导
-
-2. **需要创建排行榜**
-   - AI 调用 `create_leaderboard`
-   - 只需提供排行榜配置参数
-   - developer_id 和 app_id 自动获取
-
-3. **查看现有排行榜**
-   - AI 调用 `list_leaderboards`
-   - 显示所有已创建的排行榜
-
-4. **获取实现代码**
-   - AI 调用对应的 API 工具（如 `submit_scores`）
-   - 返回完整的代码文档和示例
-
-### 工具选择建议
-
-- **用户问"接入排行榜"** → `start_leaderboard_integration`
-- **用户问"如何提交分数"** → `submit_scores`
-- **用户问"如何显示排行榜"** → `open_leaderboard`
-- **用户问"我有哪些排行榜"** → `list_leaderboards`
-- **用户问"创建排行榜"** → `create_leaderboard`
 
 ## 发布和维护
 
@@ -496,34 +562,41 @@ npm publish --access public
 ```
 
 ### 版本管理
-- 当前版本：1.0.1
+- 当前版本：1.2.0
 - 遵循语义化版本（Semantic Versioning）
+- Beta 版本用于新特性测试和验证
 - 主要功能更新增加次版本号
 - Bug 修复增加补丁版本号
 
 ### 扩展新功能
 
-添加新的 Open API 功能（如云存档）：
+使用脚手架快速创建新功能模块：
 
-1. 在 `src/data/` 创建新的文档数据文件
-2. 在 `src/tools/` 创建新的工具处理器
-3. 在 `src/network/` 添加对应的 API 函数（如需要）
-4. 在 `src/server.ts` 注册新工具
-5. 更新 README.md 和文档
+```bash
+# 运行脚手架脚本
+./scripts/create-feature.sh
+
+# 按提示输入功能信息
+# 自动生成模块结构：src/features/yourFeature/
+# 包含：index.ts, tools.ts, handlers.ts, api.ts 等
+
+# 在 src/server.ts 注册新模块
+import { yourFeatureModule } from './features/yourFeature/index.js';
+const allModules = [..., yourFeatureModule];
+```
+
+详见脚手架使用说明部分。
 
 ### 缓存文件位置
 
 - 全局缓存：`~/.config/taptap-minigame/app.json`
 - 项目缓存：`{project}/.taptap-minigame/app.json`
 
-**与 tapcode-mcp-h5 区分**：
-- tapcode-mcp-h5: `.taptap/craft.json`
-- 本项目: `.taptap-minigame/app.json`
 
 ## 注意事项
 
 - 所有工具描述使用英文，便于 AI Agent 理解
-- 环境变量名称使用 TAPTAP_ 前缀
+- 环境变量名称使用 TDS_MCP_ 前缀
 - MAC Token 必须是 JSON 字符串格式
 - 请求签名使用两层机制（MAC + X-Tap-Sign）
 - 默认环境为 production，可通过 TDS_MCP_ENV 切换
