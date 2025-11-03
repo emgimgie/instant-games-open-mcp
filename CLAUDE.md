@@ -375,21 +375,6 @@ node dist/server.js
 - Claude Code：AI 会自动读取这些 Resources
 - VSCode/Cursor：如果不支持，使用 `get_integration_guide` Tool 中的代码示例
 
-## 核心技术栈
-
-- **MCP Framework**: Model Context Protocol 2025-03-26 规范
-- **MCP SDK**: @modelcontextprotocol/sdk@1.20.2
-- **传输协议**: stdio + Streamable HTTP (MCP 2025 标准)
-- **运行时**: Node.js 16+ (ES Module 模式)
-- **编程语言**: TypeScript (类型安全)
-- **包管理**: NPM (依赖管理和分发)
-- **构建工具**: TypeScript Compiler (tsc)
-- **开发工具**: tsx (ES modules 运行器)
-- **加密签名**: crypto-js (HMAC-SHA1 和 HMAC-SHA256)
-- **认证方式**: MAC Token Authentication + OAuth 2.0 Device Flow
-- **日志规范**: RFC 5424 (Syslog Protocol)
-
-
 ## 日志和调试
 
 ### 详细日志模式
