@@ -167,7 +167,25 @@ npm install
 npm install -g @mikoto_zero/minigame-open-mcp
 ```
 
-### 启动服务器
+### 快速启动（npm scripts）
+
+```bash
+# stdio 模式（默认，本地开发）
+npm start                  # 或 npm run dev
+
+# SSE 模式（远程部署，推荐用于 OpenHands）
+npm run serve:sse          # 基础模式（端口 3000）
+npm run serve:sse:dev      # 开发模式（详细日志）
+
+# HTTP JSON 模式（兼容普通 HTTP 客户端）
+npm run serve:http         # 端口 3000
+
+# 使用部署脚本（支持自定义端口）
+./scripts/serve-sse.sh 8080       # SSE 模式，端口 8080
+./scripts/serve-http.sh 3000 true # HTTP 模式，启用日志
+```
+
+### 启动服务器（传统方式）
 
 #### 传输协议选择
 
