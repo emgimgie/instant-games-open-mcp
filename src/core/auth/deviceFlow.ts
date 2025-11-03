@@ -54,6 +54,19 @@ interface TokenResponse {
 }
 
 /**
+ * Progress callback for authorization polling
+ */
+export interface AuthProgressCallback {
+  (info: {
+    type: 'auth_url' | 'polling' | 'success' | 'timeout' | 'error';
+    message: string;
+    authUrl?: string;
+    elapsed?: number;
+    remaining?: number;
+  }): void | Promise<void>;
+}
+
+/**
  * Device Code Flow Authentication Manager
  */
 export class DeviceFlowAuth {
@@ -217,9 +230,9 @@ export class DeviceFlowAuth {
   }
 
   /**
-   * Poll for access token
+   * Poll for access token with progress callback
    */
-  private async pollForToken(): Promise<MacToken> {
+  private async pollForToken(onProgress?: AuthProgressCallback): Promise<MacToken> {
     const url = `https://${this.config.authHost}/oauth2/v1/token`;
     let attempts = 0;
     const maxAttempts = 60; // 最多等待 2 分钟（60 * 2s）
@@ -251,6 +264,14 @@ export class DeviceFlowAuth {
         if (json.success === true && json.data) {
           // Authorization successful
           this.deviceCode = '';
+
+          if (onProgress) {
+            await onProgress({
+              type: 'success',
+              message: '✅ 授权成功！Token 已保存'
+            });
+          }
+
           return {
             kid: json.data.kid,
             mac_key: json.data.mac_key,
@@ -263,24 +284,57 @@ export class DeviceFlowAuth {
         const error = json.data?.error;
         if (error === 'authorization_pending' || error === 'authorization_waiting') {
           // Still waiting for user authorization
+          const elapsed = attempts * 2;
+          const remaining = (maxAttempts - attempts) * 2;
+
           if (attempts % 5 === 0) {
-            process.stderr.write(`⏳ 仍在等待授权... (${attempts * 2}秒)\n`);
+            process.stderr.write(`⏳ 仍在等待授权... (${elapsed}秒)\n`);
+
+            if (onProgress) {
+              await onProgress({
+                type: 'polling',
+                message: `⏳ 等待授权中... 已等待 ${elapsed} 秒，剩余 ${remaining} 秒超时`,
+                elapsed,
+                remaining
+              });
+            }
           }
           continue;
         }
 
         // Other errors
         if (error === 'expired_token') {
-          throw new Error('授权码已过期，请重新启动服务器');
+          const errorMsg = '❌ 授权码已过期，请重新调用工具获取新的授权链接';
+          if (onProgress) {
+            await onProgress({
+              type: 'error',
+              message: errorMsg
+            });
+          }
+          throw new Error(errorMsg);
         }
 
         if (error === 'access_denied') {
-          throw new Error('用户拒绝授权');
+          const errorMsg = '❌ 用户拒绝授权';
+          if (onProgress) {
+            await onProgress({
+              type: 'error',
+              message: errorMsg
+            });
+          }
+          throw new Error(errorMsg);
         }
 
-        throw new Error(`授权失败: ${json.data?.error_description || error || 'Unknown error'}`);
+        const errorMsg = `❌ 授权失败: ${json.data?.error_description || error || 'Unknown error'}`;
+        if (onProgress) {
+          await onProgress({
+            type: 'error',
+            message: errorMsg
+          });
+        }
+        throw new Error(errorMsg);
       } catch (error) {
-        if (error instanceof Error && error.message.includes('授权')) {
+        if (error instanceof Error && error.message.includes('❌')) {
           throw error;
         }
         // Network error, continue polling
@@ -288,7 +342,14 @@ export class DeviceFlowAuth {
       }
     }
 
-    throw new Error('授权超时，请重新启动服务器');
+    const timeoutMsg = '⏰ 授权超时（2分钟）。请重新调用工具获取新的授权链接。';
+    if (onProgress) {
+      await onProgress({
+        type: 'timeout',
+        message: timeoutMsg
+      });
+    }
+    throw new Error(timeoutMsg);
   }
 
   /**
@@ -311,6 +372,43 @@ export class DeviceFlowAuth {
     } catch (error) {
       process.stderr.write(`⚠️  Failed to save token: ${error instanceof Error ? error.message : String(error)}\n`);
     }
+  }
+
+  /**
+   * Start auto authorization with progress callback
+   * For SSE mode: polls for authorization and reports progress
+   */
+  async startAutoAuthorization(onProgress?: AuthProgressCallback): Promise<MacToken> {
+    // Get device code
+    const deviceCodeData = await this.requestDeviceCode();
+    const authUrl = this.config.qrcodeBaseUrl + encodeURIComponent(deviceCodeData.qrcode_url);
+
+    // Send authorization URL to client
+    if (onProgress) {
+      await onProgress({
+        type: 'auth_url',
+        message: '🔐 需要 TapTap 授权。请在浏览器中打开以下链接完成授权：',
+        authUrl
+      });
+    }
+
+    // Output to stderr for terminal users
+    process.stderr.write(`\n🔗 授权链接: ${authUrl}\n`);
+    process.stderr.write('⏳ 自动等待授权中...\n\n');
+
+    // Poll for token with progress
+    this.macToken = await this.pollForToken(onProgress);
+
+    // Save to local file
+    this.saveToken(this.macToken);
+
+    process.stderr.write('\n✅ 授权成功！Token 已保存\n');
+    process.stderr.write(`📁 Token 位置: ${this.tokenPath}\n\n`);
+
+    // Clear device code
+    this.deviceCode = '';
+
+    return this.macToken;
   }
 
   /**

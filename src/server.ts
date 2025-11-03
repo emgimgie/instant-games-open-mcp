@@ -313,6 +313,9 @@ class TapTapMinigameMCPServer {
     // Initialize logger (before any connections)
     logger.initialize(this.server, 'sse');
 
+    // Set transport mode for authentication (enables auto-authorization)
+    setTransportMode('sse');
+
     // Store active transport instances by session ID
     const transports: Map<string, { server: Server, transport: StreamableHTTPServerTransport }> = new Map();
 
@@ -448,9 +451,20 @@ class TapTapMinigameMCPServer {
 let deviceAuth: DeviceFlowAuth | null = null;
 let authInProgress = false;
 
+// Track current transport mode (set by server)
+let currentTransportMode: 'stdio' | 'sse' = 'stdio';
+
 /**
- * Lazy load authentication when needed (non-blocking)
- * Returns authorization URL if auth is needed, or completes silently if token exists
+ * Set transport mode for authentication flow
+ */
+function setTransportMode(mode: 'stdio' | 'sse'): void {
+  currentTransportMode = mode;
+}
+
+/**
+ * Lazy load authentication when needed
+ * - stdio mode: throw error with auth URL (two-step flow)
+ * - SSE mode: auto-poll with progress notifications (one-step flow)
  */
 async function ensureAuthenticated(): Promise<void> {
   const apiConfig = ApiConfig.getInstance();
@@ -471,16 +485,69 @@ async function ensureAuthenticated(): Promise<void> {
   }
 
   // Try to load from local file first
-  const macToken = await deviceAuth.initialize();
+  try {
+    const macToken = await deviceAuth.initialize();
+    if (macToken) {
+      apiConfig.setMacToken(macToken);
+      return;
+    }
+  } catch (error) {
+    // If error from initialize(), check transport mode
 
-  // If initialize succeeded, we got token from file
-  if (macToken) {
-    apiConfig.setMacToken(macToken);
-    return;
+    // SSE mode: Auto authorization with progress
+    if (currentTransportMode === 'sse') {
+      authInProgress = true;
+
+      try {
+        // Start auto authorization with progress callback
+        const macToken = await deviceAuth.startAutoAuthorization(async (info) => {
+          // Send progress via MCP notification
+          if (info.type === 'auth_url') {
+            await logger.notice(
+              `${info.message}\n\n🔗 授权链接: ${info.authUrl}\n\n` +
+              `📋 操作步骤：\n` +
+              `1. 在浏览器中打开上面的链接\n` +
+              `2. 使用 TapTap App 扫描二维码\n` +
+              `3. 完成授权后，服务器将自动继续（最多等待 2 分钟）\n\n` +
+              `⏳ 服务器正在自动等待授权中...`,
+              { authUrl: info.authUrl },
+              'oauth'
+            );
+          } else if (info.type === 'polling') {
+            await logger.info(
+              info.message,
+              { elapsed: info.elapsed, remaining: info.remaining },
+              'oauth'
+            );
+          } else if (info.type === 'success') {
+            await logger.notice(info.message, {}, 'oauth');
+          } else if (info.type === 'timeout') {
+            await logger.warning(
+              `${info.message}\n\n` +
+              `💡 提示：如果您已经授权但超时，请重新调用工具。Token 可能已经保存成功。`,
+              {},
+              'oauth'
+            );
+          } else if (info.type === 'error') {
+            await logger.error(info.message, undefined, 'oauth');
+          }
+        });
+
+        apiConfig.setMacToken(macToken);
+        authInProgress = false;
+        return;
+      } catch (authError) {
+        authInProgress = false;
+        throw authError;
+      }
+    }
+
+    // stdio mode: throw error (two-step flow, backward compatible)
+    if (error instanceof Error) {
+      throw error;
+    }
+    throw new Error('OAuth authorization required');
   }
-
-  // Need OAuth authorization - throw error with URL
-  throw new Error('OAuth authorization required');
 }
 
 // 启动服务器
