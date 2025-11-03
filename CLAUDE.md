@@ -135,9 +135,9 @@ MCP 服务器支持**三种传输模式**：
 
 | 模式 | 适用场景 | 响应格式 | 授权方式 | 进度反馈 | 多客户端 |
 |------|---------|---------|---------|---------|---------|
-| **stdio** | 本地开发<br>Claude Desktop<br>Cursor | N/A | 两步式 | ❌ | N/A |
-| **sse** | 远程部署<br>OpenHands<br>支持 SSE 的客户端 | SSE 流 | **一步式自动** | ✅ 实时 | ✅ |
-| **http** | 普通 HTTP 客户端<br>不支持 SSE | JSON | 两步式 | ❌ | ✅ |
+| **stdio** | 本地集成（单客户端）、Claude Desktop、Cursor、VSCode | N/A | 两步式 | ❌ | N/A |
+| **sse** | 远程部署、多客户端、**OpenHands**、Claude Code、Cursor、VSCode | SSE 流 | **一步式自动** | ✅ 实时 | ✅ |
+| **http** | 普通 HTTP 客户端、不支持 SSE 的场景 | JSON | 两步式 | ❌ | ✅ |
 
 ```bash
 # ========== stdio 模式（默认，最大兼容性）==========
@@ -739,8 +739,8 @@ TDS_MCP_TRANSPORT=sse TDS_MCP_VERBOSE=true npm start
 
 | 模式 | 配置 | 响应格式 | 授权 | 进度 | 多客户端 | 推荐场景 |
 |------|------|---------|-----|------|---------|---------|
-| **stdio** | 默认 | N/A | 两步式 | ❌ | N/A | Claude Desktop<br>Cursor<br>本地开发 |
-| **sse** | `TDS_MCP_TRANSPORT=sse` | SSE 流 | **一步式** | ✅ 实时 | ✅ | **OpenHands**<br>远程部署 |
+| **stdio** | 默认 | N/A | 两步式 | ❌ | N/A | Claude Desktop、Cursor、本地单客户端 |
+| **sse** | `TDS_MCP_TRANSPORT=sse` | SSE 流 | **一步式** | ✅ 实时 | ✅ | **OpenHands**、Claude Code、Cursor、VSCode、远程/多客户端 |
 | **http** | `TDS_MCP_TRANSPORT=http` | JSON | 两步式 | ❌ | ✅ | 普通 HTTP 客户端 |
 
 **关键差异**：
