@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🚀 Major Release - Multi-Client Concurrency & Smart Auto-Authorization
 
-**This is a major release bringing significant improvements: multi-client concurrent connections, intelligent auto-authorization for SSE mode, and three transport modes support.**
+**This is a major release bringing significant improvements: multi-client concurrent connections, intelligent auto-authorization for SSE mode, three transport modes support, and complete H5 game management.**
 
 ### Added
 
@@ -32,10 +32,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Clear operation instructions for AI agents
   - Automatic polling with 2-minute timeout
 
-- 📡 **Transport Mode Differentiation**
+- 📡 **Three Transport Modes**
   - `TDS_MCP_TRANSPORT=sse` → SSE streaming (`Content-Type: text/event-stream`)
   - `TDS_MCP_TRANSPORT=http` → JSON responses (`Content-Type: application/json`)
   - `TDS_MCP_TRANSPORT=stdio` → stdio mode (default, maximum compatibility)
+
+- 🎮 **H5 Game Module** (17 tools total)
+  - Complete H5 game upload and publishing workflow
+  - `upload_and_publish_h5_game` - Upload game package and publish
+  - `get_h5_game_status` - Check game publication status
+  - `update_h5_game_info` - Update game metadata
+  - `gather_h5_game_info` - Collect game information
+
+- 📦 **Modular Architecture**
+  - `features/app/` - Application management (8 tools)
+  - `features/leaderboard/` - Leaderboard (5 tools + 7 resources)
+  - `features/h5Game/` - H5 game management (4 tools)
+  - Clean separation of concerns and dependencies
 
 ### Changed
 
@@ -54,6 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Show active sessions count
   - Clarify transport capabilities
 
+- 🏗️ **Architecture Improvements**
+  - Unified format for all tools and resources
+  - Modular design with clear boundaries
+  - Scaffolding script for rapid feature development
+
 ### Fixed
 
 - ✅ **Multi-Client Initialize Support**
@@ -66,194 +84,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Progress notifications silently fail (graceful degradation)
   - All features work correctly without SSE streaming
 
-### Technical Details
-
-**Files Changed**:
-- `src/core/auth/deviceFlow.ts` - Added `AuthProgressCallback` interface and `startAutoAuthorization()`
-- `src/core/utils/logger.ts` - Added `logClientConnection()` and `logClientDisconnection()`
-- `src/server.ts` - Multi-client session management and smart auth strategy
-
-**Commits**:
-- e1e89eb: Multi-client concurrency + connection logging
-- f9f6652: SSE mode smart auto-authorization
-- b7d371e: Transport mode differentiation (sse vs http)
-- e5796f0: HTTP JSON mode auth strategy fix
-
 ### Migration Guide
 
-**For SSE Mode Users** (OpenHands, etc.):
+**For SSE Mode Users** (OpenHands, Claude Code, etc.):
 ```bash
-# Before: Two-step authorization
-TDS_MCP_TRANSPORT=sse npm start
-# Tool call → error + auth URL → user authorizes → call complete_oauth_authorization → retry
-
-# After: One-step auto-authorization
-TDS_MCP_TRANSPORT=sse npm start
+# One-step auto-authorization (new feature)
+TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 npm start
 # Tool call → auth URL + auto-wait → user authorizes → automatic completion
 ```
 
 **For HTTP JSON Mode Users**:
 ```bash
-# Use 'http' instead of 'sse' for JSON-only responses
-TDS_MCP_TRANSPORT=http npm start
-# Returns: Content-Type: application/json (not text/event-stream)
+# JSON-only responses
+TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 npm start
+# Returns: Content-Type: application/json
 ```
 
-**No Breaking Changes** - stdio mode and existing configurations continue to work.
+**For Local Development** (Claude Desktop, Cursor, VSCode):
+```bash
+# Default stdio mode (unchanged)
+npx @mikoto_zero/minigame-open-mcp
+```
 
-## [1.2.0-beta.12] - 2025-10-24
+**No Breaking Changes** - All existing configurations continue to work.
 
-### 🏗️ Major Architecture Refactoring - App Module Abstraction
+---
 
-**This is a significant architectural improvement separating application management from business features.**
+## Previous Versions
 
-### Added
-- 🎯 **App Module** - New independent application management module
-  - `features/app/` - Dedicated module for app operations
-  - 5 tools: `get_current_app_info`, `check_environment`, `complete_oauth_authorization`, `list_developers_and_apps`, `select_app`
-  - Reusable by all business features (leaderboard, future cloudSave, etc.)
-  - Clean separation of concerns
+### [1.1.4] - 2024-xx-xx
+- Tools-only stable version
+- 17 tools for TapTap Minigame
+- Basic OAuth support
 
-- ✨ **Unified Format** (v1.2.0-beta.11+)
-  - Tools/Resources use unified object array format
-  - `ToolRegistration[]` - definition + handler combined
-  - `ResourceRegistration[]` - uri + handler combined
-  - Eliminates manual sync issues
-
-- 📚 **Generic Documentation Helpers**
-  - `core/utils/docHelpers.ts` - Reusable doc generation utilities
-  - `generateAPIDoc()`, `generateOverview()`, `searchDocumentation()`
-  - Reduces code duplication across features
-
-### Changed
-- 📦 **Module Structure**
-  - `app`: 5 tools, 0 resources (foundation module)
-  - `leaderboard`: 5 tools, 7 resources (depends on app module)
-  - Clean dependency hierarchy: business → app → core
-
-- 📝 **Documentation Consolidation**
-  - Integrated architecture docs into CLAUDE.md
-  - Simplified CONTRIBUTING.md (393→277 lines, -30%)
-  - Deleted temporary architecture docs (docs/architecture/)
-  - Single source of truth for developers
-
-- 🔧 **Scaffolding Script Enhanced**
-  - `create-feature.sh` updated with `ensureAppInfo` examples
-  - Generates unified format code templates
-  - Better developer experience
-
-### Removed
-- 🗑️ **Deprecated Compatibility Layer**
-  - Deleted `core/handlers/appHandlers.ts` (compatibility layer)
-  - All app operations now through `features/app/` module
-  - No legacy code burden
-
-### Technical Details
-- **Code Impact**: Net -57 lines (cleaner architecture)
-  - New: `features/app/` (~430 lines)
-  - Removed: redundant code (~487 lines)
-- **Module Count**: 2 feature modules (app + leaderboard)
-- **Dependency Flow**: `leaderboard → app → core`
-
-### Migration
-- No breaking changes for end users
-- Developers: Import `ensureAppInfo` from `../app/api.js` (not `../leaderboard/api.js`)
-- New features can now reuse app module for common operations
-
-### Documentation
-- ✅ README.md - Updated architecture diagram
-- ✅ CLAUDE.md - Added design patterns and dev guide
-- ✅ CONTRIBUTING.md - Simplified to high-level guidance
-- ✅ Scaffolding script - Updated templates
-
-## [1.2.0-beta.10] - 2025-10-22
-
-### 🎯 Major Architecture Refactoring - Minimalist Design
-
-**Final Architecture**: 10 Tools + 7 Resources (Prompts removed)
-
-### Added
-- 🔐 **OAuth 2.0 Device Code Flow** - Zero-config authentication
-  - Lazy loading: Server starts immediately, auth triggered when needed
-  - Token saved to `~/.config/taptap-minigame/token.json`
-  - `complete_oauth_authorization` tool to complete auth flow
-  - Perfect for Cursor/Claude Code (no environment variables needed)
-
-- 📱 **New Tools for better UX**
-  - `get_integration_guide` - Complete workflow guide (replaces Prompt)
-  - `get_current_app_info` - Current app information with miniapp_id
-
-### Removed
-- 🗑️ **All Prompts** (AI doesn't auto-use them per MCP spec)
-- 🗑️ **search_leaderboard_docs Tool** (AI should read Resources instead)
-- 🗑️ **Redundant Resources**: patterns, quickstart, workflow, app-info
-
-### Changed
-- 📊 **Extreme Simplification**
-  - Tools: 17 → 10 (unified entry points)
-  - Resources: 11 → 7 (API docs only)
-  - Prompts: 2 → 0 (removed, AI doesn't use)
-
-- 🎯 **Clear Responsibilities**
-  - Tools: Entry points for AI (guides + operations)
-  - Resources: API documentation (reference material)
-
-- 🔧 **check_environment Enhancement**
-  - Now checks local token file
-  - Shows correct status even without env vars
-
-- 🌍 **miniapp_id Support**
-  - Cached and displayed in all relevant tools
-  - Used for building preview links
-
-### Fixed
-- ✅ **OAuth Non-Blocking** - Server starts in < 1 second
-- ✅ **VSCode Compatibility** - AI calls `get_integration_guide` Tool
-- ✅ **Claude Code Compatibility** - AI reads Resources
-- ✅ **API Documentation** - Aligned with source code
-- ✅ **NO SDK Emphasis** - Multiple reinforcements
-
-### Migration from beta.1-beta.9
-- Replace Prompt usage → Call `get_integration_guide` Tool
-- Replace Resource `guide://leaderboard/integration-workflow` → Call Tool
-- Replace Resource `app://current-app-info` → Call `get_current_app_info` Tool
-
-## [1.2.0] - 2025-10-15
-
-### ⚠️ BREAKING CHANGES
-- Based on v1.1.4 (includes all API fixes and Minigame & H5 support)
-- 🗑️ **Removed 9 deprecated documentation Tools** - Forces AI agents to use Resources and Prompts
-  - Removed: `start_leaderboard_integration` → Use Prompt `leaderboard-integration`
-  - Removed: `get_leaderboard_manager` → Use Resource `docs://leaderboard/api/get-manager`
-  - Removed: `open_leaderboard` → Use Resource `docs://leaderboard/api/open`
-  - Removed: `submit_scores` → Use Resource `docs://leaderboard/api/submit-scores`
-  - Removed: `load_leaderboard_scores` → Use Resource `docs://leaderboard/api/load-scores`
-  - Removed: `load_current_player_score` → Use Resource `docs://leaderboard/api/load-player-score`
-  - Removed: `load_player_centered_scores` → Use Resource `docs://leaderboard/api/load-centered-scores`
-  - Removed: `get_leaderboard_overview` → Use Resource `docs://leaderboard/overview`
-  - Removed: `get_leaderboard_patterns` → Use Resource `docs://leaderboard/patterns`
-
-### Changed
-- 📊 **New tool count: 8 tools** (down from 17)
-  - Kept only operational tools (create, list, publish, etc.)
-  - Kept `search_leaderboard_docs` (requires dynamic parameters)
-  - All documentation now exclusively through Resources (9 resources)
-  - All workflows now exclusively through Prompts (2 prompts)
-
-### Improved
-- 🚀 **Forces proper MCP architecture** - AI agents must use the right primitives
-  - Resources for read-only documentation
-  - Prompts for user-triggered workflows
-  - Tools only for operations with side effects
-- ⚡ **Better performance** - Resources are cacheable by MCP clients
-- 🎯 **Clearer separation of concerns** - Follows MCP design philosophy
-
-### Migration Guide
-If you were using the removed Tools, update to:
-- Documentation: Use `readResource("docs://leaderboard/api/...")`
-- Workflows: Use `getPrompt("leaderboard-integration")`
-- Operations: Continue using Tools like `create_leaderboard`
-
+_See git history for detailed changelog of earlier versions._
 ## [1.1.4] - 2025-10-15
 
 ### Note
