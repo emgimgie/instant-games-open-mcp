@@ -46,11 +46,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **核心特性：**
 - 🏆 **排行榜系统** - 完整的排行榜 API 文档和服务端管理
-- 🔐 **OAuth 2.0 Device Code Flow** - 零配置认证（扫码即用）
-- 🎯 **极简架构** - 10 Tools + 7 Resources
+- 🎮 **H5 游戏管理** - H5 游戏上传、发布、状态查询
+- 🔐 **OAuth 2.0 Device Code Flow** - 零配置认证（扫码即用，SSE 模式支持自动授权）
+- 🎯 **完整功能集** - 17 Tools + 7 Resources
 - 🌍 **双平台支持** - Minigame & H5 游戏
 - 🚀 **MCP 2025 标准** - Streamable HTTP + RFC 5424 Logging
-- 📡 **双传输协议** - stdio（本地）+ Streamable HTTP（远程）
+- 📡 **三种传输协议** - stdio（本地）+ SSE（远程/实时）+ HTTP JSON（兼容）
+- 🔌 **多客户端并发** - 独立会话管理，无限并发
 
 **未来计划：**
 - ☁️ 云存档系统
@@ -61,15 +63,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **NPM 包：** `@mikoto_zero/minigame-open-mcp`
 
-**版本说明：**
-- `latest` (v1.2.0): 模块化架构 + MCP 2025 标准
-  - 17 tools + 7 resources
-  - OAuth 2.0 Device Code Flow（SSE 模式支持自动授权）
-  - 三种传输协议（stdio + SSE Streaming + HTTP JSON）
-  - 多客户端并发支持（独立会话管理）
-  - MCP Logging 规范（RFC 5424）+ 连接日志
-  - MCP SDK 1.20.2
-- `beta` (v1.2.0-beta.23): 最新测试版本
+**当前版本：** v1.2.0
+
+**主要特性：**
+- 17 tools + 7 resources（应用管理 + 排行榜 + H5 游戏）
+- OAuth 2.0 Device Code Flow（SSE 模式支持自动授权）
+- 三种传输协议（stdio + SSE Streaming + HTTP JSON）
+- 多客户端并发支持（独立会话管理）
+- MCP Logging 规范（RFC 5424）+ 连接日志
+- MCP SDK 1.20.2
 
 ## 架构概览
 
@@ -184,7 +186,7 @@ MCP 服务器支持**三种传输模式**：
 npm run dev
 
 # 通过 npx 直接运行（推荐）
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 
 # 启用详细日志
 TDS_MCP_VERBOSE=true npm start
@@ -225,61 +227,28 @@ TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 npm start
 - 服务器根据 `TDS_MCP_TRANSPORT` 决定实际返回格式（JSON 或 SSE）
 - SSE 模式下支持智能自动授权，HTTP 模式保持两步式授权
 
-### 环境配置
+### 环境变量说明
 
-#### 必需的环境变量
+#### 认证相关（可选 - 推荐使用 OAuth）
 
-```bash
-# MAC Token（JSON 字符串格式）
-export TDS_MCP_MAC_TOKEN='{"kid":"your_kid","token_type":"mac","mac_key":"your_mac_key","mac_algorithm":"hmac-sha-1"}'
+- `TDS_MCP_MAC_TOKEN`: 用户 MAC Token（JSON 格式，可选）
+  - 不配置则使用 OAuth 2.0 Device Code Flow
+  - Token 自动保存到 `~/.config/taptap-minigame/token.json`
 
-# 客户端配置
-export TDS_MCP_CLIENT_ID="your_client_id"
-export TDS_MCP_CLIENT_TOKEN="your_client_secret"
+#### 客户端配置（可选 - 已内置默认值）
 
-# 启动服务器
-npm start
-```
+- `TDS_MCP_CLIENT_ID`: 客户端 ID（已内置，一般无需配置）
+- `TDS_MCP_CLIENT_TOKEN`: 请求签名密钥（**必需**，已内置默认值）
 
-#### OpenHands 集成配置示例
-```json
-{
-  "mcpServers": {
-    "taptap-minigame": {
-      "command": "npx",
-      "args": ["@mikoto_zero/minigame-open-mcp"],
-      "env": {
-        "TDS_MCP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
-        "TDS_MCP_CLIENT_ID": "your_client_id",
-        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
-        "TDS_MCP_ENV": "production",
-        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
-        "TDS_MCP_VERBOSE": "false"
-      }
-    }
-  }
-}
-```
+#### 环境和传输（可选）
 
-**开启调试模式：**
-```json
-{
-  "mcpServers": {
-    "taptap-minigame": {
-      "command": "npx",
-      "args": ["@mikoto_zero/minigame-open-mcp"],
-      "env": {
-        "TDS_MCP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
-        "TDS_MCP_CLIENT_ID": "your_client_id",
-        "TDS_MCP_CLIENT_TOKEN": "your_client_secret",
-        "TDS_MCP_ENV": "production",
-        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
-        "TDS_MCP_VERBOSE": "true"
-      }
-    }
-  }
-}
-```
+- `TDS_MCP_ENV`: 环境选择（默认 `production`）
+  - `production`: https://agent.tapapis.cn
+  - `rnd`: https://agent.api.xdrnd.cn
+- `TDS_MCP_PROJECT_PATH`: 项目路径，用于本地缓存
+- `TDS_MCP_VERBOSE`: 详细日志模式（`true` 或 `false`，默认 `false`）
+- `TDS_MCP_TRANSPORT`: 传输协议（`stdio` / `sse` / `http`，默认 `stdio`）
+- `TDS_MCP_PORT`: HTTP/SSE 模式端口（默认 `3000`）
 
 ### 测试和验证
 ```bash
@@ -340,7 +309,7 @@ node dist/server.js
 
 **注意**: 完全零安装，通过 npx 自动下载和运行！
 
-### 工具分类（10 Tools）
+### 工具分类（17 Tools）
 
 #### 🎯 流程指引工具（1个）
 - **`get_integration_guide`** ⭐ 完整接入工作流指引
@@ -576,42 +545,6 @@ HMAC-SHA256(method\nurl\nx-tap-headers\nbody\n, CLIENT_SECRET)
 - 通过 `/level/v1/list` API 自动获取
 - 避免重复输入参数
 
-### 添加新功能
-
-使用脚手架快速创建新功能模块：
-
-```bash
-# 1. 运行脚手架脚本
-./scripts/create-feature.sh
-
-# 2. 按提示输入信息
-# - Feature Key: cloud-save (kebab-case)
-# - Feature Name: 云存档 (中文描述)
-# - 是否需要 Resources: yes/no
-# - 是否需要 Prompts: yes/no
-
-# 3. 自动生成完整模块结构
-src/features/cloudSave/
-  ├── index.ts      # 模块定义
-  ├── tools.ts      # 统一格式的工具定义
-  ├── handlers.ts   # 业务逻辑（含示例代码）
-  └── api.ts        # API调用（含ensureAppInfo示例）
-
-# 4. 实现业务逻辑（参考TODO注释）
-
-# 5. 在 server.ts 注册模块
-import { cloudSaveModule } from './features/cloudSave/index.js';
-const allModules = [appModule, leaderboardModule, cloudSaveModule];
-
-# 6. 编译测试
-npm run build
-node dist/server.js
-```
-
-**关键点**：
-- 使用 `ensureAppInfo()` 获取 developer_id/app_id（从 `../app/api.js` 导入）
-- 工具采用统一格式：`ToolRegistration[]`（definition + handler）
-- 参考 leaderboard 模块的实现模式
 
 
 ## 发布和维护
