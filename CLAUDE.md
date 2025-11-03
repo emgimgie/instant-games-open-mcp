@@ -25,11 +25,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **版本说明：**
 - `latest` (v1.1.4): Tools-only 稳定版（17 tools）
-- `beta` (v1.2.0-beta.21): 模块化架构 + MCP 2025 标准
-  - 10 tools + 7 resources
-  - OAuth 2.0 Device Code Flow
-  - 双传输协议（stdio + Streamable HTTP）
-  - MCP Logging 规范（RFC 5424）
+- `beta` (v1.2.0-beta.23): 模块化架构 + MCP 2025 标准
+  - 17 tools + 7 resources
+  - OAuth 2.0 Device Code Flow（SSE 模式支持自动授权）
+  - 三种传输协议（stdio + SSE Streaming + HTTP JSON）
+  - 多客户端并发支持（独立会话管理）
+  - MCP Logging 规范（RFC 5424）+ 连接日志
   - MCP SDK 1.20.2
 
 ## 架构概览
@@ -128,47 +129,63 @@ npm install -g @mikoto_zero/minigame-open-mcp
 
 ### 启动服务器
 
-#### 传输协议选择
+#### 传输协议选择（v1.2.0-beta.23）
 
-MCP 服务器支持两种传输协议：
+MCP 服务器支持**三种传输模式**：
 
-1. **stdio 模式（默认）** - 适合本地集成、单客户端场景（如 Claude Desktop）
-2. **Streamable HTTP 模式** - 适合远程访问、多客户端并发场景（MCP 2025 标准）
+| 模式 | 适用场景 | 响应格式 | 授权方式 | 进度反馈 | 多客户端 |
+|------|---------|---------|---------|---------|---------|
+| **stdio** | 本地开发<br>Claude Desktop<br>Cursor | N/A | 两步式 | ❌ | N/A |
+| **sse** | 远程部署<br>OpenHands<br>支持 SSE 的客户端 | SSE 流 | **一步式自动** | ✅ 实时 | ✅ |
+| **http** | 普通 HTTP 客户端<br>不支持 SSE | JSON | 两步式 | ❌ | ✅ |
 
 ```bash
-# 开发模式启动（默认 stdio 模式）
+# ========== stdio 模式（默认，最大兼容性）==========
+
+# 开发模式启动
 npm run dev
 
-# 编译并启动（stdio 模式）
-npm run build
-npm start
+# 通过 npx 直接运行（推荐）
+npx @mikoto_zero/minigame-open-mcp@beta
 
-# 通过 npx 直接运行（推荐，stdio 模式）
-npx @mikoto_zero/minigame-open-mcp
-
-# 启用详细日志模式（用于调试）
+# 启用详细日志
 TDS_MCP_VERBOSE=true npm start
 
-# ========== SSE/HTTP 模式 ==========
+# ========== SSE 流式模式（推荐用于 OpenHands）==========
 
-# 使用 SSE/HTTP 传输协议（默认端口 3000）
-TDS_MCP_TRANSPORT=sse npm start
-
-# 或使用 http（与 sse 等价）
-TDS_MCP_TRANSPORT=http npm start
-
-# 使用自定义端口的 SSE 模式
-TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=8080 npm start
+# 基础启动（SSE 流式响应 + 自动授权）
+TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 npm start
 
 # SSE 模式 + 详细日志
 TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true npm start
+
+# 特性：
+# - ✅ 实时进度推送（压缩、上传、授权等）
+# - ✅ 一步式自动授权（无需手动调用 complete_oauth_authorization）
+# - ✅ 多客户端并发支持
+# - ✅ 客户端连接日志
+
+# ========== HTTP JSON 模式（兼容普通 HTTP 客户端）==========
+
+# JSON 单次响应模式
+TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 npm start
+
+# 特性：
+# - ✅ 返回 JSON 响应（Content-Type: application/json）
+# - ❌ 无实时进度（但功能完整）
+# - ✅ 两步式授权（避免长时间阻塞）
+# - ✅ 多客户端并发支持
 ```
 
 **Streamable HTTP 模式 Endpoints：**
 - MCP 请求：`GET/POST http://localhost:3000/` (统一 endpoint)
 - 健康检查：`GET http://localhost:3000/health`
+  - 返回活跃会话数、工具数、资源数等信息
 
-注：使用 MCP 2025 Streamable HTTP 标准，所有 MCP 请求通过统一的 `/` endpoint 处理。
+**重要说明**：
+- MCP SDK 要求客户端 Accept header 必须包含：`application/json, text/event-stream`
+- 服务器根据 `TDS_MCP_TRANSPORT` 决定实际返回格式（JSON 或 SSE）
+- SSE 模式下支持智能自动授权，HTTP 模式保持两步式授权
 
 ### 环境配置
 
@@ -398,10 +415,11 @@ export TDS_MCP_CLIENT_TOKEN="your_client_token"
   - rnd: `https://agent.api.xdrnd.cn`
 - `TDS_MCP_PROJECT_PATH`: 项目路径，用于本地缓存
 - `TDS_MCP_VERBOSE`: 详细日志模式（`true` 或 `1`）
-- `TDS_MCP_TRANSPORT`: 传输协议，`stdio`（默认）或 `sse`/`http`
-  - stdio: 标准输入输出，适合本地集成（如 Claude Desktop）
-  - sse/http: Server-Sent Events，适合远程访问和多客户端
-- `TDS_MCP_PORT`: SSE/HTTP 模式的监听端口（默认 `3000`）
+- `TDS_MCP_TRANSPORT`: 传输协议，`stdio`（默认）、`sse` 或 `http`
+  - `stdio`: 标准输入输出，适合本地集成（Claude Desktop、Cursor）
+  - `sse`: SSE 流式响应，支持实时进度和自动授权（推荐用于 OpenHands）
+  - `http`: JSON 单次响应，适合普通 HTTP 客户端（不支持 SSE）
+- `TDS_MCP_PORT`: HTTP/SSE 模式的监听端口（默认 `3000`）
 
 **环境检查**：
 使用 `check_environment` 工具检查认证状态（包括本地文件中的 token）。
@@ -688,10 +706,82 @@ npm publish --access public
 - tapcode-mcp-h5: `.taptap/craft.json`
 - 本项目: `.taptap-minigame/app.json`
 
+## v1.2.0-beta.23 新特性（2025-11-03）
+
+### 🚀 多客户端并发支持
+
+- **独立会话管理**：每个客户端拥有独立的 Server 和 Transport 实例
+- **Session ID 路由**：通过 `mcp-session-id` header 自动路由请求
+- **活跃会话跟踪**：`/health` endpoint 显示当前活跃会话数
+- **连接日志**：verbose 模式下记录客户端连接/断开事件
+
+```bash
+# 启用连接日志
+TDS_MCP_TRANSPORT=sse TDS_MCP_VERBOSE=true npm start
+```
+
+### 🔐 智能自动授权（SSE 模式专属）
+
+**SSE 模式下一步完成授权**：
+```
+用户调用工具 → 服务器返回授权链接 + 自动等待授权（最多 2 分钟）
+             → 用户扫码授权 → 服务器自动完成并继续执行工具
+```
+
+**实时进度推送**：
+- 授权链接 + 操作步骤
+- 每 10 秒更新等待时间
+- 授权成功/超时/错误通知
+
+**其他模式保持两步式授权**（向后兼容）。
+
+### 📡 三种传输模式
+
+| 模式 | 配置 | 响应格式 | 授权 | 进度 | 多客户端 | 推荐场景 |
+|------|------|---------|-----|------|---------|---------|
+| **stdio** | 默认 | N/A | 两步式 | ❌ | N/A | Claude Desktop<br>Cursor<br>本地开发 |
+| **sse** | `TDS_MCP_TRANSPORT=sse` | SSE 流 | **一步式** | ✅ 实时 | ✅ | **OpenHands**<br>远程部署 |
+| **http** | `TDS_MCP_TRANSPORT=http` | JSON | 两步式 | ❌ | ✅ | 普通 HTTP 客户端 |
+
+**关键差异**：
+- `sse` 模式：返回 `Content-Type: text/event-stream`，支持持久连接和实时推送
+- `http` 模式：返回 `Content-Type: application/json`，单次请求-响应
+
+### 💡 最佳实践
+
+```bash
+# ✅ 推荐：OpenHands 集成
+TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true npm start
+# → 一步式授权 + 实时进度 + 连接日志
+
+# ✅ 推荐：Claude Desktop / Cursor
+npx @mikoto_zero/minigame-open-mcp@beta
+# → 默认 stdio 模式，最大兼容性
+
+# ✅ 兼容：普通 HTTP 客户端
+TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 npm start
+# → JSON 响应，两步式授权
+```
+
+### ⚠️ 重要说明
+
+1. **Accept Header 要求**：
+   - MCP SDK 要求客户端必须声明：`Accept: application/json, text/event-stream`
+   - 服务器根据 `TDS_MCP_TRANSPORT` 决定实际返回格式
+
+2. **进度通知兼容性**：
+   - SSE 模式：所有进度通知实时推送（授权、上传、压缩等）
+   - HTTP/stdio 模式：进度通知静默失败，不影响功能
+   - 最终结果在所有模式下都正常返回
+
+3. **授权策略差异**：
+   - SSE 模式：自动授权，等待最多 2 分钟
+   - HTTP/stdio 模式：两步式授权，立即返回错误
+
 ## 注意事项
 
 - 所有工具描述使用英文，便于 AI Agent 理解
-- 环境变量名称使用 TAPTAP_ 前缀
+- 环境变量名称使用 TDS_MCP_ 前缀
 - MAC Token 必须是 JSON 字符串格式
 - 请求签名使用两层机制（MAC + X-Tap-Sign）
 - 默认环境为 production，可通过 TDS_MCP_ENV 切换

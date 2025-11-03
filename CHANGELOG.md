@@ -5,6 +5,102 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0-beta.23] - 2025-11-03
+
+### 🚀 Major Features - Multi-Client Concurrency & Smart Auto-Authorization
+
+**This release brings significant improvements for HTTP/SSE transport modes, including multi-client support and intelligent auto-authorization.**
+
+### Added
+
+- 🔌 **Multi-Client Concurrent Connections**
+  - Independent Server and Transport instances for each session
+  - Session ID-based request routing via `mcp-session-id` header
+  - Active session tracking in `/health` endpoint
+  - Support for unlimited concurrent clients
+
+- 📊 **Client Connection Logging**
+  - `logger.logClientConnection(sessionId)` - Log client connections
+  - `logger.logClientDisconnection(sessionId)` - Log client disconnections
+  - Verbose mode displays full connection events (session ID + timestamp)
+  - Dual output: stderr (local debugging) + MCP notification (client monitoring)
+
+- 🔐 **Smart Auto-Authorization (SSE Mode)**
+  - One-step authorization flow in SSE mode (vs two-step in stdio/http)
+  - Real-time progress updates every 10 seconds
+  - Progress types: auth_url, polling, success, timeout, error
+  - Clear operation instructions for AI agents
+  - Automatic polling with 2-minute timeout
+
+- 📡 **Transport Mode Differentiation**
+  - `TDS_MCP_TRANSPORT=sse` → SSE streaming (`Content-Type: text/event-stream`)
+  - `TDS_MCP_TRANSPORT=http` → JSON responses (`Content-Type: application/json`)
+  - `TDS_MCP_TRANSPORT=stdio` → stdio mode (default, maximum compatibility)
+
+### Changed
+
+- 🔧 **Request Handler Refactoring**
+  - `setupHandlers()` → `setupHandlersForServer(server)` (supports multiple instances)
+  - Each session has isolated handler configuration
+  - Prevents cross-session interference
+
+- 🎯 **Authorization Strategy by Transport**
+  - SSE mode: Auto-authorization with progress streaming
+  - HTTP/stdio modes: Two-step authorization (backward compatible)
+  - Smart mode selection based on `TDS_MCP_TRANSPORT`
+
+- 📝 **Startup Logging Enhancement**
+  - Display response mode (SSE Streaming / JSON Only)
+  - Show active sessions count
+  - Clarify transport capabilities
+
+### Fixed
+
+- ✅ **Multi-Client Initialize Support**
+  - Removed "Server already initialized" error
+  - Each client gets independent session
+  - No more 400 errors on repeated initialize
+
+- ✅ **HTTP JSON Mode Compatibility**
+  - Correctly uses two-step auth (avoids 2-min blocking without progress)
+  - Progress notifications silently fail (graceful degradation)
+  - All features work correctly without SSE streaming
+
+### Technical Details
+
+**Files Changed**:
+- `src/core/auth/deviceFlow.ts` - Added `AuthProgressCallback` interface and `startAutoAuthorization()`
+- `src/core/utils/logger.ts` - Added `logClientConnection()` and `logClientDisconnection()`
+- `src/server.ts` - Multi-client session management and smart auth strategy
+
+**Commits**:
+- e1e89eb: Multi-client concurrency + connection logging
+- f9f6652: SSE mode smart auto-authorization
+- b7d371e: Transport mode differentiation (sse vs http)
+- e5796f0: HTTP JSON mode auth strategy fix
+
+### Migration Guide
+
+**For SSE Mode Users** (OpenHands, etc.):
+```bash
+# Before: Two-step authorization
+TDS_MCP_TRANSPORT=sse npm start
+# Tool call → error + auth URL → user authorizes → call complete_oauth_authorization → retry
+
+# After: One-step auto-authorization
+TDS_MCP_TRANSPORT=sse npm start
+# Tool call → auth URL + auto-wait → user authorizes → automatic completion
+```
+
+**For HTTP JSON Mode Users**:
+```bash
+# Use 'http' instead of 'sse' for JSON-only responses
+TDS_MCP_TRANSPORT=http npm start
+# Returns: Content-Type: application/json (not text/event-stream)
+```
+
+**No Breaking Changes** - stdio mode and existing configurations continue to work.
+
 ## [1.2.0-beta.12] - 2025-10-24
 
 ### 🏗️ Major Architecture Refactoring - App Module Abstraction
