@@ -38,10 +38,18 @@
 
 ### 🎯 模块化架构
 
-- **10 个 Tools** - AI 的统一入口
+- **17 个 Tools** - 完整的工具集（应用管理 + 排行榜 + H5 游戏）
 - **7 个 Resources** - 详细 API 文档
 - **模块化设计** - 易于添加新功能（云存档、分享等）
-- **完全兼容** - Claude Code ✅、VSCode ✅、Cursor ✅
+- **完全兼容** - Claude Code ✅、VSCode ✅、Cursor ✅、OpenHands ✅
+
+### 🚀 v1.2.0-beta.23 新特性
+
+- **多客户端并发支持** - 无限客户端同时连接，独立会话管理
+- **智能自动授权（SSE 模式）** - 一步完成授权，无需手动调用 `complete_oauth_authorization`
+- **三种传输模式** - stdio（本地）、SSE（远程/实时）、HTTP JSON（兼容）
+- **客户端连接日志** - verbose 模式下完整记录连接事件
+- **实时进度推送** - SSE 模式下支持授权、上传、压缩等操作的实时进度
 
 ## 快速开始
 
@@ -79,12 +87,16 @@ npx @mikoto_zero/minigame-open-mcp@beta
 }
 ```
 
-**首次使用流程**：
+**首次使用流程（stdio 模式 - 默认）**：
 1. 服务器秒级启动
 2. 使用需要认证的功能时，会显示授权二维码链接
 3. 用 TapTap App 扫码授权
 4. 调用 `complete_oauth_authorization` 工具完成授权
 5. Token 自动保存，后续使用自动加载！
+
+**SSE 模式（OpenHands 等）**：
+- 步骤 2-4 自动完成，无需手动调用 `complete_oauth_authorization`
+- 实时显示授权进度（每 10 秒更新）
 
 **手动配置 Token**（可选）：
 
@@ -106,7 +118,33 @@ npx @mikoto_zero/minigame-open-mcp@beta
 }
 ```
 
-#### 在 OpenHands 中使用
+#### 在 OpenHands 中使用（推荐 SSE 模式）
+
+**方式 1：SSE 远程模式（推荐 - 支持自动授权和实时进度）**
+
+```bash
+# 1. 在服务器上启动 MCP 服务
+TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true \
+npx @mikoto_zero/minigame-open-mcp@beta
+
+# 2. OpenHands 配置
+{
+  "mcpServers": {
+    "taptap-minigame": {
+      "url": "http://your-server:3000",
+      "transport": "sse"
+    }
+  }
+}
+```
+
+**特性**：
+- ✅ 一步式自动授权（无需手动调用 `complete_oauth_authorization`）
+- ✅ 实时进度推送（授权、上传、压缩等）
+- ✅ 多客户端并发支持
+- ✅ 连接日志和监控
+
+**方式 2：stdio 本地模式（兼容模式）**
 
 ```json
 {
@@ -116,15 +154,37 @@ npx @mikoto_zero/minigame-open-mcp@beta
       "args": ["@mikoto_zero/minigame-open-mcp@beta"],
       "env": {
         "TDS_MCP_MAC_TOKEN": "${CURRENT_USER_MAC_TOKEN}",
-        "TDS_MCP_CLIENT_ID": "your_client_id",
-        "TDS_MCP_CLIENT_TOKEN": "your_client_token",
         "TDS_MCP_ENV": "production",
-        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}",
-        "TDS_MCP_VERBOSE": "false"
+        "TDS_MCP_PROJECT_PATH": "${CURRENT_PROJECT_PATH}"
       }
     }
   }
 }
+```
+
+### 传输模式
+
+服务器支持三种传输模式：
+
+| 模式 | 配置 | 授权方式 | 进度反馈 | 适用场景 |
+|------|------|---------|---------|---------|
+| **stdio** | 默认 | 两步式 | ❌ | Claude Desktop、Cursor、本地单客户端 |
+| **sse** | `TDS_MCP_TRANSPORT=sse` | **一步式自动** | ✅ 实时 | **OpenHands**、Claude Code、远程/多客户端 |
+| **http** | `TDS_MCP_TRANSPORT=http` | 两步式 | ❌ | 普通 HTTP 客户端 |
+
+**启动示例**：
+
+```bash
+# SSE 模式（推荐用于 OpenHands）
+TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true \
+npx @mikoto_zero/minigame-open-mcp@beta
+
+# HTTP JSON 模式
+TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 \
+npx @mikoto_zero/minigame-open-mcp@beta
+
+# stdio 模式（默认）
+npx @mikoto_zero/minigame-open-mcp@beta
 ```
 
 ### 环境变量
@@ -132,6 +192,8 @@ npx @mikoto_zero/minigame-open-mcp@beta
 **OAuth 认证（推荐 - 零配置）：**
 - ✅ 无需配置环境变量！
 - Token 自动保存到 `~/.config/taptap-minigame/token.json`
+- **SSE 模式**：自动授权，实时进度推送
+- **stdio/http 模式**：两步式授权
 
 **手动配置（可选）：**
 - `TDS_MCP_MAC_TOKEN` - MAC Token JSON 格式（可选，不设置则使用 OAuth）

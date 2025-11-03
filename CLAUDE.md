@@ -2,6 +2,44 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## 全局工作指引
+
+**重要：Claude Code 在此项目中的工作规范**
+
+### 📝 文档更新规则
+
+- **自动更新文档**：当有重要代码改动时（新特性、架构变更、API 修改），必须同时更新：
+  - `CLAUDE.md` - 开发指南和技术文档
+  - `README.md` - 用户文档和使用说明
+  - `CHANGELOG.md` - 版本变更记录
+  - **不需要每次都问用户是否更新文档，主动更新即可**
+
+### 💾 Git 提交规则
+
+- **默认提交代码**：完成代码改动后，**自动创建 git commit**
+  - 使用清晰的 commit message（遵循 Conventional Commits）
+  - 除非用户明确说"不要提交"，否则默认提交
+  - 多个相关改动可以合并为一个 commit
+  - **不需要每次都问用户是否提交，主动提交即可**
+
+- **Commit Message 格式**：
+  - `feat:` - 新功能
+  - `fix:` - Bug 修复
+  - `docs:` - 文档更新
+  - `refactor:` - 代码重构
+  - `chore:` - 构建/工具/配置更新
+
+### 🎯 工作流程
+
+```
+代码改动 → 自动更新文档 → 自动 git commit → 告知用户完成
+```
+
+**例外情况**：
+- 用户明确说"不要提交" → 不自动 commit
+- 用户明确说"不要更新文档" → 不更新文档
+- 临时测试/实验性改动 → 询问用户是否提交
+
 ## 项目概述
 
 这是一个基于 Model Context Protocol (MCP) 的 TapTap Open API MCP 服务器。项目为 **TapTap Minigame 和 H5 游戏**提供完整的排行榜 API 文档和服务端管理功能。
@@ -682,8 +720,9 @@ npm publish --access public
 ```
 
 ### 版本管理
-- 当前版本：1.0.1
+- 当前版本：1.2.0-beta.23
 - 遵循语义化版本（Semantic Versioning）
+- Beta 版本用于新特性测试和验证
 - 主要功能更新增加次版本号
 - Bug 修复增加补丁版本号
 
