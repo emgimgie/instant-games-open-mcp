@@ -7,6 +7,8 @@
  */
 
 import type { ToolRegistration } from '../../core/types/index.js';
+import type { PrivateToolParams } from '../../core/types/privateParams.js';
+import { getEffectiveContext } from '../../core/utils/handlerHelpers.js';
 import { TOOL_DESCRIPTION } from './messages.js';
 import {
   handleGatherGameInfo,
