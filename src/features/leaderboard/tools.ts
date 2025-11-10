@@ -5,7 +5,6 @@
 
 import type { ToolRegistration, HandlerContext } from '../../core/types/index.js';
 import type { PrivateToolParams } from '../../core/types/privateParams.js';
-import { getEffectiveContext } from '../../core/utils/handlerHelpers.js';
 
 // Import from this module
 import * as leaderboardHandlers from './handlers.js';
@@ -84,7 +83,7 @@ export const leaderboardTools: ToolRegistration[] = [
       display_limit?: number;
       period_time?: string;
     } & PrivateToolParams, context) => {
-      return leaderboardHandlers.createLeaderboard(args, getEffectiveContext(args, context));
+      return leaderboardHandlers.createLeaderboard(args, context);
     }
   },
 
@@ -108,7 +107,7 @@ export const leaderboardTools: ToolRegistration[] = [
       }
     },
     handler: async (args: { page?: number; page_size?: number } & PrivateToolParams, context) => {
-      return leaderboardHandlers.listLeaderboards(args, getEffectiveContext(args, context));
+      return leaderboardHandlers.listLeaderboards(args, context);
     }
   },
 
@@ -133,7 +132,7 @@ export const leaderboardTools: ToolRegistration[] = [
       }
     },
     handler: async (args: { id: number; publish: boolean } & PrivateToolParams, context) => {
-      return leaderboardHandlers.publishLeaderboard(args, getEffectiveContext(args, context));
+      return leaderboardHandlers.publishLeaderboard(args, context);
     }
   },
 
@@ -157,7 +156,7 @@ export const leaderboardTools: ToolRegistration[] = [
       }
     },
     handler: async (args: { leaderboardId?: string; limit?: number } & PrivateToolParams, context) => {
-      return leaderboardHandlers.getUserLeaderboardScores(args, getEffectiveContext(args, context));
+      return leaderboardHandlers.getUserLeaderboardScores(args, context);
     }
   }
 ];

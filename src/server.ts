@@ -30,6 +30,7 @@ import { DeviceFlowAuth } from './core/auth/deviceFlow.js';
 import { VERSION } from './version.js';
 import type { MacToken } from './core/types/index.js';
 import { mergePrivateParams } from './core/types/privateParams.js';
+import { getEffectiveContext } from './core/utils/handlerHelpers.js';
 
 // 导入功能模块
 import { appModule } from './features/app/index.js';
@@ -192,8 +193,11 @@ class TapTapMinigameMCPServer {
           }
         }
 
-        // Call handler (使用 enrichedArgs，包含可能从 header 注入的 token)
-        const result = await toolReg.handler(enrichedArgs, this.context);
+        // 统一在 Server 层处理 effectiveContext（合并私有参数到 context）
+        const effectiveContext = getEffectiveContext(enrichedArgs, this.context);
+
+        // Call handler（业务层不需要感知私有参数）
+        const result = await toolReg.handler(enrichedArgs, effectiveContext);
 
         // Log tool call output
         await logger.logToolResponse(name, result, true);

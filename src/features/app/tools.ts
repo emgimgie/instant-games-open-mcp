@@ -5,7 +5,6 @@
 
 import type { ToolRegistration, HandlerContext } from '../../core/types/index.js';
 import type { PrivateToolParams } from '../../core/types/privateParams.js';
-import { getEffectiveContext } from '../../core/utils/handlerHelpers.js';
 import * as appHandlers from './handlers.js';
 import * as appApi from './api.js';
 import { leaderboardTools as leaderboardDocTools } from '../leaderboard/docTools.js';
@@ -74,7 +73,7 @@ export const appTools: ToolRegistration[] = [
     },
     handler: async (args: PrivateToolParams, context) => {
       // Private parameter: _mac_token can be injected by MCP Proxy
-      return appHandlers.listDevelopersAndApps(getEffectiveContext(args, context));
+      return appHandlers.listDevelopersAndApps(context);
     },
     requiresAuth: true
   },
@@ -101,7 +100,7 @@ export const appTools: ToolRegistration[] = [
     },
     handler: async (args: { developer_id: number; app_id: number } & PrivateToolParams, context) => {
       // Private parameter: _mac_token can be injected by MCP Proxy
-      return appHandlers.selectApp(args, getEffectiveContext(args, context));
+      return appHandlers.selectApp(args, context);
     },
     requiresAuth: true
   },
