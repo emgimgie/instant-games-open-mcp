@@ -113,7 +113,6 @@ export interface RequestOptions {
   body?: unknown;
   params?: Record<string, string>;
   timeout?: number;
-  macToken?: MacToken;  // 可选：覆盖全局 MAC Token
 }
 
 /**
@@ -134,11 +133,22 @@ export class HttpClient {
   private overrideMacToken?: MacToken;
 
   /**
-   * @param macToken - Optional MAC Token to override global config
+   * @param contextOrToken - HandlerContext or MacToken (for backward compatibility)
    */
-  constructor(macToken?: MacToken) {
+  constructor(contextOrToken?: import('../types/index.js').HandlerContext | MacToken) {
     this.config = ApiConfig.getInstance();
-    this.overrideMacToken = macToken;
+
+    // 支持两种参数类型（向后兼容）
+    if (contextOrToken) {
+      // 检查是否是 HandlerContext（有 macToken 字段）
+      if ('macToken' in contextOrToken) {
+        const context = contextOrToken as import('../types/index.js').HandlerContext;
+        this.overrideMacToken = context.macToken;
+      } else {
+        // 直接传递 MacToken（向后兼容）
+        this.overrideMacToken = contextOrToken as MacToken;
+      }
+    }
   }
 
   /**
@@ -203,8 +213,8 @@ export class HttpClient {
       }
     }
 
-    // MAC Token 优先级：options.macToken > constructor macToken > global config
-    const effectiveMacToken = options.macToken || this.overrideMacToken || this.config.macToken;
+    // MAC Token 优先级：constructor macToken > global config
+    const effectiveMacToken = this.overrideMacToken || this.config.macToken;
 
     // Generate MAC Authorization header
     const authorization = this.generateMacAuthorization(fullUrl, method, effectiveMacToken);
