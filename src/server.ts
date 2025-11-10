@@ -54,28 +54,6 @@ const allModules: FeatureModule[] = [
 ];
 
 /**
- * 请求作用域存储 - 用于在 HTTP Handler 和 MCP Handler 之间传递数据
- * 使用 AsyncLocalStorage 模式的简化版本
- */
-class RequestStorage {
-  private storage = new Map<string, MacToken>();
-
-  set(key: string, token: MacToken): void {
-    this.storage.set(key, token);
-  }
-
-  get(key: string): MacToken | undefined {
-    return this.storage.get(key);
-  }
-
-  delete(key: string): void {
-    this.storage.delete(key);
-  }
-}
-
-const requestStorage = new RequestStorage();
-
-/**
  * TapTap 小游戏 MCP 服务器
  */
 class TapTapMinigameMCPServer {
@@ -133,21 +111,34 @@ class TapTapMinigameMCPServer {
     }));
 
     // 设置工具调用处理器 - 自动从模块路由
-    server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const { name, arguments: args } = request.params;
 
       // 私有参数支持两种方式：
       // 1. MCP Proxy 在 arguments 中注入（args._mac_token）
-      // 2. HTTP Header 注入（仅 HTTP/SSE 模式）
+      // 2. HTTP Header 注入（仅 HTTP/SSE 模式，从 extra.requestInfo.headers 读取）
       let enrichedArgs = args || {};
 
-      // 尝试从请求存储中获取 HTTP Header 注入的 token
-      const sessionKey = (server as any)._currentSessionKey;
-      if (sessionKey) {
-        const headerToken = requestStorage.get(sessionKey);
-        if (headerToken && !enrichedArgs._mac_token) {
-          // 仅在 args 中没有 _mac_token 时才使用 header 的
-          enrichedArgs = mergePrivateParams(enrichedArgs, { _mac_token: headerToken });
+      // 从 HTTP Header 提取 MAC Token（如果存在且 args 中没有）
+      if (extra?.requestInfo?.headers && !enrichedArgs._mac_token) {
+        const headers = extra.requestInfo.headers;
+        const macTokenHeader = headers['x-taptap-mac-token'];
+
+        if (macTokenHeader && typeof macTokenHeader === 'string') {
+          try {
+            // 支持 Base64 编码或直接 JSON
+            let token: MacToken;
+            try {
+              const decoded = Buffer.from(macTokenHeader, 'base64').toString('utf-8');
+              token = JSON.parse(decoded);
+            } catch {
+              token = JSON.parse(macTokenHeader);
+            }
+            enrichedArgs = mergePrivateParams(enrichedArgs, { _mac_token: token });
+          } catch (error) {
+            // 忽略无效的 token header
+            await logger.warning('Invalid X-TapTap-Mac-Token header', { error: String(error) });
+          }
         }
       }
 
@@ -403,40 +394,11 @@ class TapTapMinigameMCPServer {
       // Get session ID from header (if exists)
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
-      // 提取 HTTP Header 中的 MAC Token（如果存在）
-      const macTokenHeader = req.headers['x-taptap-mac-token'] as string | undefined;
-      if (macTokenHeader && sessionId) {
-        try {
-          // 支持 Base64 编码或直接 JSON
-          let token: MacToken;
-          try {
-            const decoded = Buffer.from(macTokenHeader, 'base64').toString('utf-8');
-            token = JSON.parse(decoded);
-          } catch {
-            token = JSON.parse(macTokenHeader);
-          }
-
-          // 存储到请求作用域
-          requestStorage.set(sessionId, token);
-        } catch (error) {
-          // 忽略无效的 token header
-          await logger.warning('Invalid X-TapTap-Mac-Token header', { error: String(error) });
-        }
-      }
-
       // Check if this is a request for an existing session
       if (sessionId && transports.has(sessionId)) {
         // Use existing transport for this session
-        const { server: sessionServer, transport } = transports.get(sessionId)!;
-
-        // 设置当前会话 key（供 CallToolRequestSchema handler 使用）
-        (sessionServer as any)._currentSessionKey = sessionId;
-
+        const { transport } = transports.get(sessionId)!;
         await transport.handleRequest(req, res);
-
-        // 清理会话 key
-        delete (sessionServer as any)._currentSessionKey;
-
         return;
       }
 
@@ -485,19 +447,8 @@ class TapTapMinigameMCPServer {
       // Connect transport to the new server
       await sessionServer.connect(sessionTransport);
 
-      // 为新会话设置当前会话 key
-      const newSessionId = sessionTransport.sessionId;
-      if (newSessionId) {
-        (sessionServer as any)._currentSessionKey = newSessionId;
-      }
-
       // Handle the request
       await sessionTransport.handleRequest(req, res);
-
-      // 清理会话 key
-      if (newSessionId) {
-        delete (sessionServer as any)._currentSessionKey;
-      }
     });
 
     httpServer.listen(TDS_MCP_PORT, () => {
