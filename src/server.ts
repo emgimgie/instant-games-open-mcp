@@ -29,7 +29,7 @@ import { logger } from './core/utils/logger.js';
 import { DeviceFlowAuth } from './core/auth/deviceFlow.js';
 import { VERSION } from './version.js';
 import type { MacToken } from './core/types/index.js';
-import { mergePrivateParams } from './core/types/privateParams.js';
+import { mergePrivateParams, stripPrivateParams } from './core/types/privateParams.js';
 import { getEffectiveContext } from './core/utils/handlerHelpers.js';
 
 // 导入功能模块
@@ -196,8 +196,11 @@ class TapTapMinigameMCPServer {
         // 统一在 Server 层处理 effectiveContext（合并私有参数到 context）
         const effectiveContext = getEffectiveContext(enrichedArgs, this.context);
 
-        // Call handler（业务层不需要感知私有参数）
-        const result = await toolReg.handler(enrichedArgs, effectiveContext);
+        // 从 args 中移除私有参数（业务层完全不感知）
+        const businessArgs = stripPrivateParams(enrichedArgs);
+
+        // Call handler（传递干净的业务参数 + 包含 macToken 的 context）
+        const result = await toolReg.handler(businessArgs, effectiveContext);
 
         // Log tool call output
         await logger.logToolResponse(name, result, true);

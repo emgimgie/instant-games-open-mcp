@@ -4,7 +4,6 @@
  */
 
 import type { ToolRegistration, HandlerContext } from '../../core/types/index.js';
-import type { PrivateToolParams } from '../../core/types/privateParams.js';
 import * as appHandlers from './handlers.js';
 import * as appApi from './api.js';
 import { leaderboardTools as leaderboardDocTools } from '../leaderboard/docTools.js';
@@ -71,8 +70,8 @@ export const appTools: ToolRegistration[] = [
         properties: {}
       }
     },
-    handler: async (args: PrivateToolParams, context) => {
-      // Private parameter: _mac_token can be injected by MCP Proxy
+    handler: async (_args, context) => {
+      // Note: Private parameters are handled at Server layer
       return appHandlers.listDevelopersAndApps(context);
     },
     requiresAuth: true
@@ -98,7 +97,7 @@ export const appTools: ToolRegistration[] = [
         required: ['developer_id', 'app_id']
       }
     },
-    handler: async (args: { developer_id: number; app_id: number } & PrivateToolParams, context) => {
+    handler: async (args: { developer_id: number; app_id: number }, context) => {
       // Private parameter: _mac_token can be injected by MCP Proxy
       return appHandlers.selectApp(args, context);
     },
@@ -115,10 +114,9 @@ export const appTools: ToolRegistration[] = [
         properties: {}
       }
     },
-    handler: async (args: PrivateToolParams, context) => {
-      // Private parameter: _mac_token can be injected by MCP Proxy
-      // Note: createDeveloper API doesn't use context, so no need to pass effectiveContext
-      const result = await appApi.createDeveloper();
+    handler: async (_args, context) => {
+      // Note: Private parameters are handled at Server layer
+      const result = await appApi.createDeveloper(context);
       return `✅ 创建开发者身份成功！\n\n` +
              `📋 开发者信息：\n` +
              `- 名称: ${result.developer_name}\n` +
@@ -144,7 +142,7 @@ export const appTools: ToolRegistration[] = [
         required: ['app_id']
       }
     },
-    handler: async (args: { app_id: number } & PrivateToolParams, context) => {
+    handler: async (args: { app_id: number }, context) => {
       // Private parameter: _mac_token can be injected by MCP Proxy
       // Note: getAppStatus API doesn't use context, so no need to pass effectiveContext
       const result = await appApi.getAppStatus(args.app_id);
