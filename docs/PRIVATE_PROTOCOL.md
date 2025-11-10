@@ -214,18 +214,22 @@ const context = {};
 - 默认 `additionalProperties` 为 `true`，允许额外参数通过
 - AI Agent 看到的工具定义不包含私有参数
 
-### 3. TypeScript 类型安全
+### 3. Server 层统一处理
 
 ```typescript
-import type { PrivateToolParams } from '../../core/types/privateParams.js';
+// Server 层（唯一处理私有参数的地方）
+server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
+  const { arguments: args } = request.params;
 
-// Handler 类型定义
-handler: async (
-  args: { page: number } & PrivateToolParams,  // TypeScript 知道私有参数存在
-  context
-) => {
-  // args._mac_token 可以安全访问
-}
+  // 1. 提取私有参数（从 arguments 或 HTTP Header）
+  const effectiveContext = getEffectiveContext(enrichedArgs, baseContext);
+
+  // 2. 移除私有参数
+  const businessArgs = stripPrivateParams(enrichedArgs);
+
+  // 3. 调用业务层（完全干净）
+  await toolReg.handler(businessArgs, effectiveContext);
+});
 ```
 
 ## 📚 实现示例
@@ -245,15 +249,11 @@ handler: async (
       }
     }
   },
-  handler: async (
-    args: { page: number } & PrivateToolParams,
-    context
-  ) => {
-    // 使用 getEffectiveContext 自动处理优先级
-    return leaderboardHandlers.listLeaderboards(
-      args,
-      getEffectiveContext(args, context)
-    );
+  handler: async (args: { page?: number }, context) => {
+    // Server 层已经处理了私有参数
+    // 这里的 args 只包含业务参数
+    // context.macToken 已经包含了正确的 Token
+    return leaderboardHandlers.listLeaderboards(args, context);
   }
 }
 ```
@@ -425,17 +425,18 @@ curl -X POST http://localhost:3000/ \
 
 **排查步骤：**
 1. 检查参数格式是否正确（必须包含 `kid`, `mac_key` 等字段）
-2. 检查 TypeScript 类型定义是否包含 `& PrivateToolParams`
-3. 检查 handler 是否使用 `getEffectiveContext(args, context)`
+2. 确认 Proxy 正确注入了 `_mac_token` 到 `arguments` 中
+3. 检查 Server 层的 `getEffectiveContext` 调用是否正常
+4. 查看 verbose 日志确认 Token 传递链路
 
 ### 问题 2：日志中显示敏感信息
 
 **症状：** 日志中看到完整的 `_mac_token`
 
 **排查步骤：**
-1. 确认使用的是 `logger.logToolCall()` 而不是 `console.log()`
-2. 检查 `stripPrivateParams()` 是否正确导入
-3. 验证 `logToolCall` 调用顺序（应在 `mergePrivateParams` 之后）
+1. 确认 TapTap MCP Server 版本 >= 1.3.0（自动脱敏功能）
+2. 检查是否启用了 verbose 日志（`TDS_MCP_VERBOSE=true`）
+3. 如果是自己实现的日志，确保调用了 `stripPrivateParams()`
 
 ### 问题 3：Proxy 注入参数格式错误
 
@@ -468,9 +469,9 @@ curl -X POST http://localhost:3000/ \
 
 如果需要添加新的私有参数：
 
-1. 在 `PrivateToolParams` 接口中添加类型定义
-2. 更新 `extractPrivateParams()` 和 `stripPrivateParams()` 函数
-3. 在 `server.ts` 的 `extractPrivateParamsFromHeaders()` 中添加 header 支持
+1. 在 `PrivateToolParams` 接口中添加类型定义（src/core/types/privateParams.ts）
+2. 更新 `stripPrivateParams()` 函数以过滤新参数
+3. 在 `server.ts` 的 `CallToolRequestSchema` handler 中添加 HTTP Header 提取逻辑（如果需要）
 4. 更新本文档
 
 ## ⚠️ 重要提醒

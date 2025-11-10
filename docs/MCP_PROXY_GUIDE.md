@@ -86,9 +86,9 @@ class MCPProxy {
 }
 ```
 
-### 3. 工具定义过滤
+### 3. 工具列表透传
 
-隐藏私有参数，让 AI Agent 看到的工具定义保持简洁：
+直接透传 TapTap MCP Server 的工具定义（已经不包含私有参数）：
 
 ```typescript
 async listTools() {
@@ -97,18 +97,16 @@ async listTools() {
     method: 'tools/list'
   });
 
-  // 移除私有参数（可选，因为 TapTap Server 已经不声明了）
-  return {
-    tools: result.tools.map(tool => this.stripPrivateParams(tool))
-  };
-}
-
-private stripPrivateParams(tool: Tool): Tool {
-  // 如果需要额外处理，可以在这里实现
-  // 但 TapTap Server 的工具定义已经不包含私有参数
-  return tool;
+  // TapTap Server 的工具定义中不声明私有参数
+  // Proxy 只需直接透传，无需任何处理
+  return result;
 }
 ```
+
+**重要说明：**
+- ✅ TapTap MCP Server v1.3.0 的工具定义中**不包含**私有参数
+- ✅ AI Agent 看到的是干净的业务参数
+- ✅ Proxy 只需负责在调用时注入 `_mac_token`
 
 ## 实现示例
 
