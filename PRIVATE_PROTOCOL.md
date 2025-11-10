@@ -77,7 +77,7 @@ Call B (Proxy → Server):
 
 ## 💉 注入方式
 
-### 直接参数注入（唯一方式）
+### 方式 1：直接参数注入（推荐）
 
 MCP Proxy 直接在 `arguments` 中注入私有参数：
 
@@ -102,22 +102,68 @@ MCP Proxy 直接在 `arguments` 中注入私有参数：
 }
 ```
 
+### 方式 2：HTTP Header 注入（仅 HTTP/SSE 模式）
+
+在 HTTP/SSE 传输模式下，可以通过 HTTP Headers 注入 MAC Token：
+
+```http
+POST / HTTP/1.1
+Host: localhost:3000
+Content-Type: application/json
+Mcp-Session-Id: abc123xyz
+X-TapTap-Mac-Token: eyJraWQiOiJhYmMxMjMiLCJtYWNfa2V5Ijoic2VjcmV0In0=
+
+{
+  "jsonrpc": "2.0",
+  "method": "tools/call",
+  "params": {
+    "name": "list_leaderboards",
+    "arguments": {
+      "page": 1
+    }
+  }
+}
+```
+
+**Header 格式说明：**
+
+- `Mcp-Session-Id`: MCP 会话 ID（必需）
+- `X-TapTap-Mac-Token`: Base64 编码的 MAC Token JSON（也支持直接传 JSON 字符串）
+
+**Base64 编码示例：**
+
+```bash
+# 原始 MAC Token
+{
+  "kid": "abc123",
+  "mac_key": "secret",
+  "token_type": "mac",
+  "mac_algorithm": "hmac-sha-1"
+}
+
+# Base64 编码
+echo -n '{"kid":"abc123","mac_key":"secret","token_type":"mac","mac_algorithm":"hmac-sha-1"}' | base64
+# 输出: eyJraWQiOiJhYmMxMjMiLCJtYWNfa2V5Ijoic2VjcmV0IiwidG9rZW5fdHlwZSI6Im1hYyIsIm1hY19hbGdvcml0aG0iOiJobWFjLXNoYTEifQ==
+```
+
 **重要说明：**
 
-- 私有参数必须在 `arguments` 对象中传递
-- MCP 协议不支持从 HTTP Header 提取自定义参数（`extra` 参数没有 `req.headers`）
-- 这是 MCP Server 和 MCP Proxy 之间的**私有约定**
+- **优先级**：`arguments._mac_token` > HTTP Header > context/global token
+- **仅 HTTP/SSE 模式**：stdio 模式不支持 HTTP Header 注入
+- **会话绑定**：Header 中的 token 绑定到 `Mcp-Session-Id`，整个会话期间有效
 
 ## 🔐 认证优先级
 
 当存在多个 MAC Token 来源时，按以下优先级选择：
 
 ```
-1. arguments._mac_token  (最高优先级，来自 Proxy 注入)
+1. arguments._mac_token       (最高优先级，来自 Proxy 参数注入)
    ↓
-2. context.macToken      (来自环境变量或 OAuth)
+2. HTTP Header (X-TapTap-Mac-Token)  (仅 HTTP/SSE 模式)
    ↓
-3. global ApiConfig      (全局配置)
+3. context.macToken           (来自环境变量或 OAuth)
+   ↓
+4. global ApiConfig           (全局配置)
 ```
 
 **示例：**
@@ -250,7 +296,7 @@ class MCPProxy {
 
 ## 🧪 测试验证
 
-### 测试：直接参数注入
+### 测试 1：直接参数注入（推荐）
 
 ```bash
 # 启动服务器（SSE 模式）
@@ -283,11 +329,93 @@ curl -X POST http://localhost:3000/ \
   }'
 ```
 
+### 测试 2：HTTP Header 注入（仅 HTTP/SSE 模式）
+
+```bash
+# 启动服务器
+export TDS_MCP_TRANSPORT=sse
+export TDS_MCP_PORT=3000
+export TDS_MCP_VERBOSE=true
+npm start
+
+# Base64 编码 MAC Token
+TOKEN=$(echo -n '{"kid":"test_kid","mac_key":"test_key","token_type":"mac","mac_algorithm":"hmac-sha-1"}' | base64)
+
+# 测试：第一次请求（初始化会话，获取 session-id）
+RESPONSE=$(curl -X POST http://localhost:3000/ \
+  -H "Content-Type: application/json" \
+  -H "X-TapTap-Mac-Token: $TOKEN" \
+  -D /tmp/headers.txt \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 1,
+    "method": "initialize",
+    "params": {
+      "protocolVersion": "2025-03-26",
+      "capabilities": {},
+      "clientInfo": {
+        "name": "test-client",
+        "version": "1.0.0"
+      }
+    }
+  }')
+
+# 从响应 header 提取 session-id
+SESSION_ID=$(grep -i "mcp-session-id" /tmp/headers.txt | cut -d: -f2 | tr -d ' \r\n')
+
+# 测试：后续请求（使用 session-id）
+curl -X POST http://localhost:3000/ \
+  -H "Content-Type: application/json" \
+  -H "Mcp-Session-Id: $SESSION_ID" \
+  -H "X-TapTap-Mac-Token: $TOKEN" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 2,
+    "method": "tools/call",
+    "params": {
+      "name": "list_leaderboards",
+      "arguments": {
+        "page": 1
+      }
+    }
+  }'
+```
+
+### 测试 3：验证优先级
+
+```bash
+# 测试：arguments 中的 token 优先于 header
+curl -X POST http://localhost:3000/ \
+  -H "Content-Type: application/json" \
+  -H "Mcp-Session-Id: $SESSION_ID" \
+  -H "X-TapTap-Mac-Token: $TOKEN_FROM_HEADER" \
+  -d '{
+    "jsonrpc": "2.0",
+    "id": 3,
+    "method": "tools/call",
+    "params": {
+      "name": "list_leaderboards",
+      "arguments": {
+        "page": 1,
+        "_mac_token": {
+          "kid": "from_arguments",
+          "mac_key": "xxx",
+          "token_type": "mac",
+          "mac_algorithm": "hmac-sha-1"
+        }
+      }
+    }
+  }'
+# 应该使用 "from_arguments" 这个 token
+```
+
 **验证要点：**
 
 1. ✅ 工具调用成功（使用了注入的 `_mac_token`）
 2. ✅ 日志中不显示私有参数（`_mac_token`, `_user_id`, `_session_id` 被自动移除）
 3. ✅ Handler 能够访问 `args._mac_token`（通过 `getEffectiveContext`）
+4. ✅ HTTP Header 方式在 arguments 中没有 `_mac_token` 时生效
+5. ✅ 优先级正确：arguments > header > context > global
 
 ## 🔧 故障排查
 
@@ -317,6 +445,17 @@ curl -X POST http://localhost:3000/ \
 1. 确认私有参数在 `arguments` 对象的顶层（不是嵌套对象）
 2. 验证 `_mac_token` 包含所有必需字段（`kid`, `mac_key`, `token_type`, `mac_algorithm`）
 3. 检查参数名称前缀是否正确（必须是 `_` 下划线开头）
+
+### 问题 4：HTTP Header 注入不生效
+
+**症状：** 通过 `X-TapTap-Mac-Token` header 注入的 token 未被使用
+
+**排查步骤：**
+1. 确认使用的是 HTTP/SSE 模式（`TDS_MCP_TRANSPORT=sse` 或 `http`）
+2. 检查是否提供了 `Mcp-Session-Id` header（HTTP Header 注入需要 session ID）
+3. 验证 Base64 编码是否正确，或直接传 JSON 字符串
+4. 检查 CORS 配置是否允许 `X-TapTap-Mac-Token` header
+5. 确认 `arguments` 中没有 `_mac_token`（header 的优先级较低）
 
 ## 📖 相关文档
 

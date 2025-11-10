@@ -28,6 +28,8 @@ import { ApiConfig } from './core/network/httpClient.js';
 import { logger } from './core/utils/logger.js';
 import { DeviceFlowAuth } from './core/auth/deviceFlow.js';
 import { VERSION } from './version.js';
+import type { MacToken } from './core/types/index.js';
+import { mergePrivateParams } from './core/types/privateParams.js';
 
 // 导入功能模块
 import { appModule } from './features/app/index.js';
@@ -49,6 +51,28 @@ const allModules: FeatureModule[] = [
   h5GameModule      // H5 Game management (upload, publish, status)
   // Future: cloudSaveModule, shareModule, etc.
 ];
+
+/**
+ * 请求作用域存储 - 用于在 HTTP Handler 和 MCP Handler 之间传递数据
+ * 使用 AsyncLocalStorage 模式的简化版本
+ */
+class RequestStorage {
+  private storage = new Map<string, MacToken>();
+
+  set(key: string, token: MacToken): void {
+    this.storage.set(key, token);
+  }
+
+  get(key: string): MacToken | undefined {
+    return this.storage.get(key);
+  }
+
+  delete(key: string): void {
+    this.storage.delete(key);
+  }
+}
+
+const requestStorage = new RequestStorage();
 
 /**
  * TapTap 小游戏 MCP 服务器
@@ -111,11 +135,23 @@ class TapTapMinigameMCPServer {
     server.setRequestHandler(CallToolRequestSchema, async (request) => {
       const { name, arguments: args } = request.params;
 
-      // Note: 私有参数已经在 args 中（由 MCP Proxy 注入）
-      // 不需要额外处理，直接使用 args
+      // 私有参数支持两种方式：
+      // 1. MCP Proxy 在 arguments 中注入（args._mac_token）
+      // 2. HTTP Header 注入（仅 HTTP/SSE 模式）
+      let enrichedArgs = args || {};
+
+      // 尝试从请求存储中获取 HTTP Header 注入的 token
+      const sessionKey = (server as any)._currentSessionKey;
+      if (sessionKey) {
+        const headerToken = requestStorage.get(sessionKey);
+        if (headerToken && !enrichedArgs._mac_token) {
+          // 仅在 args 中没有 _mac_token 时才使用 header 的
+          enrichedArgs = mergePrivateParams(enrichedArgs, { _mac_token: headerToken });
+        }
+      }
 
       // Log tool call input (私有参数会被自动过滤)
-      await logger.logToolCall(name, args || {});
+      await logger.logToolCall(name, enrichedArgs);
 
       try {
         // Special handling for complete_oauth_authorization (needs deviceAuth access)
@@ -156,8 +192,8 @@ class TapTapMinigameMCPServer {
           }
         }
 
-        // Call handler (私有参数已经在 args 中)
-        const result = await toolReg.handler(args || {}, this.context);
+        // Call handler (使用 enrichedArgs，包含可能从 header 注入的 token)
+        const result = await toolReg.handler(enrichedArgs, this.context);
 
         // Log tool call output
         await logger.logToolResponse(name, result, true);
@@ -335,7 +371,7 @@ class TapTapMinigameMCPServer {
       // CORS headers
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Mcp-Session-Id');
+      res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Mcp-Session-Id, X-TapTap-Mac-Token');
 
       if (req.method === 'OPTIONS') {
         res.writeHead(200);
@@ -360,11 +396,40 @@ class TapTapMinigameMCPServer {
       // Get session ID from header (if exists)
       const sessionId = req.headers['mcp-session-id'] as string | undefined;
 
+      // 提取 HTTP Header 中的 MAC Token（如果存在）
+      const macTokenHeader = req.headers['x-taptap-mac-token'] as string | undefined;
+      if (macTokenHeader && sessionId) {
+        try {
+          // 支持 Base64 编码或直接 JSON
+          let token: MacToken;
+          try {
+            const decoded = Buffer.from(macTokenHeader, 'base64').toString('utf-8');
+            token = JSON.parse(decoded);
+          } catch {
+            token = JSON.parse(macTokenHeader);
+          }
+
+          // 存储到请求作用域
+          requestStorage.set(sessionId, token);
+        } catch (error) {
+          // 忽略无效的 token header
+          await logger.warning('Invalid X-TapTap-Mac-Token header', { error: String(error) });
+        }
+      }
+
       // Check if this is a request for an existing session
       if (sessionId && transports.has(sessionId)) {
         // Use existing transport for this session
-        const { transport } = transports.get(sessionId)!;
+        const { server: sessionServer, transport } = transports.get(sessionId)!;
+
+        // 设置当前会话 key（供 CallToolRequestSchema handler 使用）
+        (sessionServer as any)._currentSessionKey = sessionId;
+
         await transport.handleRequest(req, res);
+
+        // 清理会话 key
+        delete (sessionServer as any)._currentSessionKey;
+
         return;
       }
 
@@ -413,8 +478,19 @@ class TapTapMinigameMCPServer {
       // Connect transport to the new server
       await sessionServer.connect(sessionTransport);
 
+      // 为新会话设置当前会话 key
+      const newSessionId = sessionTransport.sessionId;
+      if (newSessionId) {
+        (sessionServer as any)._currentSessionKey = newSessionId;
+      }
+
       // Handle the request
       await sessionTransport.handleRequest(req, res);
+
+      // 清理会话 key
+      if (newSessionId) {
+        delete (sessionServer as any)._currentSessionKey;
+      }
     });
 
     httpServer.listen(TDS_MCP_PORT, () => {
