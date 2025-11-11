@@ -59,6 +59,49 @@ export interface PrivateToolParams {
    * @example "session_abc123xyz"
    */
   _session_id?: string;
+
+  // === 应用上下文层（v1.4.0 规划）===
+
+  /**
+   * Developer ID (应用开发者 ID)
+   * 优先级：_developer_id > context.developerId > cache
+   * @example 89058
+   */
+  _developer_id?: number;
+
+  /**
+   * App ID (应用 ID)
+   * 优先级：_app_id > context.appId > cache
+   * @example 204334
+   */
+  _app_id?: number;
+
+  /**
+   * Project Path (项目路径)
+   * 用于 H5 上传等需要访问文件系统的场景
+   * @example "/workspace/runtime-container-1/project-a"
+   */
+  _project_path?: string;
+
+  // === 追踪层（扩展）===
+
+  /**
+   * Tenant ID for multi-tenant scenarios
+   * @example "tenant_abc"
+   */
+  _tenant_id?: string;
+
+  /**
+   * Trace ID for distributed tracing
+   * @example "trace_xyz789"
+   */
+  _trace_id?: string;
+
+  /**
+   * Request ID for logging
+   * @example "req_12345"
+   */
+  _request_id?: string;
 }
 
 /**
