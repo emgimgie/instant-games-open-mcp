@@ -43,24 +43,30 @@
 - **模块化设计** - 易于添加新功能（云存档、分享等）
 - **完全兼容** - Claude Code ✅、VSCode ✅、Cursor ✅、OpenHands ✅
 
-### 🚀 v1.4.0 新特性 - 无状态架构
+### 🚀 v1.4.0 新特性 - Context Resolver & 多租户隔离
 
-- **ContextResolver 系统** - 集中式上下文解析（[详细文档](docs/STATELESS_ARCHITECTURE.md)）
+- **ContextResolver 系统** - 集中式上下文解析（[详细文档](docs/MCP_PROXY_GUIDE.md)）
   - 统一的 `contextResolver.resolve()` 替代分散的 `ensureAppInfo()` 调用
   - 优先级机制：私有参数 > 上下文 > 缓存
-  - 无异步 API 调用 - 纯内存/缓存查询
-  - 完全无状态设计，支持真正的多租户部署
+  - 纯内存/缓存查询，避免重复 API 调用
+  - 支持多租户隔离部署
 
-- **扩展私有参数协议** - 新增应用上下文和追踪字段
-  - `_developer_id`, `_app_id` - 应用上下文注入
-  - `_project_path` - H5 上传文件系统访问
-  - `_tenant_id`, `_trace_id`, `_request_id` - 多租户和追踪支持
+- **多租户隔离** - 通过 `_project_path` 实现租户隔离
+  - 每个租户独立的工作空间路径
+  - 缓存文件隔离：`{projectPath}/.taptap-minigame/`
+  - MCP Proxy 注入租户上下文
+  - 支持 RuntimeContainer 架构
+
+- **扩展私有参数** - 新增应用上下文和追踪字段
+  - `_developer_id`, `_app_id`: 应用上下文注入
+  - `_project_path`: 租户隔离的关键
+  - `_tenant_id`, `_trace_id`, `_request_id`: 追踪支持
 
 - **架构优化**
-  - 消除 `app` ↔ `leaderboard` 循环依赖
-  - 统一所有 `HandlerContext` 接口定义（移除重复）
-  - API 层清理：所有函数使用统一的 context 解析
-  - 更清晰的错误提示和操作指引
+  - 消除模块间循环依赖
+  - 统一所有 `HandlerContext` 接口定义
+  - 更清晰的错误提示（不暴露私有参数给 AI）
+  - API 层使用统一的 ContextResolver
 
 ### 🚀 v1.3.0 特性 - 私有参数协议
 

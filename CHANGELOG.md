@@ -7,9 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.0] - 2025-11-11
 
-### 🚀 Major Release - Stateless Architecture & Context Resolver
+### 🚀 Major Release - Context Resolver & Multi-Tenant Support
 
-**This release implements a comprehensive stateless architecture refactor, enabling true multi-tenant deployment with complete context isolation.**
+**This release implements ContextResolver system and enhances multi-tenant support with proper tenant isolation through projectPath.**
 
 ### Added
 
@@ -28,9 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `_request_id`: Request-level logging
 
 - 📖 **Documentation**
-  - `docs/STATELESS_ARCHITECTURE.md` - Complete architecture design document
-  - Multi-tenant container deployment guide
-  - Context resolution flow diagrams
+  - Updated `docs/MCP_PROXY_GUIDE.md` - Added multi-tenant isolation guide
+  - Explained tenant isolation through `_project_path`
+  - Clarified cache file separation per tenant
 
 ### Changed
 
@@ -62,14 +62,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 **Priority Resolution Flow:**
 ```
-Arguments (_developer_id) > Context (developerId) > Cache (developer_id)
+Private Params > HandlerContext > Local Cache
 ```
 
-**Stateless Design:**
-- ✅ No session state in server
-- ✅ All context from private params or cache
-- ✅ True multi-tenant support
-- ✅ Horizontal scaling ready
+**Multi-Tenant Isolation:**
+- ✅ Each tenant has isolated `projectPath`
+- ✅ Cache files stored in `{projectPath}/.taptap-minigame/`
+- ✅ MCP Proxy injects tenant-specific context
+- ✅ Supports RuntimeContainer architecture
 
 ### Migration Guide
 
