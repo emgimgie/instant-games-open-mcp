@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.2] - 2025-11-12
+
+### Fixed
+
+- 🐛 **Docker 部署架构修复**
+  - 修复 MCP Server 容器缺少 workspace 挂载导致无法读取用户代码
+  - docker-compose.yml 添加 `${WORKSPACE_ROOT}:/workspace:ro` 挂载
+  - 新增 WORKSPACE_ROOT 环境变量配置
+
+- 📊 **日志增强**
+  - 启动日志显示缓存和临时目录路径
+  - Tool call 日志分离显示业务参数和私有参数
+  - 私有参数自动脱敏（mac_key: ***REDACTED***）
+
 ## [1.4.1] - 2025-11-12
 
 ### 🚀 Major Update - MCP Proxy Production Ready
