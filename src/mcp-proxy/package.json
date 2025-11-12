@@ -1,0 +1,9 @@
+{
+  "name": "taptap-mcp-proxy",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "MCP Proxy for TapTap Minigame Platform",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4"
+  }
+}
