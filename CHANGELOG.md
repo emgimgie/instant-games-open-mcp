@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.4.1] - 2025-11-12
+
+### 🚀 Major Update - MCP Proxy Production Ready
+
+**This release brings production-ready MCP Proxy with critical bug fixes, architectural improvements, and TapCode platform integration.**
+
+### Added
+
+- 🎯 **MCP Proxy CLI 入口和 NPM 包支持**
+  - 新增 `bin/taptap-mcp-proxy` CLI 命令
+  - 支持全局安装：`npm install -g @mikoto_zero/minigame-open-mcp`
+  - package.json exports 支持多入口点
+  - 完整的 TapCode 集成文档（`docs/TAPCODE_INTEGRATION.md`）
 
 ### Changed
 
