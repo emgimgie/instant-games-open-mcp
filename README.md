@@ -43,7 +43,34 @@
 - **模块化设计** - 易于添加新功能（云存档、分享等）
 - **完全兼容** - Claude Code ✅、VSCode ✅、Cursor ✅、OpenHands ✅
 
-### 🚀 v1.3.0 新特性
+### 🚀 v1.4.0 新特性 - Context Resolver & 多租户隔离
+
+- **ContextResolver 系统** - 集中式上下文解析（[详细文档](docs/MCP_PROXY_GUIDE.md)）
+  - 统一的 `contextResolver.resolve()` 替代分散的 `ensureAppInfo()` 调用
+  - 优先级机制：私有参数 > 上下文 > 缓存
+  - 纯内存/缓存查询，避免重复 API 调用
+  - 支持多租户隔离部署
+
+- **多租户隔离** - 通过 `_project_path` 实现租户隔离（[v1.4.1+ 架构优化](docs/ARCHITECTURE.md)）
+  - 每个租户独立的工作空间路径
+  - **缓存目录独立**：`/tmp/taptap-mcp/cache/{userId}/{projectId}/`
+  - **临时目录独立**：`/tmp/taptap-mcp/temp/{userId}/{projectId}/`
+  - **支持只读 workspace**：缓存和临时文件不写入用户代码目录
+  - MCP Proxy 注入租户上下文
+  - 支持 RuntimeContainer 架构
+
+- **扩展私有参数** - 新增应用上下文和追踪字段
+  - `_developer_id`, `_app_id`: 应用上下文注入
+  - `_project_path`: 租户隔离的关键
+  - `_tenant_id`, `_trace_id`, `_request_id`: 追踪支持
+
+- **架构优化**
+  - 消除模块间循环依赖
+  - 统一所有 `HandlerContext` 接口定义
+  - 更清晰的错误提示（不暴露私有参数给 AI）
+  - API 层使用统一的 ContextResolver
+
+### 🚀 v1.3.0 特性 - 私有参数协议
 
 - **私有参数协议** - 支持 MCP Proxy 模式多账号认证（[详细文档](docs/PRIVATE_PROTOCOL.md)）
   - 对 AI Agent 完全透明（Tool Definition 不声明私有参数）
@@ -51,6 +78,7 @@
   - 四层认证优先级：自动选择最合适的 Token
   - 业务层完全隔离：不感知私有参数
   - [MCP Proxy 开发指引](docs/MCP_PROXY_GUIDE.md) - 完整的 Proxy 实现指南
+
 - **多客户端并发支持** - 无限客户端同时连接，独立会话管理
 - **智能自动授权（SSE 模式）** - 一步完成授权，无需手动调用 `complete_oauth_authorization`
 - **三种传输模式** - stdio（本地）、SSE（远程/实时）、HTTP JSON（兼容）
@@ -59,7 +87,7 @@
 
 ## 快速开始
 
-### 安装
+### 本地安装
 
 ```bash
 npm install -g @mikoto_zero/minigame-open-mcp
@@ -68,8 +96,28 @@ npm install -g @mikoto_zero/minigame-open-mcp
 或使用 npx 直接运行（无需安装）：
 
 ```bash
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 ```
+
+### Docker 部署（推荐用于 TapCode 平台）
+
+**快速启动**：
+```bash
+# 1. 配置环境变量
+cp .env.docker .env
+# 编辑 .env，填入 CLIENT_ID 和 CLIENT_TOKEN
+
+# 2. 启动服务
+./scripts/docker-start.sh
+
+# 或使用 docker-compose
+docker-compose up -d
+
+# 3. 验证服务
+curl http://localhost:5003/health
+```
+
+**TapCode 平台集成**：详见 [Docker 部署文档](docs/DOCKER_DEPLOYMENT.md) 和 [TapCode 集成指南](docs/TAPCODE_INTEGRATION.md)
 
 ### 配置
 
@@ -84,7 +132,7 @@ npx @mikoto_zero/minigame-open-mcp@beta
   "mcpServers": {
     "taptap-minigame": {
       "command": "npx",
-      "args": ["-y", "@mikoto_zero/minigame-open-mcp@beta"],
+      "args": ["-y", "@mikoto_zero/minigame-open-mcp"],
       "env": {
         "TDS_MCP_ENV": "production"
       }
@@ -113,7 +161,7 @@ npx @mikoto_zero/minigame-open-mcp@beta
   "mcpServers": {
     "taptap-minigame": {
       "command": "npx",
-      "args": ["@mikoto_zero/minigame-open-mcp@beta"],
+      "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
         "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
         "TDS_MCP_ENV": "production",
@@ -131,7 +179,7 @@ npx @mikoto_zero/minigame-open-mcp@beta
 ```bash
 # 1. 在服务器上启动 MCP 服务
 TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true \
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 
 # 2. OpenHands 配置
 {
@@ -183,14 +231,14 @@ npx @mikoto_zero/minigame-open-mcp@beta
 ```bash
 # SSE 模式（推荐用于 OpenHands）
 TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true \
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 
 # HTTP JSON 模式
 TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 \
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 
 # stdio 模式（默认）
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 ```
 
 ### 环境变量

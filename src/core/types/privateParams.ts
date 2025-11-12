@@ -59,6 +59,49 @@ export interface PrivateToolParams {
    * @example "session_abc123xyz"
    */
   _session_id?: string;
+
+  // === 应用上下文层（v1.4.0 规划）===
+
+  /**
+   * Developer ID (应用开发者 ID)
+   * 优先级：_developer_id > context.developerId > cache
+   * @example 89058
+   */
+  _developer_id?: number;
+
+  /**
+   * App ID (应用 ID)
+   * 优先级：_app_id > context.appId > cache
+   * @example 204334
+   */
+  _app_id?: number;
+
+  /**
+   * Project Path (项目路径)
+   * 用于 H5 上传等需要访问文件系统的场景
+   * @example "/workspace/runtime-container-1/project-a"
+   */
+  _project_path?: string;
+
+  // === 追踪层（扩展）===
+
+  /**
+   * Tenant ID for multi-tenant scenarios
+   * @example "tenant_abc"
+   */
+  _tenant_id?: string;
+
+  /**
+   * Trace ID for distributed tracing
+   * @example "trace_xyz789"
+   */
+  _trace_id?: string;
+
+  /**
+   * Request ID for logging
+   * @example "req_12345"
+   */
+  _request_id?: string;
 }
 
 /**
@@ -78,7 +121,13 @@ export function extractPrivateParams(args: any): PrivateToolParams {
   return {
     _mac_token: args?._mac_token,
     _user_id: args?._user_id,
-    _session_id: args?._session_id
+    _session_id: args?._session_id,
+    _developer_id: args?._developer_id,
+    _app_id: args?._app_id,
+    _project_path: args?._project_path,
+    _tenant_id: args?._tenant_id,
+    _trace_id: args?._trace_id,
+    _request_id: args?._request_id
   };
 }
 
@@ -102,7 +151,18 @@ export function stripPrivateParams(args: any): any {
     return args;
   }
 
-  const { _mac_token, _user_id, _session_id, ...businessParams } = args;
+  const {
+    _mac_token,
+    _user_id,
+    _session_id,
+    _developer_id,
+    _app_id,
+    _project_path,
+    _tenant_id,
+    _trace_id,
+    _request_id,
+    ...businessParams
+  } = args;
   return businessParams;
 }
 
@@ -123,7 +183,17 @@ export function hasPrivateParams(args: any): boolean {
     return false;
   }
 
-  return !!(args._mac_token || args._user_id || args._session_id);
+  return !!(
+    args._mac_token ||
+    args._user_id ||
+    args._session_id ||
+    args._developer_id ||
+    args._app_id ||
+    args._project_path ||
+    args._tenant_id ||
+    args._trace_id ||
+    args._request_id
+  );
 }
 
 /**
@@ -152,6 +222,24 @@ export function mergePrivateParams(args: any, privateParams: PrivateToolParams):
   }
   if (privateParams._session_id) {
     result._session_id = privateParams._session_id;
+  }
+  if (privateParams._developer_id !== undefined) {
+    result._developer_id = privateParams._developer_id;
+  }
+  if (privateParams._app_id !== undefined) {
+    result._app_id = privateParams._app_id;
+  }
+  if (privateParams._project_path) {
+    result._project_path = privateParams._project_path;
+  }
+  if (privateParams._tenant_id) {
+    result._tenant_id = privateParams._tenant_id;
+  }
+  if (privateParams._trace_id) {
+    result._trace_id = privateParams._trace_id;
+  }
+  if (privateParams._request_id) {
+    result._request_id = privateParams._request_id;
   }
 
   return result;

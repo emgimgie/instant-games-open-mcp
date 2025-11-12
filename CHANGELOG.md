@@ -5,6 +5,125 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.1] - 2025-11-12
+
+### 🚀 Major Update - MCP Proxy Production Ready
+
+**This release brings production-ready MCP Proxy with critical bug fixes, architectural improvements, and TapCode platform integration.**
+
+### Added
+
+- 🎯 **MCP Proxy CLI 入口和 NPM 包支持**
+  - 新增 `bin/taptap-mcp-proxy` CLI 命令
+  - 支持全局安装：`npm install -g @mikoto_zero/minigame-open-mcp`
+  - package.json exports 支持多入口点
+  - 完整的 TapCode 集成文档（`docs/TAPCODE_INTEGRATION.md`）
+
+### Changed
+
+- 🔄 **MCP Proxy 配置重构**
+  - **Breaking**: 移除环境变量配置方式，改用 JSON 配置
+  - 新的配置结构：`{ server, tenant, auth, options }`
+  - 支持 3 种传递方式：命令行参数 / stdin / 环境变量
+  - Token 内嵌在配置中（内存管理，不落盘）
+  - 删除 `tokenStore.ts`，简化代码结构
+  - 新增 `config.ts` 和 `config.example.json`
+
+### Fixed
+
+- 🐛 **MCP Proxy Bug Fixes**
+  - Fixed reconnection state management bug that prevented retry after failed reconnect
+  - Fixed connection state not being reset when `connect()` fails
+  - Fixed resource leak by adding cleanup for monitor timers on process exit
+  - Enhanced Token validation to check `mac_algorithm` field
+
+- 🔧 **架构修复：缓存和临时文件目录分离**
+  - Fixed `_project_path` now uses absolute path instead of relative path
+  - Separated cache directory from workspace (supports read-only workspace)
+  - Separated temp files directory for H5 game uploads
+  - Improved tenant isolation with dedicated cache/temp directories
+  - Environment variables: `TDS_MCP_CACHE_DIR`, `TDS_MCP_TEMP_DIR`
+
+## [1.4.0] - 2025-11-11
+
+### 🚀 Major Release - Context Resolver & Multi-Tenant Support
+
+**This release implements ContextResolver system and enhances multi-tenant support with proper tenant isolation through projectPath.**
+
+### Added
+
+- 🎯 **ContextResolver System**
+  - New `src/core/utils/contextResolver.ts` - Centralized context resolution
+  - Replaces scattered `ensureAppInfo()` calls with unified resolver
+  - Priority-based resolution: private params > context > cache
+  - Single source of truth for all context fields
+
+- 📋 **Extended Private Parameters** (v1.3.0+)
+  - `_developer_id`: Developer ID injection
+  - `_app_id`: App ID injection
+  - `_project_path`: Project path injection (for H5 upload)
+  - `_tenant_id`: Tenant ID for multi-tenant scenarios
+  - `_trace_id`: Distributed tracing support
+  - `_request_id`: Request-level logging
+
+- 📖 **Documentation**
+  - Updated `docs/MCP_PROXY_GUIDE.md` - Added multi-tenant isolation guide
+  - Explained tenant isolation through `_project_path`
+  - Clarified cache file separation per tenant
+
+### Changed
+
+- 🏗️ **Architecture Refactor**
+  - **API Layer**: All API functions use `ContextResolver` instead of `ensureAppInfo()`
+  - **Handler Layer**: Simplified context resolution logic
+  - **Type System**: Extended `HandlerContext` with new fields (developerId, appId, userId, tenantId, etc.)
+  - **Private Parameters**: All utility functions support extended field set
+
+- 🔧 **Core Components**
+  - `HandlerContext`: Added 8 new fields for complete context support
+  - `getEffectiveContext()`: Merges all private parameter types
+  - `stripPrivateParams()`: Handles all new private parameter fields
+  - Fixed duplicate `HandlerContext` definitions (consolidated to `core/types/`)
+
+- 📊 **Code Quality**
+  - Eliminated circular dependencies between `app` and `leaderboard` modules
+  - Removed async API calls from context resolution (lazy loading from cache)
+  - Cleaner error messages with actionable guidance
+
+### Removed
+
+- ❌ **Deprecated Patterns**
+  - Direct `ensureAppInfo()` calls in leaderboard module
+  - Inline `HandlerContext` interface definitions (consolidated)
+  - Unnecessary `context.macToken` parameter passing (use `context` directly)
+
+### Technical Details
+
+**Priority Resolution Flow:**
+```
+Private Params > HandlerContext > Local Cache
+```
+
+**Multi-Tenant Isolation:**
+- ✅ Each tenant has isolated `projectPath`
+- ✅ Cache files stored in `{projectPath}/.taptap-minigame/`
+- ✅ MCP Proxy injects tenant-specific context
+- ✅ Supports RuntimeContainer architecture
+
+### Migration Guide
+
+**Before (v1.3.0):**
+```typescript
+const appInfo = await ensureAppInfo(context.projectPath, true, context);
+const developerId = appInfo.developer_id;
+```
+
+**After (v1.4.0):**
+```typescript
+const resolved = contextResolver.resolve(context);
+const developerId = resolved.developerId;
+```
+
 ## [1.3.0] - 2025-11-10
 
 ### 🚀 Major Release - Private Parameter Protocol for MCP Proxy

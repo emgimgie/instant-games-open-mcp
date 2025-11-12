@@ -1,0 +1,32 @@
+#!/usr/bin/env node
+
+/**
+ * TapTap MCP Proxy
+ * Entry point for NPM executable
+ */
+
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+import { existsSync } from 'node:fs';
+
+// Get current file path and directory (ES Module equivalent of __dirname)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Get package root directory
+const packageRoot = join(__dirname, '..');
+
+// Check if compiled version exists
+const distPath = join(packageRoot, 'dist', 'mcp-proxy', 'index.js');
+
+if (existsSync(distPath)) {
+    // Use compiled version (ES Module dynamic import)
+    import(distPath).catch(error => {
+        console.error('❌ Failed to start MCP Proxy:', error);
+        process.exit(1);
+    });
+} else {
+    console.error('❌ MCP Proxy file not found. Please build the project first:');
+    console.error('   npm run build');
+    process.exit(1);
+}

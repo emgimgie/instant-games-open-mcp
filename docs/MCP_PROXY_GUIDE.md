@@ -49,18 +49,26 @@ interface MacToken {
 }
 ```
 
-### 2. 工具调用拦截
+### 2. 工具调用拦截与多租户隔离
 
-拦截 AI Agent 的工具调用，注入 MAC Token：
+拦截 AI Agent 的工具调用，注入 MAC Token 和租户上下文：
 
 ```typescript
 import { Client } from '@modelcontextprotocol/sdk/client/index.js';
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 
+interface TenantContext {
+  userId: string;
+  developerId: number;
+  appId: number;
+  projectPath: string;  // 租户工作空间路径
+}
+
 class MCPProxy {
   private mcpClient: Client;  // 连接到 TapTap MCP Server
   private mcpServer: Server;  // 暴露给 AI Agent
   private tokenStore: TokenStore;
+  private contextStore: Map<string, TenantContext>;
 
   async handleToolCall(request: any, userId: string) {
     const { name, arguments: args } = request.params;
@@ -68,10 +76,18 @@ class MCPProxy {
     // 从 Token Store 获取用户的 MAC Token
     const macToken = await this.tokenStore.getToken(userId);
 
-    // 方式1: 参数注入（推荐）
+    // 获取租户上下文（可从数据库或缓存读取）
+    const context = this.contextStore.get(userId);
+
+    // 注入私有参数（对 AI Agent 完全透明）
     const enrichedArgs = {
       ...args,
-      _mac_token: macToken
+      _mac_token: macToken,
+      _developer_id: context.developerId,
+      _app_id: context.appId,
+      _project_path: context.projectPath,  // 租户隔离的关键！
+      _user_id: userId,
+      _tenant_id: `tenant_${userId}`
     };
 
     // 转发到 TapTap MCP Server
@@ -85,6 +101,34 @@ class MCPProxy {
   }
 }
 ```
+
+**租户隔离机制：**
+
+TapTap MCP Server 通过 `_project_path` 实现租户隔离：
+
+```typescript
+// 每个租户有独立的工作空间和缓存
+RuntimeContainer-1:
+  workspace/project-a/              ← _project_path
+    ├── index.html
+    └── .taptap-minigame/
+        └── app.json                ← 租户1的缓存
+
+RuntimeContainer-2:
+  workspace/project-b/              ← _project_path
+    ├── index.html
+    └── .taptap-minigame/
+        └── app.json                ← 租户2的缓存
+```
+
+**私有参数优先级：**
+```
+参数注入 > HandlerContext > 本地缓存
+```
+
+- `_developer_id`, `_app_id`: 避免每次 API 查询
+- `_project_path`: 确保缓存文件隔离
+- `_mac_token`: 多账号认证
 
 ### 3. 工具列表透传
 

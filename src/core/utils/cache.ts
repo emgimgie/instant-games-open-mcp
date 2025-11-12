@@ -1,11 +1,21 @@
 /**
  * Local cache utilities for storing app configuration
- * Separate cache file from tapcode-mcp-h5 to avoid conflicts
+ *
+ * 架构设计：
+ * - workspace 目录：用户代码（只读挂载）
+ * - 缓存目录：独立于 workspace，可写（通过环境变量配置）
+ * - 租户隔离：通过 projectPath（租户标识符）隔离不同租户的缓存
  */
 
 import * as path from 'node:path';
 import * as fs from 'node:fs';
 import * as os from 'node:os';
+
+/**
+ * 缓存根目录（独立于 workspace）
+ * 优先级：环境变量 > 默认值
+ */
+const CACHE_ROOT = process.env.TDS_MCP_CACHE_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
 
 /**
  * Cached application information
@@ -21,17 +31,49 @@ export interface AppCacheInfo {
 
 /**
  * Get cache file path for minigame leaderboard
- * Uses different directory from tapcode-mcp-h5 to avoid conflicts
+ *
+ * 设计说明：
+ * - projectPath 现在是租户标识符（如 "/workspace/user-123/project-456" 或 "user-123/project-456"）
+ * - 缓存文件存储在独立的缓存目录，不在 workspace 中
+ * - 支持绝对路径和相对路径（自动提取租户部分）
+ *
+ * @param projectPath - 租户标识符（绝对路径或相对路径）
+ * @returns 缓存文件的绝对路径
+ *
+ * @example
+ * ```typescript
+ * // 绝对路径（Proxy 传入）
+ * getCachePath('/workspace/user-123/project-456')
+ * // => '/tmp/taptap-mcp/cache/user-123/project-456/app.json'
+ *
+ * // 相对路径（向后兼容）
+ * getCachePath('user-123/project-456')
+ * // => '/tmp/taptap-mcp/cache/user-123/project-456/app.json'
+ *
+ * // 全局缓存
+ * getCachePath()
+ * // => '/tmp/taptap-mcp/cache/global/app.json'
+ * ```
  */
 export function getCachePath(projectPath?: string): string {
   if (projectPath) {
-    // Project-specific cache
-    const normalizedPath = projectPath.endsWith('/') ? projectPath : projectPath + '/';
-    return path.join(normalizedPath, '.taptap-minigame', 'app.json');
+    // 提取租户标识符（去除 workspace 前缀）
+    let tenantId: string;
+
+    if (path.isAbsolute(projectPath)) {
+      // 绝对路径：提取最后两层（userId/projectId）
+      const parts = projectPath.split(path.sep).filter(Boolean);
+      tenantId = parts.slice(-2).join(path.sep);
+    } else {
+      // 相对路径：直接使用
+      tenantId = projectPath;
+    }
+
+    // 缓存路径：CACHE_ROOT/tenantId/app.json
+    return path.join(CACHE_ROOT, tenantId, 'app.json');
   } else {
-    // Global cache in user home directory
-    const home = os.homedir();
-    return path.join(home, '.config', 'taptap-minigame', 'app.json');
+    // 全局缓存
+    return path.join(CACHE_ROOT, 'global', 'app.json');
   }
 }
 
