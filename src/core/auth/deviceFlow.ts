@@ -76,8 +76,9 @@ export class DeviceFlowAuth {
   private config: HostConfig;
 
   constructor(environment: string = 'production') {
-    const home = os.homedir();
-    this.tokenPath = path.join(home, '.config', 'taptap-minigame', 'token.json');
+    // Use cache directory for token (persistent across container restarts)
+    const cacheDir = process.env.TDS_MCP_CACHE_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
+    this.tokenPath = path.join(cacheDir, 'global', 'oauth-token.json');
     this.config = ENV_CONFIGS[environment] || ENV_CONFIGS.production;
   }
 
