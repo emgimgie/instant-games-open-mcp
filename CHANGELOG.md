@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.3] - 2025-11-12
+
+### Added
+
+- 📚 **客户端配置文档**
+  - 新增 `docs/PROXY_CLIENT_CONFIG.md` - MCP Proxy 客户端配置指南
+  - VS Code、Claude Desktop、Cursor 配置示例
+  - 配置生成器和验证方法
+
+### Fixed
+
+- 📊 **启动日志增强**
+  - 显示 workspace 挂载状态（📁 Workspace: /workspace ✅）
+  - 帮助快速诊断 Docker 挂载配置问题
+
 ## [1.4.2] - 2025-11-12
 
 ### Fixed
