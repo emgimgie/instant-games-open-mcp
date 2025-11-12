@@ -160,9 +160,10 @@ const config = {
     env: "rnd"                     // rnd | production
   },
   tenant: {
-    user_id: "your-user-id",       // 你的用户 ID
-    project_id: "your-project-id", // 你的项目 ID
-    workspace_path: "/Users/you/workspace"  // 可选，默认 /workspace
+    user_id: "your-user-id",       // 你的用户 ID（用于标识租户）
+    project_id: "your-project-id", // 你的项目 ID（用于标识租户）
+    workspace_path: "/workspace",  // Docker 中的工作空间挂载点（默认 /workspace）
+    project_relative_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"  // 项目相对于 workspace 的路径（可选）
   },
   auth: {
     kid: "your_kid_here",          // 从 TapTap OAuth 获取
@@ -183,6 +184,55 @@ console.log(configString);
 ```
 
 **步骤 3：粘贴到配置文件的 `args` 数组**
+
+---
+
+## 路径配置说明
+
+### `_project_path` 计算逻辑
+
+Proxy 会自动计算 `_project_path` 并注入到请求中，供 MCP Server 使用（例如读取用户代码、压缩上传 H5 游戏等）。
+
+**计算规则：**
+
+1. **优先使用 `project_relative_path`**（推荐）：
+   ```javascript
+   // 配置
+   {
+     tenant: {
+       workspace_path: "/workspace",
+       project_relative_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"
+     }
+   }
+
+   // 结果
+   _project_path = "/workspace/Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"
+   ```
+
+2. **回退到 `userId/projectId`**（兼容旧配置）：
+   ```javascript
+   // 配置
+   {
+     tenant: {
+       workspace_path: "/workspace",
+       user_id: "mikoto",
+       project_id: "minigame_h5_demo"
+     }
+   }
+
+   // 结果
+   _project_path = "/workspace/mikoto/minigame_h5_demo"
+   ```
+
+**最佳实践：**
+
+- **在 Docker 部署时**：使用 `project_relative_path`
+  - workspace 挂载：`/Users/mikoto` → `/workspace`
+  - 项目路径：`/Users/mikoto/Documents/.../minigame_h5_demo`
+  - 配置：`project_relative_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"`
+
+- **在本地开发时**：可以省略 `project_relative_path`
+  - 使用默认的 `userId/projectId` 拼接即可
 
 ---
 

@@ -62,9 +62,9 @@ const allModules: FeatureModule[] = [
 class TapTapMinigameMCPServer {
   private server: Server;
   private context: HandlerContext;
-  private ensureAuth: () => Promise<void>;
+  private ensureAuth: (context?: HandlerContext) => Promise<void>;
 
-  constructor(ensureAuthFn: () => Promise<void>) {
+  constructor(ensureAuthFn: (context?: HandlerContext) => Promise<void>) {
     // Create server with explicit capabilities declaration (required in SDK 1.20+)
     this.server = new Server(
       {
@@ -169,10 +169,13 @@ class TapTapMinigameMCPServer {
           throw new McpError(ErrorCode.MethodNotFound, `未知工具: ${name}`);
         }
 
-        // Check if authentication is required
+        // 统一在 Server 层处理 effectiveContext（合并私有参数到 context）
+        const effectiveContext = getEffectiveContext(enrichedArgs, this.context);
+
+        // Check if authentication is required (pass effectiveContext to check request-level token)
         if (toolReg.requiresAuth) {
           try {
-            await this.ensureAuth();
+            await this.ensureAuth(effectiveContext);
           } catch (authError) {
             const errorMsg = authError instanceof Error ? authError.message : String(authError);
             throw new McpError(
@@ -186,9 +189,6 @@ class TapTapMinigameMCPServer {
             );
           }
         }
-
-        // 统一在 Server 层处理 effectiveContext（合并私有参数到 context）
-        const effectiveContext = getEffectiveContext(enrichedArgs, this.context);
 
         // 从 args 中移除私有参数（业务层完全不感知）
         const businessArgs = stripPrivateParams(enrichedArgs);
@@ -524,11 +524,19 @@ function setTransportMode(mode: 'stdio' | 'sse'): void {
  * Lazy load authentication when needed
  * - stdio mode: throw error with auth URL (two-step flow)
  * - SSE mode: auto-poll with progress notifications (one-step flow)
+ *
+ * @param context - Request-specific context (may contain injected MAC token from Proxy)
  */
-async function ensureAuthenticated(): Promise<void> {
+async function ensureAuthenticated(context?: HandlerContext): Promise<void> {
   const apiConfig = ApiConfig.getInstance();
 
-  // Already authenticated
+  // Priority 1: Check request-specific token (from Proxy injection)
+  if (context?.macToken?.kid && context?.macToken?.mac_key) {
+    // Request has its own token - no need to check global config
+    return;
+  }
+
+  // Priority 2: Check global config
   if (apiConfig.macToken.kid && apiConfig.macToken.mac_key) {
     return;
   }
