@@ -96,7 +96,7 @@ npm install -g @mikoto_zero/minigame-open-mcp
 或使用 npx 直接运行（无需安装）：
 
 ```bash
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 ```
 
 ### Docker 部署（推荐用于 TapCode 平台）
@@ -132,7 +132,7 @@ curl http://localhost:5003/health
   "mcpServers": {
     "taptap-minigame": {
       "command": "npx",
-      "args": ["-y", "@mikoto_zero/minigame-open-mcp@beta"],
+      "args": ["-y", "@mikoto_zero/minigame-open-mcp"],
       "env": {
         "TDS_MCP_ENV": "production"
       }
@@ -161,7 +161,7 @@ curl http://localhost:5003/health
   "mcpServers": {
     "taptap-minigame": {
       "command": "npx",
-      "args": ["@mikoto_zero/minigame-open-mcp@beta"],
+      "args": ["@mikoto_zero/minigame-open-mcp"],
       "env": {
         "TDS_MCP_MAC_TOKEN": "{\"kid\":\"your_kid\",\"token_type\":\"mac\",\"mac_key\":\"your_key\",\"mac_algorithm\":\"hmac-sha-1\"}",
         "TDS_MCP_ENV": "production",
@@ -179,7 +179,7 @@ curl http://localhost:5003/health
 ```bash
 # 1. 在服务器上启动 MCP 服务
 TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true \
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 
 # 2. OpenHands 配置
 {
@@ -231,14 +231,14 @@ npx @mikoto_zero/minigame-open-mcp@beta
 ```bash
 # SSE 模式（推荐用于 OpenHands）
 TDS_MCP_TRANSPORT=sse TDS_MCP_PORT=3000 TDS_MCP_VERBOSE=true \
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 
 # HTTP JSON 模式
 TDS_MCP_TRANSPORT=http TDS_MCP_PORT=3000 \
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 
 # stdio 模式（默认）
-npx @mikoto_zero/minigame-open-mcp@beta
+npx @mikoto_zero/minigame-open-mcp
 ```
 
 ### 环境变量
