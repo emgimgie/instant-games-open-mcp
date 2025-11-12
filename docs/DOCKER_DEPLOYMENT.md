@@ -9,7 +9,10 @@
 ```bash
 # 1. 配置环境变量
 cp .env.docker .env
-# 编辑 .env，填入你的 CLIENT_ID 和 CLIENT_TOKEN
+# 编辑 .env，填入：
+#   - WORKSPACE_ROOT（必需）- workspace 根目录路径
+#   - TDS_MCP_CLIENT_ID（必需）
+#   - TDS_MCP_CLIENT_TOKEN（必需）
 
 # 2. 启动服务
 ./scripts/docker-start.sh
@@ -17,6 +20,8 @@ cp .env.docker .env
 # 或手动启动
 docker-compose up -d
 ```
+
+**重要**：MCP Server 需要挂载 workspace 根目录（只读）以访问用户代码进行压缩上传。
 
 ### 方式 2：使用 Docker 命令
 
@@ -34,6 +39,7 @@ docker run -d \
   -e TDS_MCP_CLIENT_ID=your_client_id \
   -e TDS_MCP_CLIENT_TOKEN=your_client_token \
   -e TDS_MCP_VERBOSE=false \
+  -v /path/to/workspace:/workspace:ro \
   -v taptap-mcp-cache:/var/lib/taptap-mcp/cache \
   -v taptap-mcp-temp:/tmp/taptap-mcp/temp \
   taptap-mcp-server:1.4.1

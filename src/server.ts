@@ -22,6 +22,8 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import process from 'node:process';
 import http from 'node:http';
+import path from 'node:path';
+import os from 'node:os';
 
 // 导入核心模块
 import { ApiConfig } from './core/network/httpClient.js';
@@ -462,6 +464,8 @@ class TapTapMinigameMCPServer {
       process.stderr.write('🏆 Features: Leaderboard Documentation & Management API\n');
       process.stderr.write(`🌍 Environment: ${apiConfig.environment}\n`);
       process.stderr.write(`🔗 API Base: ${apiConfig.apiBaseUrl}\n`);
+      process.stderr.write(`📁 Cache Dir: ${process.env.TDS_MCP_CACHE_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'cache')}\n`);
+      process.stderr.write(`📂 Temp Dir: ${process.env.TDS_MCP_TEMP_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'temp')}\n`);
       process.stderr.write('\n📖 MCP Capabilities:\n');
       process.stderr.write(`   ✅ Tools (${totalTools}) - Execute operations with side effects\n`);
       process.stderr.write(`   ✅ Resources (${totalResources}) - Read-only documentation and data\n`);
