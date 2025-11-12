@@ -144,16 +144,38 @@ Token 文件应包含有效的 MAC Token JSON：
 Proxy 通过 `_project_path` 实现租户隔离：
 
 ```typescript
-// 计算规则
-const _project_path = `${userId}/${projectId}`;
+// 计算规则（绝对路径）
+const _project_path = path.join(workspacePath, userId, projectId);
 
 // 示例
+workspacePath = "/workspace"
 userId = "user-a"
 projectId = "project-1"
-_project_path = "user-a/project-1"
+_project_path = "/workspace/user-a/project-1"
 ```
 
-TapTap MCP Server 会将缓存文件保存到对应路径，确保不同租户的数据隔离。
+TapTap MCP Server 会：
+1. 提取租户标识符（`user-a/project-1`）
+2. 将缓存文件保存到独立的缓存目录（`/tmp/taptap-mcp/cache/user-a/project-1/`）
+3. 将临时文件保存到独立的临时目录（`/tmp/taptap-mcp/temp/user-a/project-1/`）
+
+**目录结构：**
+```
+/workspace/user-a/project-1/    ← 用户代码（只读挂载）
+  ├── src/
+  └── package.json
+
+/tmp/taptap-mcp/cache/user-a/project-1/  ← 缓存（可写）
+  └── app.json
+
+/tmp/taptap-mcp/temp/user-a/project-1/   ← 临时文件（可写）
+  └── game-123456789.zip
+```
+
+**优点：**
+- ✅ workspace 可以只读挂载
+- ✅ 缓存和临时文件完全隔离
+- ✅ 不同租户数据完全隔离
 
 ## 错误处理
 

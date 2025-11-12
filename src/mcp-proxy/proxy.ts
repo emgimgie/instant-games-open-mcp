@@ -10,6 +10,7 @@ import {
   ErrorCode,
   McpError,
 } from '@modelcontextprotocol/sdk/types.js';
+import * as path from 'node:path';
 import { FileTokenStore } from './tokenStore.js';
 import type { ProxyConfig, MacToken } from './types.js';
 
@@ -255,8 +256,12 @@ export class TapTapMCPProxy {
         );
       }
 
-      // 构建 _project_path: userId/projectId
-      const projectPath = `${this.config.userId}/${this.config.projectId}`;
+      // 构建 _project_path: 绝对路径（workspacePath/userId/projectId）
+      const projectPath = path.join(
+        this.config.workspacePath,
+        this.config.userId,
+        this.config.projectId
+      );
 
       // 注入私有参数
       const enrichedArgs = {

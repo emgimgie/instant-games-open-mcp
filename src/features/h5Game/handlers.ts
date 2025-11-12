@@ -7,6 +7,7 @@
 
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import * as os from 'node:os';
 import archiver from 'archiver';
 import { MESSAGES } from './messages.js';
 import { getH5PackageUploadParams, type UploadParams } from './api.js';
@@ -20,6 +21,44 @@ import {
 } from '../app/api.js';
 import { readAppCache, saveAppCache, type AppCacheInfo } from '../../core/utils/cache.js';
 import { logger } from '../../core/utils/logger.js';
+
+/**
+ * 临时文件根目录（独立于 workspace）
+ * 优先级：环境变量 > 默认值
+ */
+const TEMP_ROOT = process.env.TDS_MCP_TEMP_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'temp');
+
+/**
+ * 获取临时 ZIP 文件路径
+ *
+ * @param projectPath - 租户标识符（绝对路径）
+ * @returns 临时 ZIP 文件的绝对路径
+ *
+ * @example
+ * getTempZipPath('/workspace/user-123/project-456')
+ * // => '/tmp/taptap-mcp/temp/user-123/project-456/game-1234567890.zip'
+ */
+function getTempZipPath(projectPath: string): string {
+  // 提取租户标识符（最后两层：userId/projectId）
+  let tenantId: string;
+
+  if (path.isAbsolute(projectPath)) {
+    const parts = projectPath.split(path.sep).filter(Boolean);
+    tenantId = parts.slice(-2).join(path.sep);
+  } else {
+    tenantId = projectPath;
+  }
+
+  // 确保临时目录存在
+  const tempDir = path.join(TEMP_ROOT, tenantId);
+  if (!fs.existsSync(tempDir)) {
+    fs.mkdirSync(tempDir, { recursive: true });
+  }
+
+  // 生成唯一文件名（带时间戳）
+  const timestamp = Date.now();
+  return path.join(tempDir, `game-${timestamp}.zip`);
+}
 
 /**
  * 压缩目录为 ZIP 文件
@@ -299,62 +338,63 @@ export async function handleUploadGame(args: {
   // 保存缓存
   saveAppCache(cacheInfo, decodedPath);
 
-  // 判断路径是否以斜杠结尾
-  const outputPath = decodedPath.endsWith('/') ? decodedPath + 'game.zip' : decodedPath + '/game.zip';
-
-  // 确保目录存在
+  // 确保源目录存在
   if (!fs.existsSync(decodedPath)) {
     throw new Error(MESSAGES.DIRECTORY_NOT_EXISTS(decodedPath));
   }
 
-  // 检查文件是否存在，如果存在则删除
-  if (fs.existsSync(outputPath)) {
-    fs.unlinkSync(outputPath);
-  }
+  // 生成临时 ZIP 文件路径（独立于 workspace）
+  const outputPath = getTempZipPath(decodedPath);
 
-  // 1. 压缩目录
-  const archiveSize = await compressDirectory(decodedPath, outputPath);
-  await logger.info(MESSAGES.COMPRESSION_SUCCESS(archiveSize));
-
-  // 2. 获取上传参数
-  let uploadParams: UploadParams;
   try {
-    uploadParams = await getH5PackageUploadParams(cacheInfo.app_id);
-    await logger.info(MESSAGES.GET_UPLOAD_PARAMS_SUCCESS(uploadParams, outputPath));
-  } catch (error) {
-    return MESSAGES.COMPRESSED_GET_PARAMS_FAILED(archiveSize, String(error));
-  }
+    // 1. 压缩目录
+    const archiveSize = await compressDirectory(decodedPath, outputPath);
+    await logger.info(MESSAGES.COMPRESSION_SUCCESS(archiveSize));
 
-  // 3. 上传文件
-  let packageId: number;
-  try {
-    packageId = await uploadFile(uploadParams, outputPath);
-  } catch (error) {
-    throw new Error(
-      MESSAGES.FILE_COMPRESSED_UPLOAD_FAILED(error instanceof Error ? error.message : String(error))
+    // 2. 获取上传参数
+    let uploadParams: UploadParams;
+    try {
+      uploadParams = await getH5PackageUploadParams(cacheInfo.app_id);
+      await logger.info(MESSAGES.GET_UPLOAD_PARAMS_SUCCESS(uploadParams, outputPath));
+    } catch (error) {
+      return MESSAGES.COMPRESSED_GET_PARAMS_FAILED(archiveSize, String(error));
+    }
+
+    // 3. 上传文件
+    let packageId: number;
+    try {
+      packageId = await uploadFile(uploadParams, outputPath);
+    } catch (error) {
+      throw new Error(
+        MESSAGES.FILE_COMPRESSED_UPLOAD_FAILED(error instanceof Error ? error.message : String(error))
+      );
+    }
+
+    // 4. 发布到 TapTap
+    await logger.info(MESSAGES.PUBLISH_PARAMS(cacheInfo.app_id, cacheInfo.developer_id, packageId));
+
+    const results = await editAppInfo(
+      cacheInfo.app_id,
+      cacheInfo.developer_id,
+      packageId,
+      undefined,
+      args.genre
     );
+
+    let msg = MESSAGES.GAME_PUBLISH_SUCCESS(results.app_title, cacheInfo.app_id);
+    msg += '\n' + MESSAGES.GAME_TYPE_INFO(results.display_app_title) + '\n';
+
+    return msg;
+  } finally {
+    // 清理临时文件（无论成功或失败）
+    if (fs.existsSync(outputPath)) {
+      try {
+        fs.unlinkSync(outputPath);
+      } catch (error) {
+        console.error(`[H5Game] Failed to cleanup temp file: ${outputPath}`, error);
+      }
+    }
   }
-
-  // 4. 发布到 TapTap
-  await logger.info(MESSAGES.PUBLISH_PARAMS(cacheInfo.app_id, cacheInfo.developer_id, packageId));
-
-  const results = await editAppInfo(
-    cacheInfo.app_id,
-    cacheInfo.developer_id,
-    packageId,
-    undefined,
-    args.genre
-  );
-
-  let msg = MESSAGES.GAME_PUBLISH_SUCCESS(results.app_title, cacheInfo.app_id);
-  msg += '\n' + MESSAGES.GAME_TYPE_INFO(results.display_app_title) + '\n';
-
-  // 发布成功删除中间产物
-  if (fs.existsSync(outputPath)) {
-    fs.unlinkSync(outputPath);
-  }
-
-  return msg;
 }
 
 /**

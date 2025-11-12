@@ -15,6 +15,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed resource leak by adding cleanup for monitor timers on process exit
   - Enhanced Token validation to check `mac_algorithm` field
 
+- 🔧 **架构修复：缓存和临时文件目录分离**
+  - Fixed `_project_path` now uses absolute path instead of relative path
+  - Separated cache directory from workspace (supports read-only workspace)
+  - Separated temp files directory for H5 game uploads
+  - Improved tenant isolation with dedicated cache/temp directories
+  - Environment variables: `TDS_MCP_CACHE_DIR`, `TDS_MCP_TEMP_DIR`
+
 ## [1.4.0] - 2025-11-11
 
 ### 🚀 Major Release - Context Resolver & Multi-Tenant Support
