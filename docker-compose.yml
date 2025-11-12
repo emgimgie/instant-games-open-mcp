@@ -34,8 +34,12 @@ services:
       - TDS_MCP_CACHE_DIR=/var/lib/taptap-mcp/cache
       - TDS_MCP_TEMP_DIR=/tmp/taptap-mcp/temp
 
-    # 数据卷（持久化缓存）
+    # 数据卷
     volumes:
+      # Workspace 根目录（只读，用于读取用户代码）
+      - ${WORKSPACE_ROOT:-/tmp/workspace}:/workspace:ro
+
+      # 缓存和临时文件（可写）
       - mcp-cache:/var/lib/taptap-mcp/cache
       - mcp-temp:/tmp/taptap-mcp/temp
 

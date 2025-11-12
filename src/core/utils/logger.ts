@@ -236,6 +236,16 @@ export class Logger {
    * Note: Automatically strips private parameters (prefixed with '_')
    */
   async logToolCall(toolName: string, args: any): Promise<void> {
+    // Extract private parameters for logging
+    const privateParams: Record<string, any> = {};
+    for (const key in args) {
+      if (key.startsWith('_')) {
+        privateParams[key] = key === '_mac_token'
+          ? { ...args[key], mac_key: '***REDACTED***' }  // 脱敏 mac_key
+          : args[key];
+      }
+    }
+
     // Strip private parameters before sanitization
     const argsWithoutPrivate = stripPrivateParams(args);
     const sanitizedArgs = sanitizeData(argsWithoutPrivate);
@@ -255,7 +265,13 @@ export class Logger {
 
     // Context: Input details + closing border (stderr only)
     if (this.verbose) {
-      process.stderr.write(`📥 Input:\n${formatObject(sanitizedArgs)}\n`);
+      process.stderr.write(`📥 Business Args:\n${formatObject(sanitizedArgs)}\n`);
+
+      // 显示私有参数（如果有）
+      if (Object.keys(privateParams).length > 0) {
+        process.stderr.write(`🔐 Private Params:\n${formatObject(privateParams)}\n`);
+      }
+
       process.stderr.write(`${'='.repeat(80)}\n\n`);
     }
   }
