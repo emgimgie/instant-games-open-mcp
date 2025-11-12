@@ -39,6 +39,7 @@ import { getEffectiveContext } from './core/utils/handlerHelpers.js';
 import { appModule } from './features/app/index.js';
 import { leaderboardModule } from './features/leaderboard/index.js';
 import { h5GameModule } from './features/h5Game/index.js';
+import { vibrateModule } from './features/vibrate/index.js';
 import type { HandlerContext, FeatureModule } from './core/types/index.js';
 
 // 环境变量配置
@@ -52,7 +53,8 @@ const TDS_MCP_PORT = parseInt(process.env.TDS_MCP_PORT || '3000', 10);
 const allModules: FeatureModule[] = [
   appModule,        // App management (developer/app selection)
   leaderboardModule,// Leaderboard management
-  h5GameModule      // H5 Game management (upload, publish, status)
+  h5GameModule,     // H5 Game management (upload, publish, status)
+  vibrateModule     // Vibrate API documentation and guides
   // Future: cloudSaveModule, shareModule, etc.
 ];
 
