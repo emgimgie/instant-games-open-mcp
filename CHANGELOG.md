@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.9] - 2025-01-15
+
+### 🔄 Refactor - MCP Proxy 配置结构优化
+
+**优化 tenant 配置结构，将 user_id 和 project_id 从路径构建中分离，仅用于标识和日志追踪。**
+
+### Changed
+
+- 📝 **配置结构调整**
+  - `user_id` 和 `project_id` 改为可选，仅用于日志追踪和标识
+  - 路径完全由 `project_relative_path` 决定（默认 '.'）
+  - 所有 tenant 字段都改为可选
+  - 简化路径构建逻辑
+
+- ✅ **类型定义优化** (types.ts)
+  - `workspace_path`: 可选，默认 '/workspace'
+  - `project_relative_path`: 可选，默认 '.'（用于构建路径）
+  - `user_id`: 可选，仅标识
+  - `project_id`: 可选，仅标识
+
+- 🔧 **配置验证简化** (config.ts)
+  - 移除所有 tenant 字段的必填验证
+  - `project_relative_path` 默认值设为 '.'
+
+- ⚡ **路径构建简化** (proxy.ts)
+  - 简化逻辑：直接使用 `project_relative_path`
+  - 更新启动日志：分别显示各字段（如果存在）
+
+### Documentation
+
+- 📚 更新 README.md 配置说明
+- 📚 更新 config.example.json 示例
+- 📚 明确标注字段用途和优先级
+
+**配置示例：**
+```json
+{
+  "tenant": {
+    "workspace_path": "/workspace",
+    "project_relative_path": "user-123/my-game",
+    "user_id": "user-123",
+    "project_id": "my-game"
+  }
+}
+```
+
+**优点：**
+- ✅ 职责清晰：user_id/project_id 仅标识，不影响路径
+- ✅ 灵活性强：路径完全由 project_relative_path 控制
+- ✅ 配置简单：所有字段可选，默认值合理
+
 ## [1.4.8] - 2025-11-12
 
 ### 🚀 Major Update - MCP Proxy 重连机制全面优化
