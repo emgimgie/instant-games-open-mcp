@@ -46,7 +46,7 @@ npm install -g @mikoto_zero/minigame-open-mcp@1.4.2
     "taptap": {
       "command": "taptap-mcp-proxy",
       "args": [
-        "{\"server\":{\"url\":\"http://localhost:5003\",\"env\":\"rnd\"},\"tenant\":{\"user_id\":\"your-user-id\",\"project_id\":\"your-project-id\",\"workspace_path\":\"/Users/you/workspace\"},\"auth\":{\"kid\":\"your_kid\",\"mac_key\":\"your_mac_key\",\"token_type\":\"mac\",\"mac_algorithm\":\"hmac-sha-1\"},\"options\":{\"verbose\":false}}"
+        "{\"server\":{\"url\":\"http://localhost:5003\",\"env\":\"rnd\"},\"tenant\":{\"user_id\":\"your-user-id\",\"project_id\":\"your-project-id\",\"project_path\":\"/Users/you/workspace\"},\"auth\":{\"kid\":\"your_kid\",\"mac_key\":\"your_mac_key\",\"token_type\":\"mac\",\"mac_algorithm\":\"hmac-sha-1\"},\"options\":{\"verbose\":false}}"
       ]
     }
   }
@@ -162,8 +162,8 @@ const config = {
   tenant: {
     user_id: "your-user-id",       // 你的用户 ID（用于标识租户）
     project_id: "your-project-id", // 你的项目 ID（用于标识租户）
-    workspace_path: "/workspace",  // Docker 中的工作空间挂载点（默认 /workspace）
-    project_relative_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"  // 项目相对于 workspace 的路径（可选）
+    project_path: "/workspace",  // Docker 中的工作空间挂载点（默认 /workspace）
+    project_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"  // 项目相对于 workspace 的路径（可选）
   },
   auth: {
     kid: "your_kid_here",          // 从 TapTap OAuth 获取
@@ -195,13 +195,13 @@ Proxy 会自动计算 `_project_path` 并注入到请求中，供 MCP Server 使
 
 **计算规则：**
 
-1. **优先使用 `project_relative_path`**（推荐）：
+1. **优先使用 `project_path`**（推荐）：
    ```javascript
    // 配置
    {
      tenant: {
-       workspace_path: "/workspace",
-       project_relative_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"
+       project_path: "/workspace",
+       project_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"
      }
    }
 
@@ -214,7 +214,7 @@ Proxy 会自动计算 `_project_path` 并注入到请求中，供 MCP Server 使
    // 配置
    {
      tenant: {
-       workspace_path: "/workspace",
+       project_path: "/workspace",
        user_id: "mikoto",
        project_id: "minigame_h5_demo"
      }
@@ -226,12 +226,12 @@ Proxy 会自动计算 `_project_path` 并注入到请求中，供 MCP Server 使
 
 **最佳实践：**
 
-- **在 Docker 部署时**：使用 `project_relative_path`
+- **在 Docker 部署时**：使用 `project_path`
   - workspace 挂载：`/Users/mikoto` → `/workspace`
   - 项目路径：`/Users/mikoto/Documents/.../minigame_h5_demo`
-  - 配置：`project_relative_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"`
+  - 配置：`project_path: "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"`
 
-- **在本地开发时**：可以省略 `project_relative_path`
+- **在本地开发时**：可以省略 `project_path`
   - 使用默认的 `userId/projectId` 拼接即可
 
 ---
@@ -430,7 +430,7 @@ HTTP 403 - Authorization failed
   "tenant": {
     "user_id": "your-user-id",
     "project_id": "your-project-id",
-    "workspace_path": "/workspace"
+    "project_path": "/workspace"
   },
   "auth": {
     "kid": "your_kid",
@@ -636,7 +636,7 @@ A: 更新 `tenant.project_id` 即可：
 }
 ```
 
-### Q: 可以不填 workspace_path 吗？
+### Q: 可以不填 project_path 吗？
 
 A: 可以。默认值是 `/workspace`。只有在 Proxy 和 Server 不在同一台机器时才需要自定义。
 
