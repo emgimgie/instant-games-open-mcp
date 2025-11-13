@@ -235,7 +235,7 @@ const config = {
   tenant: {
     user_id: session.userId,
     project_id: session.projectId,
-    workspace_path: '/workspace',
+    project_path: '/workspace',
   },
   auth: macToken,
 };

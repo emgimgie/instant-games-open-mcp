@@ -5,6 +5,203 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.4.11] - 2025-01-15
+
+### 🐛 Bug Fixes
+
+**修复 OAuth 完成后 MAC Token 无法正确传递的问题**
+
+#### Fixed
+
+- **OAuth Token 传递问题**
+  - 修复 `server.ts` 中 `context.macToken` 在服务器启动时固定为空对象的问题
+  - 改用动态 getter 让 `context.macToken` 始终返回最新的 `apiConfig.macToken`
+  - 确保 OAuth 完成后的请求能正确获取到授权 token
+
+- **HttpClient Token 获取**
+  - 优化 `httpClient.ts` 中的 token 获取逻辑
+  - 改为每次请求时动态调用 `ApiConfig.getInstance().macToken`
+  - 避免缓存旧的 token 引用
+
+#### Technical Details
+
+**问题根源：**
+```typescript
+// 旧代码 - 问题所在
+const TDS_MCP_MAC_TOKEN = apiConfig.macToken;  // 启动时是空对象 {}
+this.context = {
+  macToken: TDS_MCP_MAC_TOKEN  // 永远指向空对象
+};
+```
+
+**修复方案：**
+```typescript
+// 新代码 - 动态获取
+this.context = {
+  get macToken() {
+    return apiConfig.macToken;  // 每次访问都获取最新值
+  }
+};
+```
+
+#### Impact
+
+- ✅ OAuth 授权流程现在完全正常工作
+- ✅ 不影响 MCP Proxy 私有参数（`_mac_token`）传递逻辑
+- ✅ 不影响环境变量配置的 token
+
+#### Debug Enhancements
+
+新增详细调试日志（`TDS_MCP_VERBOSE=true`）：
+- `ApiConfig.setMacToken()` 调用日志
+- `HttpClient` Token 获取日志
+- MAC 签名生成过程日志
+- 请求签名生成过程日志
+
+## [1.4.10] - 2025-01-15
+
+### 🚀 Major Update - 统一路径解析系统与 Proxy 配置极简化
+
+**重大架构改进：实现统一路径解析系统，极简化 Proxy 配置，移除冗余路径拼接逻辑。**
+
+### Added
+
+- 📦 **统一路径解析器** (`src/core/utils/pathResolver.ts`)
+  - `resolveWorkPath()` - 主解析函数，智能检测绝对/相对路径
+  - `getWorkspaceRoot()` - 获取工作空间根路径
+  - `isPathInWorkspace()` - 路径安全检查
+  - `getRelativeToWorkspace()` - 转换为相对路径
+  - 公式：`WORKSPACE_ROOT + _project_path + gamePath`
+
+- 🌍 **新环境变量支持**
+  - `WORKSPACE_ROOT` - 工作空间根路径（默认：`process.cwd()`）
+  - 自动适配三种场景：Proxy、容器、本地开发
+
+- 📚 **技术文档**
+  - `docs/PATH_RESOLUTION.md` - 完整路径解析说明
+  - 三种场景详细示例
+  - 开发者集成指南
+
+### Changed
+
+- 🔧 **Proxy 配置极简化**
+  - 移除 `workspace_path` 字段（不再需要）
+  - `project_relative_path` 重命名为 `project_path`
+  - Proxy 不再做路径拼接，只传递相对路径
+  - 路径拼接逻辑统一由 MCP Server 的 `pathResolver` 处理
+
+- ⚡ **H5 Game 工具参数调整**
+  - `projectPath` → `gamePath`（相对路径）
+  - 参数说明更新为相对路径
+  - 使用 `resolveWorkPath()` 统一解析
+
+- 🗑️ **移除废弃环境变量**
+  - 移除 `TDS_MCP_PROJECT_PATH` 使用
+  - 所有路径通过 `context.projectPath` 传递
+
+### Fixed
+
+- 🐛 **修复 getCurrentAppInfo 路径问题**
+  - 从 context 获取 projectPath（而非环境变量）
+  - 传递 context 给所有需要路径的函数
+
+### Documentation
+
+- 📚 批量更新所有 Proxy 相关文档 (50+ 处更新)
+  - `docs/PROXY_CLIENT_CONFIG.md`
+  - `docs/TAPCODE_QUICK_START.md`
+  - `docs/TAPCODE_INTEGRATION.md`
+  - `docs/DOCKER_DEPLOYMENT.md`
+  - `README.md`
+  - `src/mcp-proxy/README.md`
+
+**配置对比：**
+
+旧配置（v1.4.9）：
+```json
+{
+  "tenant": {
+    "workspace_path": "/workspace",
+    "project_relative_path": "user-123/my-game",
+    "user_id": "user-123",
+    "project_id": "my-game"
+  }
+}
+```
+
+新配置（v1.4.10）：
+```json
+{
+  "tenant": {
+    "project_path": "project-123/workspace",
+    "user_id": "user-456",
+    "project_id": "project-123"
+  }
+}
+```
+
+**职责分离：**
+- ✅ TapCode 平台：生成 `project_path`
+- ✅ Proxy：直接传递 `_project_path`
+- ✅ MCP Server：统一路径解析（`pathResolver`）
+
+**优势：**
+- ✅ Proxy 配置更简单（减少一个字段）
+- ✅ 路径逻辑统一在 MCP Server
+- ✅ 支持多场景自动适配
+- ✅ 用户只需传递相对路径
+
+## [1.4.9] - 2025-01-15
+
+### 🔄 Refactor - MCP Proxy 配置结构优化
+
+**优化 tenant 配置结构，将 user_id 和 project_id 从路径构建中分离，仅用于标识和日志追踪。**
+
+### Changed
+
+- 📝 **配置结构调整**
+  - `user_id` 和 `project_id` 改为可选，仅用于日志追踪和标识
+  - 路径完全由 `project_relative_path` 决定（默认 '.'）
+  - 所有 tenant 字段都改为可选
+  - 简化路径构建逻辑
+
+- ✅ **类型定义优化** (types.ts)
+  - `workspace_path`: 可选，默认 '/workspace'
+  - `project_relative_path`: 可选，默认 '.'（用于构建路径）
+  - `user_id`: 可选，仅标识
+  - `project_id`: 可选，仅标识
+
+- 🔧 **配置验证简化** (config.ts)
+  - 移除所有 tenant 字段的必填验证
+  - `project_relative_path` 默认值设为 '.'
+
+- ⚡ **路径构建简化** (proxy.ts)
+  - 简化逻辑：直接使用 `project_relative_path`
+  - 更新启动日志：分别显示各字段（如果存在）
+
+### Documentation
+
+- 📚 更新 README.md 配置说明
+- 📚 更新 config.example.json 示例
+- 📚 明确标注字段用途和优先级
+
+**配置示例：**
+```json
+{
+  "tenant": {
+    "workspace_path": "/workspace",
+    "project_relative_path": "user-123/my-game",
+    "user_id": "user-123",
+    "project_id": "my-game"
+  }
+}
+```
+
+**优点：**
+- ✅ 职责清晰：user_id/project_id 仅标识，不影响路径
+- ✅ 灵活性强：路径完全由 project_relative_path 控制
+- ✅ 配置简单：所有字段可选，默认值合理
+
 ## [1.4.8] - 2025-11-12
 
 ### 🚀 Major Update - MCP Proxy 重连机制全面优化

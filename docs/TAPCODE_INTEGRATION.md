@@ -109,7 +109,7 @@ async function startMCPProxy(session: AgentSession) {
     tenant: {
       user_id: session.userId,
       project_id: session.projectId,
-      workspace_path: '/workspace',
+      project_path: '/workspace',
     },
     auth: {
       kid: macToken.kid,
@@ -165,7 +165,7 @@ interface UserToken {
 ```typescript
 interface ProxyConfig {
   server: { url: string; env: 'rnd' | 'production' };
-  tenant: { user_id: string; project_id: string; workspace_path: string };
+  tenant: { user_id: string; project_id: string; project_path: string };
   auth: { kid: string; mac_key: string; token_type: 'mac'; mac_algorithm: 'hmac-sha-1' };
   options?: { verbose?: boolean; reconnect_interval?: number; monitor_interval?: number };
 }
@@ -183,7 +183,7 @@ function generateProxyConfig(
     tenant: {
       user_id: session.userId,
       project_id: session.projectId,
-      workspace_path: '/workspace',
+      project_path: '/workspace',
     },
     auth: {
       kid: macToken.kid,
@@ -608,7 +608,7 @@ class TapCodeAgentManager {
       tenant: {
         user_id: userId,
         project_id: projectId,
-        workspace_path: '/workspace',
+        project_path: '/workspace',
       },
       auth: macToken,
       options: {

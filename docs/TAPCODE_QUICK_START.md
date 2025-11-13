@@ -135,8 +135,8 @@ interface ProxyConfig {
   tenant: {
     user_id: string;          // 用户 ID（TapCode 用户标识）
     project_id: string;       // 项目 ID（TapCode 项目标识）
-    workspace_path?: string;  // Docker 中的挂载点（默认 /workspace）
-    project_relative_path?: string;  // 项目相对于 workspace 的路径（推荐）
+    project_path?: string;  // Docker 中的挂载点（默认 /workspace）
+    project_path?: string;  // 项目相对于 workspace 的路径（推荐）
   };
   auth: {
     kid: string;              // MAC Token kid（从用户授权获取）
@@ -165,13 +165,13 @@ function generateProxyConfig(user: User, project: Project, macToken: MacToken): 
     tenant: {
       user_id: user.id,                    // TapCode 用户 ID
       project_id: project.id,              // TapCode 项目 ID
-      workspace_path: "/workspace",        // Docker 挂载点（固定）
+      project_path: "/workspace",        // Docker 挂载点（固定）
 
       // 关键：项目相对于 WORKSPACE_ROOT 的路径
       // 示例：/Users/mikoto/Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo
       //       相对于 /Users/mikoto 的路径是：
       //       Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo
-      project_relative_path: calculateRelativePath(project.path, WORKSPACE_ROOT)
+      project_path: calculateRelativePath(project.path, WORKSPACE_ROOT)
     },
     auth: {
       kid: macToken.kid,
@@ -247,15 +247,15 @@ Docker:  /workspace/Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo
 1. **WORKSPACE_ROOT** (环境变量) = 宿主机根路径
    - 示例: `/Users/mikoto`
 
-2. **workspace_path** (Proxy 配置) = Docker 挂载点
+2. **project_path** (Proxy 配置) = Docker 挂载点
    - 固定值: `/workspace`
 
-3. **project_relative_path** (Proxy 配置) = 项目相对路径
+3. **project_path** (Proxy 配置) = 项目相对路径
    - 计算: `相对路径 = 项目绝对路径 - WORKSPACE_ROOT`
    - 示例: `Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo`
 
 4. **_project_path** (自动注入) = Docker 中的项目路径
-   - 计算: `workspace_path + project_relative_path`
+   - 计算: `project_path + project_path`
    - 结果: `/workspace/Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo`
 
 ---
@@ -290,8 +290,8 @@ const proxyConfig = {
   "tenant": {
     "user_id": "mikoto",
     "project_id": "minigame_h5_demo",
-    "workspace_path": "/workspace",
-    "project_relative_path": "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"
+    "project_path": "/workspace",
+    "project_path": "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"
   },
   "auth": {
     "kid": "1/L5cZb7oqwK8fFzybUIte8iaDD2FYUThCO2DvmwWPXaSHLvSMhs-z12gdGPXw4gCTeSKoQUgzwfWbPPkJgtzu5zXiJvv-HGL9keEFz5moAtlFQWBQiFRs0UGUQ5mOzuYj4J2xee4WrrTTIlkCm6-9aSPvM3IgGe-Jx_EERjpFS0Py6cHYBPe0Kh3Azmt2Wa5Rtm_qmGWsmabSGLngS7kqca4iQLxL8qmvI0B6-zPuZmiEmE3QiO8xuYUxI1Nmu-gdAgVCO-a-aVOV8uuk0dA7Yx-a8tCyV_kzjySf7Lh6QZ9lXdi1pIB8QTlk39FhM1ItjblZ4bdRhQ9nn8ln3FfDyg",
@@ -385,14 +385,14 @@ TDS_MCP_PORT=3000
     "project_id": "minigame_h5_demo",
 
     // Docker 挂载点（可选，默认 /workspace）
-    "workspace_path": "/workspace",
+    "project_path": "/workspace",
 
     // 项目相对路径（推荐，用于路径映射）
     // 计算方式：path.relative(WORKSPACE_ROOT, projectPath)
     // 示例：/Users/mikoto/Documents/.../minigame_h5_demo
     //       相对于 /Users/mikoto
     //       = Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo
-    "project_relative_path": "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"
+    "project_path": "Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo"
   }
 }
 ```
@@ -400,13 +400,13 @@ TDS_MCP_PORT=3000
 **路径计算逻辑:**
 
 ```typescript
-// 如果提供了 project_relative_path（推荐）
-_project_path = workspace_path + project_relative_path
+// 如果提供了 project_path（推荐）
+_project_path = project_path + project_path
              = /workspace + Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo
              = /workspace/Documents/xindong/Repos/InstantGameRepos/minigame_h5_demo
 
 // 如果没提供（回退逻辑，不推荐）
-_project_path = workspace_path + user_id + project_id
+_project_path = project_path + user_id + project_id
              = /workspace + mikoto + minigame_h5_demo
              = /workspace/mikoto/minigame_h5_demo
 ```
@@ -493,8 +493,8 @@ class TapTapMCPService {
       tenant: {
         user_id: user.id,
         project_id: project.id,
-        workspace_path: "/workspace",
-        project_relative_path: projectRelativePath  // 关键字段
+        project_path: "/workspace",
+        project_path: projectRelativePath  // 关键字段
       },
       auth: macToken,
       options: { verbose: true }
@@ -577,7 +577,7 @@ curl http://localhost:5003/health
 [Proxy] ✅ Connected to TapTap MCP Server
 ```
 
-**如果缺少 `Project Relative Path` 这一行**，说明配置 JSON 中没有 `project_relative_path` 字段。
+**如果缺少 `Project Relative Path` 这一行**，说明配置 JSON 中没有 `project_path` 字段。
 
 ### 验证工具调用
 
@@ -609,9 +609,9 @@ curl http://localhost:5003/health
 目录不存在：/workspace/mikoto/minigame_h5_demo
 ```
 
-**原因:** 缺少 `project_relative_path` 配置
+**原因:** 缺少 `project_path` 配置
 
-**解决:** 在 Proxy 配置中添加 `project_relative_path` 字段
+**解决:** 在 Proxy 配置中添加 `project_path` 字段
 
 ### Q2: MAC Token 认证失败
 
@@ -674,7 +674,7 @@ npx @mikoto_zero/minigame-open-mcp@latest
    - 运行 `docker-compose up -d`
 
 2. ✅ **为每个用户生成 Proxy 配置**
-   - 计算 `project_relative_path` = `path.relative(WORKSPACE_ROOT, projectPath)`
+   - 计算 `project_path` = `path.relative(WORKSPACE_ROOT, projectPath)`
    - 从数据库获取用户的 MAC Token
    - 生成完整的 JSON 配置
 
@@ -684,7 +684,7 @@ npx @mikoto_zero/minigame-open-mcp@latest
    - 通过 stdio 与 AI Agent 通信
 
 **关键点:**
-- 🔑 `project_relative_path` 字段是路径映射的关键
+- 🔑 `project_path` 字段是路径映射的关键
 - 🔑 MAC Token 需要从 TapCode 数据库获取
 - 🔑 每个用户/项目需要独立的 Proxy 进程
 - 🔑 所有用户共享同一个 Docker MCP Server
