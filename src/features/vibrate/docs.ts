@@ -20,7 +20,6 @@ export const VIBRATE_DOCUMENTATION: Documentation = {
 - All APIs are accessed via: tap.vibrateShort() or tap.vibrateLong()
 - Works in TapTap Minigame AND H5 game environments (not in regular web browsers)
 - Only works on iPhone 7/7 Plus and above, and Android devices`,
-  apiReference: "https://developer.taptap.cn/minigameapidoc/dev/api/device/vibrate/",
 
   categories: {
     short_vibration: {
@@ -30,7 +29,7 @@ export const VIBRATE_DOCUMENTATION: Documentation = {
         {
           name: "tap.vibrateShort",
           method: "tap.vibrateShort({ type, success, fail, complete })",
-          description: "Make the device vibrate for a short duration (15ms). Only works on iPhone 7/7 Plus and above, and Android devices. Supports Promise style calls.",
+          description: "Make the device vibrate for a short duration (15ms). Only works on iPhone 7/7 Plus and above, and Android devices. Supports Promise style calls.\n\n**Official Documentation**: https://developer.taptap.cn/minigameapidoc/dev/api/device/vibrate/tap.vibrateShort/",
           parameters: {
             "type": "string (required) - Vibration intensity: 'heavy', 'medium', or 'light'",
             "success": "function (optional) - Success callback function",
@@ -81,7 +80,7 @@ tap.vibrateShort({ type: 'light' });   // Light vibration`
         {
           name: "tap.vibrateLong",
           method: "tap.vibrateLong({ success, fail, complete })",
-          description: "Make the device vibrate for a long duration (400ms). Only works on iPhone 7/7 Plus and above, and Android devices. Supports Promise style calls.",
+          description: "Make the device vibrate for a long duration (400ms). Only works on iPhone 7/7 Plus and above, and Android devices. Supports Promise style calls.\n\n**Official Documentation**: https://developer.taptap.cn/minigameapidoc/dev/api/device/vibrate/tap.vibrateLong/",
           parameters: {
             "success": "function (optional) - Success callback function",
             "fail": "function (optional) - Failure callback function with error message",

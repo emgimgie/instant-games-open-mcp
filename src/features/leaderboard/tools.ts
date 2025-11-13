@@ -17,7 +17,7 @@ export const leaderboardTools: ToolRegistration[] = [
   // 🎯 Integration Guide
   {
     definition: {
-      name: 'get_integration_guide',
+      name: 'get_leaderboard_integration_guide',
       description: '⭐ READ THIS FIRST when user wants to integrate/接入/setup/add leaderboard功能. Returns complete step-by-step workflow. CRITICAL: Emphasizes NO SDK installation - tap is global object. Call this BEFORE making any implementation plans.',
       inputSchema: {
         type: 'object',
