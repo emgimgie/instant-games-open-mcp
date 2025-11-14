@@ -511,11 +511,23 @@ class TapTapMinigameMCPServer {
       process.stderr.write(`🔗 API Base: ${apiConfig.apiBaseUrl}\n`);
 
       // 显示目录配置
-      const workspaceExists = fs.existsSync('/workspace');
-      const workspaceStatus = workspaceExists ? '✅' : '❌';
-      process.stderr.write(`📁 Workspace: /workspace ${workspaceStatus}\n`);
-      process.stderr.write(`📦 Cache Dir: ${process.env.TDS_MCP_CACHE_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'cache')}\n`);
-      process.stderr.write(`📂 Temp Dir: ${process.env.TDS_MCP_TEMP_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'temp')}\n`);
+      process.stderr.write('\n📂 Directory Configuration:\n');
+
+      // WORKSPACE_ROOT
+      const workspaceRoot = process.env.WORKSPACE_ROOT || process.cwd();
+      const workspaceRootLabel = process.env.WORKSPACE_ROOT ? '(env)' : '(default: cwd)';
+      process.stderr.write(`   📁 WORKSPACE_ROOT: ${workspaceRoot} ${workspaceRootLabel}\n`);
+
+      // TDS_MCP_CACHE_DIR
+      const cacheDir = process.env.TDS_MCP_CACHE_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
+      const cacheDirLabel = process.env.TDS_MCP_CACHE_DIR ? '(env)' : '(default)';
+      process.stderr.write(`   📦 TDS_MCP_CACHE_DIR: ${cacheDir} ${cacheDirLabel}\n`);
+
+      // TDS_MCP_TEMP_DIR
+      const tempDir = process.env.TDS_MCP_TEMP_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'temp');
+      const tempDirLabel = process.env.TDS_MCP_TEMP_DIR ? '(env)' : '(default)';
+      process.stderr.write(`   📂 TDS_MCP_TEMP_DIR: ${tempDir} ${tempDirLabel}\n`);
+
       process.stderr.write('\n📖 MCP Capabilities:\n');
       process.stderr.write(`   ✅ Tools (${totalTools}) - Execute operations with side effects\n`);
       process.stderr.write(`   ✅ Resources (${totalResources}) - Read-only documentation and data\n`);
