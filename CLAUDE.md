@@ -16,29 +16,45 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 💾 Git 提交规则
 
-- **默认提交代码**：完成代码改动后，**自动创建 git commit**
-  - 使用清晰的 commit message（遵循 Conventional Commits）
-  - 除非用户明确说"不要提交"，否则默认提交
-  - 多个相关改动可以合并为一个 commit
-  - **不需要每次都问用户是否提交，主动提交即可**
+- **使用 Conventional Commits 规范**：项目已配置自动化 CI/CD，commit 消息格式至关重要
+  - `feat:` - 新功能（触发 minor 版本升级）
+  - `fix:` - Bug 修复（触发 patch 版本升级）
+  - `feat!:` 或 `fix!:` - 破坏性变更（触发 major 版本升级）
+  - `docs:` - 文档更新（不触发发布）
+  - `refactor:` - 代码重构（触发 patch 版本升级）
+  - `chore:` - 构建/工具/配置更新（不触发发布）
+  - `test:` - 测试相关（不触发发布）
+  - `ci:` - CI 配置更新（不触发发布）
 
-- **Commit Message 格式**：
-  - `feat:` - 新功能
-  - `fix:` - Bug 修复
-  - `docs:` - 文档更新
-  - `refactor:` - 代码重构
-  - `chore:` - 构建/工具/配置更新
+- **Commit Message 最佳实践**：
+  - Subject 长度：5-100 字符
+  - 使用祈使句："add feature" 而不是 "added feature"
+  - 不要以句号结尾
+  - 示例：
+    - `feat(leaderboard): add score submission API`
+    - `fix(auth): resolve token refresh issue`
+    - `feat!: change API endpoint structure`
+
+- **分支工作流**：
+  - ❌ **不要直接 commit 到 main 分支**（已配置分支保护）
+  - ✅ **创建 feature/fix 分支** → 提交代码 → 创建 PR
+  - ✅ **PR 合并后自动触发发布**（由 semantic-release 处理）
 
 ### 🎯 工作流程
 
 ```
-代码改动 → 自动更新文档 → 自动 git commit → 告知用户完成
+feature 分支开发 → git commit (规范格式) → git push → 创建 PR
+→ CI 检查 → Code Review → Merge PR → 自动发布 → 更新文档
 ```
 
-**例外情况**：
-- 用户明确说"不要提交" → 不自动 commit
-- 用户明确说"不要更新文档" → 不更新文档
-- 临时测试/实验性改动 → 询问用户是否提交
+**注意事项**：
+- 开发时始终在 feature/fix 分支工作
+- Commit 消息必须符合 Conventional Commits 规范
+- PR 合并到 main 后，semantic-release 会自动：
+  - 分析所有 commits 确定版本号
+  - 更新 package.json 和 CHANGELOG.md
+  - 发布到 npm
+  - 创建 GitHub Release
 
 ## 项目概述
 
@@ -610,23 +626,197 @@ HMAC-SHA256(method\nurl\nx-tap-headers\nbody\n, CLIENT_SECRET)
 
 
 
-## 发布和维护
+## CI/CD 和自动化发布
 
-### 构建发布
+### 概述
+
+项目采用 **GitHub Flow + Semantic Release** 实现完全自动化的版本管理和发布流程。
+
+**核心特性：**
+- ✅ 基于 Conventional Commits 自动计算版本号
+- ✅ 自动生成 CHANGELOG.md
+- ✅ 自动发布到 npm
+- ✅ 自动创建 GitHub Release
+- ✅ 完整的 PR 检查（lint、build、test、commitlint）
+
+### 分支策略
+
+```
+main          # 稳定版本（1.2.3）- 受保护
+├── beta      # Beta 测试版（1.3.0-beta.1）
+├── alpha     # Alpha 早期版（1.3.0-alpha.1）
+├── next      # 下一个主版本（2.0.0-next.1）
+└── 1.x       # 旧版本维护（1.2.4）
+```
+
+**分支保护规则：**
+- `main` 分支不允许直接 push，只能通过 PR 合并
+- PR 必须通过所有 CI 检查
+- PR 必须至少 1 人批准
+- Commit 消息必须符合 Conventional Commits 规范
+
+详见：[docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md)
+
+### 开发工作流
+
+#### 1. 开发新功能
+
 ```bash
-# 编译项目
-npm run build
+# 从 main 创建 feature 分支
+git checkout main
+git pull origin main
+git checkout -b feature/awesome-feature
 
-# 发布到 npm
-npm publish --access public
+# 开发并提交（使用规范格式）
+git add .
+git commit -m "feat: add awesome new feature"
+
+# 推送到远程
+git push origin feature/awesome-feature
+
+# 在 GitHub 创建 PR → 等待 CI 检查 → 请求 Review → 合并
+# 合并后自动触发发布（版本：1.2.0 → 1.3.0）
+```
+
+#### 2. 修复 Bug
+
+```bash
+# 创建 fix 分支
+git checkout -b fix/critical-bug
+
+# 修复并提交
+git commit -m "fix: resolve critical security issue"
+
+# Push 并创建 PR
+git push origin fix/critical-bug
+
+# 合并后自动发布（版本：1.2.0 → 1.2.1）
+```
+
+#### 3. 发布 Beta 版本
+
+```bash
+# 创建或切换到 beta 分支
+git checkout -b beta
+
+# 合并要测试的功能
+git merge feature/feature-a
+git merge feature/feature-b
+
+# 推送到远程
+git push origin beta
+
+# 自动发布 beta 版本（1.3.0-beta.1）
+# 用户可通过 npm install @mikoto_zero/minigame-open-mcp@beta 安装
+
+# 测试稳定后，合并到 main
+git checkout main
+git merge beta
+git push origin main
+
+# 发布正式版本（1.3.0）
+```
+
+### 版本号规则
+
+Semantic Release 根据 commit 类型自动计算版本号：
+
+| Commit 类型 | 版本变更 | 示例 |
+|------------|---------|------|
+| `feat:` | Minor | 1.2.0 → 1.3.0 |
+| `fix:` | Patch | 1.2.0 → 1.2.1 |
+| `feat!:` 或 `BREAKING CHANGE:` | Major | 1.2.0 → 2.0.0 |
+| `docs:`, `chore:`, `test:` | 无变更 | 不触发发布 |
+| `refactor:`, `perf:` | Patch | 1.2.0 → 1.2.1 |
+
+**混合 commit 时取最高优先级：**
+```bash
+# PR 包含多个 commits
+git commit -m "fix: bug fix 1"
+git commit -m "feat: new feature"
+git commit -m "feat!: breaking change"
+
+# 最终版本变更：Major（因为有 feat!）
+# 1.2.0 → 2.0.0
+```
+
+### CI/CD 工作流
+
+#### PR 检查 (.github/workflows/pr.yml)
+
+PR 创建或更新时自动运行：
+- ✅ Lint - 代码风格检查
+- ✅ Build - 构建检查
+- ✅ Test - 单元测试
+- ✅ Commitlint - Commit 消息格式检查
+
+所有检查通过才能合并。
+
+#### 自动发布 (.github/workflows/release.yml)
+
+PR 合并到 main/beta/alpha 分支后自动运行：
+1. 运行质量检查（lint、build、test）
+2. 执行 semantic-release：
+   - 分析所有 commits
+   - 计算新版本号
+   - 更新 package.json
+   - 生成/更新 CHANGELOG.md
+   - Git commit 和 tag
+   - 发布到 npm
+   - 创建 GitHub Release
+
+### 配置文件
+
+- `.releaserc.js` - Semantic Release 配置
+- `.commitlintrc.js` - Commitlint 配置
+- `.github/workflows/pr.yml` - PR 检查工作流
+- `.github/workflows/release.yml` - 发布工作流
+
+### 环境变量和 Secrets
+
+需要在 GitHub 仓库设置中配置：
+
+**Secrets (Settings → Secrets and variables → Actions):**
+- `NPM_TOKEN` - npm 发布令牌（必需）
+
+**自动提供（无需配置）:**
+- `GITHUB_TOKEN` - GitHub API 令牌（用于创建 Release）
+
+### 手动操作
+
+#### 安装依赖
+
+```bash
+npm install
+```
+
+这会安装所有 CI/CD 相关的依赖：
+- `semantic-release` - 自动化发布
+- `@commitlint/cli` - Commit 消息检查
+- `@semantic-release/*` - 各种插件
+
+#### 本地验证 Commit 消息
+
+```bash
+# 检查最近的 commit
+npx commitlint --from HEAD~1 --to HEAD
+
+# 检查多个 commits
+npx commitlint --from HEAD~5 --to HEAD
+```
+
+#### 本地测试发布流程（dry-run）
+
+```bash
+# 不会真正发布，只显示会做什么
+npx semantic-release --dry-run
 ```
 
 ### 版本管理
-- 当前版本：1.2.0
 - 遵循语义化版本（Semantic Versioning）
-- Beta 版本用于新特性测试和验证
-- 主要功能更新增加次版本号
-- Bug 修复增加补丁版本号
+- 版本号完全自动化，不需要手动修改
+- Beta/Alpha 版本用于新特性测试
+- 旧版本通过维护分支（如 1.x）支持
 
 ### 扩展新功能
 
