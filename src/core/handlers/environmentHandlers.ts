@@ -5,9 +5,7 @@
 
 import type { HandlerContext } from '../types/index.js';
 import { ApiConfig } from '../network/httpClient.js';
-import * as fs from 'node:fs';
-import * as os from 'node:os';
-import * as path from 'node:path';
+import { getMacTokenStatus, getTokenSourceLabel } from '../utils/handlerHelpers.js';
 
 /**
  * Check environment configuration and authentication status
@@ -15,31 +13,15 @@ import * as path from 'node:path';
 export async function checkEnvironment(context: HandlerContext): Promise<string> {
   const apiConfig = ApiConfig.getInstance();
 
-  // Check if token exists (env var OR local file)
-  let hasMacToken: boolean = !!(apiConfig.macToken.kid && apiConfig.macToken.mac_key);
-  let tokenSource = '';
-
-  if (hasMacToken) {
-    tokenSource = '(环境变量)';
-  } else {
-    // Check if token file exists
-    try {
-      const tokenPath = path.join(os.homedir(), '.config', 'taptap-minigame', 'token.json');
-
-      if (fs.existsSync(tokenPath)) {
-        hasMacToken = true;
-        tokenSource = '(本地文件)';
-      }
-    } catch (error) {
-      // Ignore file check errors
-    }
-  }
+  // Use shared authentication check logic
+  const { hasMacToken, source } = getMacTokenStatus(context);
 
   const configStatus = apiConfig.getConfigStatus();
 
-  // Override MAC Token status if found in local file
-  if (hasMacToken && tokenSource === '(本地文件)') {
-    configStatus['TDS_MCP_MAC_TOKEN'] = `✅ 已配置 ${tokenSource}`;
+  // Override MAC Token status based on actual source
+  if (hasMacToken) {
+    const sourceLabel = getTokenSourceLabel(source);
+    configStatus['TDS_MCP_MAC_TOKEN'] = `✅ 已配置 ${sourceLabel}`;
   }
 
   const envInfo = {

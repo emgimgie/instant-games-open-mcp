@@ -33,7 +33,7 @@ import { DeviceFlowAuth } from './core/auth/deviceFlow.js';
 import { VERSION } from './version.js';
 import type { MacToken } from './core/types/index.js';
 import { mergePrivateParams, stripPrivateParams } from './core/types/privateParams.js';
-import { getEffectiveContext } from './core/utils/handlerHelpers.js';
+import { getEffectiveContext, getMacTokenStatus, getTokenSourceLabel } from './core/utils/handlerHelpers.js';
 
 // 导入功能模块
 import { appModule } from './features/app/index.js';
@@ -150,10 +150,14 @@ class TapTapMinigameMCPServer {
       // Log tool call input (私有参数会被自动过滤)
       await logger.logToolCall(name, enrichedArgs);
 
+      // 统一在 Server 层处理 effectiveContext（合并私有参数到 context）
+      // 这样 OAuth 工具也能检查到 Proxy 注入的 token
+      const effectiveContext = getEffectiveContext(enrichedArgs, this.context);
+
       try {
         // Special handling for OAuth tools (need deviceAuth access)
         if (name === 'start_oauth_authorization') {
-          const result = await this.handleOAuthStart();
+          const result = await this.handleOAuthStart(effectiveContext);
           await logger.logToolResponse(name, result, true);
           return {
             content: [{ type: 'text', text: result }]
@@ -178,9 +182,6 @@ class TapTapMinigameMCPServer {
         if (!toolReg) {
           throw new McpError(ErrorCode.MethodNotFound, `未知工具: ${name}`);
         }
-
-        // 统一在 Server 层处理 effectiveContext（合并私有参数到 context）
-        const effectiveContext = getEffectiveContext(enrichedArgs, this.context);
 
         // Check if authentication is required (pass effectiveContext to check request-level token)
         if (toolReg.requiresAuth) {
@@ -284,13 +285,14 @@ class TapTapMinigameMCPServer {
   /**
    * Handle OAuth start (special case - needs deviceAuth access)
    */
-  private async handleOAuthStart(): Promise<string> {
-    const apiConfig = ApiConfig.getInstance();
+  private async handleOAuthStart(context?: HandlerContext): Promise<string> {
+    // Use shared authentication check logic
+    const { hasMacToken, source } = getMacTokenStatus(context);
 
-    // Check if already authenticated
-    if (apiConfig.macToken.kid && apiConfig.macToken.mac_key) {
+    if (hasMacToken) {
+      const sourceLabel = getTokenSourceLabel(source);
       return '✅ 已经完成授权\n\n' +
-             '当前已有有效的 MAC Token，可以直接使用所有功能。\n\n' +
+             `当前已有有效的 MAC Token ${sourceLabel}，可以直接使用所有功能。\n\n` +
              '💡 如需切换账号，请先使用 clear_auth_data 工具清除现有授权。';
     }
 
@@ -584,18 +586,14 @@ function setTransportMode(mode: 'stdio' | 'sse'): void {
  * @param context - Request-specific context (may contain injected MAC token from Proxy)
  */
 async function ensureAuthenticated(context?: HandlerContext): Promise<void> {
+  // Use shared authentication check logic
+  const { hasMacToken } = getMacTokenStatus(context);
+
+  if (hasMacToken) {
+    return;
+  }
+
   const apiConfig = ApiConfig.getInstance();
-
-  // Priority 1: Check request-specific token (from Proxy injection)
-  if (context?.macToken?.kid && context?.macToken?.mac_key) {
-    // Request has its own token - no need to check global config
-    return;
-  }
-
-  // Priority 2: Check global config
-  if (apiConfig.macToken.kid && apiConfig.macToken.mac_key) {
-    return;
-  }
 
   // Auth already in progress
   if (authInProgress) {
