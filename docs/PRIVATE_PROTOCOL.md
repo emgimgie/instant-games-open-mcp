@@ -37,6 +37,31 @@ interface MacToken {
 }
 ```
 
+## ⚠️ 重要说明：授权检测优先级
+
+为了确保 MCP Proxy 模式正常工作，以下工具会按优先级检查认证：
+
+### `check_environment`
+检测认证状态，优先级：
+1. **MCP Proxy 注入** (`context.macToken`) - 最高优先级
+2. **环境变量** (`TDS_MCP_MAC_TOKEN`)
+3. **本地文件** (`~/.config/taptap-minigame/token.json`)
+
+在 Proxy 模式下显示：
+```
+TDS_MCP_MAC_TOKEN: ✅ 已配置 (MCP Proxy 注入)
+✅ 认证配置完整，可以使用所有功能
+🔌 当前使用 MCP Proxy 多账号认证模式
+```
+
+### `start_oauth_authorization`
+启动 OAuth 授权流程前会检查：
+1. **MCP Proxy 注入的 token** - 如果存在，跳过授权并提示："您正在使用 MCP Proxy 多账号认证模式，无需手动授权"
+2. **全局 token** - 如果存在，提示已授权
+3. **无 token** - 启动 OAuth 流程
+
+这样可以避免在 Proxy 模式下 AI 误认为需要授权。
+
 ## 🔄 工作流程
 
 ```

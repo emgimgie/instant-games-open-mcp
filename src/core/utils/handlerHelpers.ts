@@ -100,3 +100,84 @@ export function hasMacToken<T extends PrivateToolParams>(
   const token = getEffectiveMacToken(args, context);
   return !!(token && token.kid && token.mac_key);
 }
+
+/**
+ * Token source types
+ */
+export enum TokenSource {
+  NONE = 'none',
+  CONTEXT = 'context',     // From request context (e.g., MCP Proxy injection)
+  ENV = 'env',             // From environment variable
+  FILE = 'file'            // From local OAuth token file
+}
+
+/**
+ * Get MAC Token source and availability
+ * Returns both availability and the source of the token
+ *
+ * Priority: context.macToken > global config > local file
+ *
+ * @param context - Handler context (may contain macToken from request)
+ * @returns Object with hasMacToken flag and tokenSource enum
+ */
+export function getMacTokenStatus(context?: HandlerContext): {
+  hasMacToken: boolean;
+  source: TokenSource;
+} {
+  const apiConfig = ApiConfig.getInstance();
+
+  // Priority 1: Check request-specific token (from context, e.g., MCP Proxy)
+  if (context?.macToken?.kid && context?.macToken?.mac_key) {
+    return {
+      hasMacToken: true,
+      source: TokenSource.CONTEXT
+    };
+  }
+
+  // Priority 2: Check global config (environment variable)
+  if (apiConfig.macToken.kid && apiConfig.macToken.mac_key) {
+    return {
+      hasMacToken: true,
+      source: TokenSource.ENV
+    };
+  }
+
+  // Priority 3: Check local file (OAuth cached token)
+  try {
+    const fs = require('node:fs');
+    const path = require('node:path');
+    const os = require('node:os');
+    const tokenPath = path.join(os.homedir(), '.config', 'taptap-minigame', 'token.json');
+
+    if (fs.existsSync(tokenPath)) {
+      return {
+        hasMacToken: true,
+        source: TokenSource.FILE
+      };
+    }
+  } catch (error) {
+    // Ignore file check errors
+  }
+
+  return {
+    hasMacToken: false,
+    source: TokenSource.NONE
+  };
+}
+
+/**
+ * Get human-readable token source label for display
+ */
+export function getTokenSourceLabel(source: TokenSource): string {
+  switch (source) {
+    case TokenSource.CONTEXT:
+      return '(请求上下文)';
+    case TokenSource.ENV:
+      return '(环境变量)';
+    case TokenSource.FILE:
+      return '(本地文件)';
+    case TokenSource.NONE:
+    default:
+      return '';
+  }
+}
