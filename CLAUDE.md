@@ -47,14 +47,25 @@ feature 分支开发 → git commit (规范格式) → git push → 创建 PR
 → CI 检查 → Code Review → Merge PR → 自动发布 → 更新文档
 ```
 
-**注意事项**：
-- 开发时始终在 feature/fix 分支工作
-- Commit 消息必须符合 Conventional Commits 规范
-- PR 合并到 main 后，semantic-release 会自动：
-  - 分析所有 commits 确定版本号
-  - 更新 package.json 和 CHANGELOG.md
-  - 发布到 npm
-  - 创建 GitHub Release
+**完整的自动发布流程**：
+1. **PR 合并到 main** - 触发 GitHub Actions
+2. **分析 commits** - semantic-release dry-run 确定版本号
+3. **创建 release 分支** - `release/vX.X.X`
+4. **发布到 npm** - 在 release 分支更新版本
+5. **生成 CHANGELOG** - 自动生成版本说明
+6. **自动创建 PR** - release 分支 → main
+7. **自动合并 PR** - 符合 trunk-guard 要求
+8. **创建 GitHub Release** - 添加 tag 和 release notes
+
+**重要注意事项**：
+- ✅ **始终在 feature/fix 分支工作**，不要直接 commit 到 main
+- ✅ **Commit 类型决定版本号**：
+  - `feat:` → minor 版本 (1.2.0 → 1.3.0)
+  - `fix:` → patch 版本 (1.2.0 → 1.2.1)
+  - `feat!:` / `fix!:` → major 版本 (1.2.0 → 2.0.0)
+  - `docs:` / `ci:` / `chore:` → 不触发发布
+- ✅ **发布完全自动化**，无需人工干预
+- ✅ **符合组织 Ruleset**，所有更改通过 PR
 
 ## 项目概述
 
@@ -650,12 +661,18 @@ main          # 稳定版本（1.2.3）- 受保护
 ```
 
 **分支保护规则：**
-- `main` 分支不允许直接 push，只能通过 PR 合并
+- `main` 分支受组织级 Ruleset (trunk-guard) 保护
+- 所有更改必须通过 PR 合并
 - PR 必须通过所有 CI 检查
-- PR 必须至少 1 人批准
 - Commit 消息必须符合 Conventional Commits 规范
 
-详见：[docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md)
+**自动发布机制：**
+- Feature PR 合并 → 触发 GitHub Actions
+- 分析 commits 确定版本号
+- 创建临时 release 分支
+- 在临时分支发布到 npm 并更新版本
+- 自动创建 PR 并合并到 main
+- 创建 GitHub Release
 
 ### 开发工作流
 
@@ -780,7 +797,7 @@ PR 合并到 main/beta/alpha 分支后自动运行：
 - `NPM_TOKEN` - npm 发布令牌（必需）
 
 **自动提供（无需配置）:**
-- `GITHUB_TOKEN` - GitHub API 令牌（用于创建 Release）
+- `GITHUB_TOKEN` - GitHub API 令牌（用于创建 PR、合并、创建 Release）
 
 ### 手动操作
 
