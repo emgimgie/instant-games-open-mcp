@@ -779,15 +779,21 @@ PR 合并到 main/beta/alpha 分支后自动运行：
    - 更新 package.json
    - 生成/更新 CHANGELOG.md
    - Git commit 和 tag
-   - 发布到 npm
+   - **发布到 npm（带 Provenance）**
    - 创建 GitHub Release
+
+**npm Provenance（可信发布）：**
+- ✅ 使用 GitHub OIDC 认证，无需 NPM_TOKEN
+- ✅ 自动生成来源证明（Provenance Statement）
+- ✅ 提供构建透明度和供应链安全
+- ✅ 通过 `npm publish --provenance` 启用
 
 ### 配置文件
 
 - `.releaserc.js` - Semantic Release 配置
 - `.commitlintrc.js` - Commitlint 配置
 - `.github/workflows/pr.yml` - PR 检查工作流
-- `.github/workflows/release.yml` - 发布工作流
+- `.github/workflows/release.yml` - 发布工作流（含 Provenance）
 
 ### 环境变量和 Secrets
 
@@ -795,9 +801,20 @@ PR 合并到 main/beta/alpha 分支后自动运行：
 
 **Secrets (Settings → Secrets and variables → Actions):**
 - `NPM_TOKEN` - npm 发布令牌（必需）
+  - **推荐**：创建 **Automation Token**（可绕过 2FA）
+  - **安全**：发布时使用 `--provenance` 启用 Trusted Publishing
 
 **自动提供（无需配置）:**
 - `GITHUB_TOKEN` - GitHub API 令牌（用于创建 PR、合并、创建 Release）
+
+**Permissions 要求：**
+```yaml
+permissions:
+  contents: write      # 创建 commit 和 tag
+  issues: write        # 发布说明
+  pull-requests: write # 创建和合并 PR
+  id-token: write      # OIDC 认证（Provenance）
+```
 
 ### 手动操作
 
