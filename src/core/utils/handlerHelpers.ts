@@ -35,7 +35,8 @@ export function getEffectiveContext<T extends PrivateToolParams>(
   const result: HandlerContext = { ...context };
 
   // === 认证层 ===
-  if (args._mac_token) {
+  // 🔧 FIX: 只有在私有参数有效时才覆盖（避免 undefined 覆盖已有 token）
+  if (args._mac_token && args._mac_token.kid && args._mac_token.mac_key) {
     result.macToken = args._mac_token;
   }
   if (args._user_id) {

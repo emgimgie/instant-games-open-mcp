@@ -10,7 +10,9 @@
  */
 
 import * as path from 'node:path';
+import * as fs from 'node:fs';
 import type { HandlerContext } from '../types/index.js';
+import { logger } from './logger.js';
 
 /**
  * 工作空间根路径
@@ -61,7 +63,37 @@ export function resolveWorkPath(relativePath?: string, context?: HandlerContext)
 
   // 3. 拼接用户传入的相对路径
   if (relativePath) {
-    return path.join(basePath, relativePath);
+    // 🔧 FIX: 如果用户传入的是绝对路径，直接使用（避免重复拼接）
+    if (path.isAbsolute(relativePath)) {
+      // 详细日志：绝对路径
+      logger.info(`[PathResolver] Using absolute path: ${relativePath}`).catch(() => {});
+      return relativePath;
+    }
+
+    // 相对路径拼接
+    const resolvedPath = path.join(basePath, relativePath);
+
+    // 详细日志：相对路径解析
+    logger.info(
+      `[PathResolver] Resolved relative path:\n` +
+      `  Input: ${relativePath}\n` +
+      `  Base: ${basePath}\n` +
+      `  Result: ${resolvedPath}`
+    ).catch(() => {});
+
+    // 🔧 FIX: 智能提示 - 如果路径不存在，提供帮助信息
+    if (!fs.existsSync(resolvedPath)) {
+      logger.warning(
+        `[PathResolver] ⚠️  Path does not exist: ${resolvedPath}\n` +
+        `  💡 Tip: Current WORKSPACE_ROOT is ${WORKSPACE_ROOT}\n` +
+        `  💡 Consider using:\n` +
+        `     - Absolute path (e.g., /Users/username/project/path)\n` +
+        `     - Set WORKSPACE_ROOT environment variable in MCP config\n` +
+        `     - Check if the path is correct relative to ${basePath}`
+      ).catch(() => {});
+    }
+
+    return resolvedPath;
   }
 
   return basePath;
