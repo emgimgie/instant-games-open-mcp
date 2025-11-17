@@ -112,8 +112,8 @@ jobs:
       - name: Generate CHANGELOG
         if: steps.analyze.outputs.should_release == 'true'
         run: |
-          # 生成/更新 CHANGELOG
-          npx conventional-changelog -p conventionalcommits -i CHANGELOG.md -s
+          # 生成/更新 CHANGELOG (使用项目已安装的包)
+          npx conventional-changelog-cli -p conventionalcommits -i CHANGELOG.md -s
 
       # ========== 7. 提交并推送 Release 分支 ==========
       - name: Commit and push release branch
@@ -143,9 +143,9 @@ jobs:
           VERSION=${{ steps.analyze.outputs.version }}
           BRANCH=${{ steps.branch.outputs.branch }}
 
-          # 创建 PR
+          # 创建 PR（标题包含 [skip ci] 防止合并后触发循环）
           PR_URL=$(gh pr create \
-            --title "chore(release): ${VERSION}" \
+            --title "chore(release): ${VERSION} [skip ci]" \
             --body "## 📦 Release ${VERSION}
 
           此 PR 由自动发布流程创建。
@@ -205,16 +205,18 @@ jobs:
           # 等待 PR 合并完成
           sleep 10
 
-          # 切回 main 分支并拉取最新代码
-          git checkout main
-          git pull origin main
+          # 重新 fetch 所有分支
+          git fetch origin
+
+          # 切换到远程 main 分支（强制切换，忽略本地更改）
+          git checkout -B main origin/main
 
           # 创建 git tag
           git tag "v${VERSION}"
           git push origin "v${VERSION}"
 
           # 提取 CHANGELOG 中的 release notes
-          RELEASE_NOTES=$(npx conventional-changelog -p conventionalcommits -o /dev/stdout -r 1)
+          RELEASE_NOTES=$(npx conventional-changelog-cli -p conventionalcommits -o /dev/stdout -r 1)
 
           # 创建 GitHub Release
           gh release create "v${VERSION}" \
