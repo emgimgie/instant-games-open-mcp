@@ -112,8 +112,8 @@ jobs:
       - name: Generate CHANGELOG
         if: steps.analyze.outputs.should_release == 'true'
         run: |
-          # 生成/更新 CHANGELOG
-          npx conventional-changelog -p conventionalcommits -i CHANGELOG.md -s
+          # 生成/更新 CHANGELOG (使用项目已安装的包)
+          npx conventional-changelog-cli -p conventionalcommits -i CHANGELOG.md -s
 
       # ========== 7. 提交并推送 Release 分支 ==========
       - name: Commit and push release branch
@@ -214,7 +214,7 @@ jobs:
           git push origin "v${VERSION}"
 
           # 提取 CHANGELOG 中的 release notes
-          RELEASE_NOTES=$(npx conventional-changelog -p conventionalcommits -o /dev/stdout -r 1)
+          RELEASE_NOTES=$(npx conventional-changelog-cli -p conventionalcommits -o /dev/stdout -r 1)
 
           # 创建 GitHub Release
           gh release create "v${VERSION}" \
