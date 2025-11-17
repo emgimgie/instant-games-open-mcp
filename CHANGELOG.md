@@ -1,19 +1,8 @@
+
 ## <small>1.5.2 (2025-11-17)</small>
 
 * refactor: 优化认证检查逻辑，提高代码可维护性 ([559fd2a](https://github.com/taptap/taptap_minigame_open_mcp/commit/559fd2a))
 * fix: proxy模式下授权检测问题 ([bfbdcc8](https://github.com/taptap/taptap_minigame_open_mcp/commit/bfbdcc8))
-
-
-
-## [Unreleased]
-
-### 🐛 Fixed
-
-- **修复 MCP Proxy 模式下的授权检测问题**
-  - `check_environment` 现在会检查 `context.macToken`（MCP Proxy 注入的 token）
-  - `start_oauth_authorization` 现在会检查请求级别的 token，避免在 Proxy 模式下误提示授权
-  - 优先级：MCP Proxy 注入 > 环境变量 > 本地文件
-  - 在 Proxy 模式下显示友好提示："您正在使用 MCP Proxy 多账号认证模式，无需手动授权"
 
 ## <small>1.5.1 (2025-11-17)</small>
 

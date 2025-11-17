@@ -208,6 +208,82 @@ handler: async (args: { page: number }, context) => {
 
 详见：[docs/PRIVATE_PROTOCOL.md](docs/PRIVATE_PROTOCOL.md)
 
+## 常见问题和重要修复（v1.5.3）
+
+### 路径处理问题
+
+**问题 1: 绝对路径重复拼接**
+- **现象**: 用户输入 `/Users/mikoto/Downloads/game`，实际解析为 `/Users/mikoto/Users/mikoto/Downloads/game`
+- **根本原因**: `pathResolver.ts` 使用 `path.join()` 处理绝对路径时会错误拼接
+- **修复方案**: 在拼接前检查用户输入是否为绝对路径，如果是则直接使用
+
+```typescript
+// ✅ 修复后 (src/core/utils/pathResolver.ts:64-68)
+if (relativePath) {
+  // 如果用户传入的是绝对路径，直接使用（避免重复拼接）
+  if (path.isAbsolute(relativePath)) {
+    return relativePath;
+  }
+  return path.join(basePath, relativePath);
+}
+```
+
+**问题 2: 相对路径基准错误（stdio 模式）**
+- **现象**: Cursor/VSCode 通过 stdio 启动 MCP，相对路径 `frontend/public` 解析为用户 HOME 目录而非项目目录
+- **根本原因**: `process.cwd()` 返回用户 HOME 目录（`/Users/mikoto`），而非 IDE 打开的项目目录
+- **修复方案**:
+  1. 添加详细的路径解析日志（显示 base 路径和解析结果）
+  2. 当路径不存在时，提供友好的警告和建议（使用绝对路径或设置 `WORKSPACE_ROOT` 环境变量）
+  3. 推荐在 MCP 配置中设置 `WORKSPACE_ROOT` 环境变量
+
+```json
+// Cursor/VSCode MCP 配置建议
+{
+  "mcpServers": {
+    "taptap-minigame": {
+      "command": "npx",
+      "args": ["@mikoto_zero/minigame-open-mcp"],
+      "env": {
+        "WORKSPACE_ROOT": "${workspaceFolder}"  // 设置工作空间根路径
+      }
+    }
+  }
+}
+```
+
+### OAuth Token 覆盖问题
+
+**问题 3: 私有参数中的无效 Token 覆盖全局 Token**
+- **现象**: OAuth Token 已成功加载到全局配置，但 HTTP 请求时显示 `Token kid: N/A`
+- **根本原因**: `getEffectiveContext()` 会无条件使用 `args._mac_token`，即使它是 `undefined` 或空对象，导致覆盖已有的全局 Token
+- **修复方案**: 在合并私有参数时，只有当 Token 有效（包含 `kid` 和 `mac_key`）时才覆盖
+
+```typescript
+// ✅ 修复后 (src/core/utils/handlerHelpers.ts:38-41)
+// 只有在私有参数有效时才覆盖（避免 undefined 覆盖已有 token）
+if (args._mac_token && args._mac_token.kid && args._mac_token.mac_key) {
+  result.macToken = args._mac_token;
+}
+```
+
+### 最佳实践建议
+
+1. **路径使用**:
+   - ✅ 推荐：使用绝对路径（如 `/Users/username/project/dist`）
+   - ⚠️ 小心：相对路径在 stdio 模式下可能解析错误
+   - 💡 配置：在 MCP 配置中设置 `WORKSPACE_ROOT` 环境变量
+
+2. **调试技巧**:
+   - 启用详细日志：`TDS_MCP_VERBOSE=true`
+   - 查看路径解析日志：`[PathResolver] Resolved relative path`
+   - 查看 Token 状态：`[DEBUG] HttpClient Token Retrieval`
+
+3. **环境变量配置**:
+   - `WORKSPACE_ROOT`: 工作空间根路径（推荐设置）
+   - `TDS_MCP_VERBOSE`: 详细日志模式（调试时启用）
+   - `TDS_MCP_CACHE_DIR`: 缓存根目录
+   - `TDS_MCP_TEMP_DIR`: 临时文件根目录
+
 ## 常用命令
 
 ### 开发环境设置

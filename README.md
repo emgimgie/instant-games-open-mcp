@@ -38,13 +38,20 @@ npx @mikoto_zero/minigame-open-mcp
   "mcpServers": {
     "taptap-minigame": {
       "command": "npx",
-      "args": ["-y", "@mikoto_zero/minigame-open-mcp"]
+      "args": ["-y", "@mikoto_zero/minigame-open-mcp"],
+      "env": {
+        "WORKSPACE_ROOT": "${workspaceFolder}"
+      }
     }
   }
 }
 ```
 
-**零配置 OAuth**：首次使用会提示扫码授权，token 自动保存！
+**重要说明**：
+- **零配置 OAuth**：首次使用会提示扫码授权，token 自动保存！
+- **路径处理**：设置 `WORKSPACE_ROOT` 环境变量可以正确解析相对路径（推荐）
+  - 如果不设置，相对路径会基于用户 HOME 目录（可能不符合预期）
+  - 建议使用绝对路径，或配置 `WORKSPACE_ROOT`
 
 #### OpenHands（推荐 SSE 模式）
 
