@@ -1,10 +1,12 @@
 FROM node:20-alpine
 
-# 设置工作目录
+# 单文件 Bundle 部署 - 极简版本
+# 优势：无需 npm install，启动更快，镜像更小
+
 WORKDIR /app
 
-# 安装 MCP Server
-RUN npm install -g @mikoto_zero/minigame-open-mcp@latest
+# 只复制单文件 bundle（无需 node_modules）
+COPY dist/server-bundle.js /app/server.js
 
 # 健康检查
 HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
@@ -16,7 +18,7 @@ EXPOSE 3000
 # 环境变量（可在 docker run 时覆盖）
 ENV TAPTAP_MCP_TRANSPORT=sse
 ENV TAPTAP_MCP_PORT=3000
-ENV TAPTAP_MCP_ENV=rnd
+ENV TAPTAP_MCP_ENV=production
 ENV TAPTAP_MCP_VERBOSE=false
 ENV TAPTAP_MCP_CACHE_DIR=/var/lib/taptap-mcp/cache
 ENV TAPTAP_MCP_TEMP_DIR=/tmp/taptap-mcp/temp
@@ -24,5 +26,5 @@ ENV TAPTAP_MCP_TEMP_DIR=/tmp/taptap-mcp/temp
 # 创建缓存和临时目录
 RUN mkdir -p /var/lib/taptap-mcp/cache /tmp/taptap-mcp/temp
 
-# 启动命令
-CMD ["sh", "-c", "minigame-open-mcp"]
+# 启动命令（直接运行单文件）
+CMD ["node", "/app/server.js"]

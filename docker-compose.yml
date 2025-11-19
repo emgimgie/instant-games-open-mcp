@@ -1,68 +1,48 @@
 version: '3.8'
 
 services:
-  # TapTap MCP Server（独立服务）
   taptap-mcp-server:
-    image: taptap-mcp-server:1.4.10-local
     build:
       context: .
-      dockerfile: Dockerfile.local
+      dockerfile: Dockerfile
+    image: taptap-mcp-server:latest
     container_name: taptap-mcp-server
     restart: unless-stopped
-
-    # 网络配置
     ports:
-      - "5003:3000"  # 主机端口:容器端口
-
-    # 环境变量
+      - "3000:3000"
     environment:
-      # 传输模式
-      - TAPTAP_MCP_TRANSPORT=sse
-      - TAPTAP_MCP_PORT=3000
-
-      # TapTap 环境
-      - TAPTAP_MCP_ENV=${TAPTAP_MCP_ENV:-rnd}  # rnd | production
-
-      # 客户端配置（必需）
-      - TAPTAP_MCP_CLIENT_ID=${TAPTAP_MCP_CLIENT_ID}
-      - TAPTAP_MCP_CLIENT_SECRET=${TAPTAP_MCP_CLIENT_SECRET}
-
-      # 路径配置
-      - WORKSPACE_ROOT=/workspace
-
+      # 传输协议
+      TAPTAP_MCP_TRANSPORT: sse
+      TAPTAP_MCP_PORT: 3000
+      
+      # API 环境
+      TAPTAP_MCP_ENV: production
+      
+      # 认证信息（必填）
+      TAPTAP_MCP_CLIENT_ID: ${TAPTAP_MCP_CLIENT_ID}
+      TAPTAP_MCP_CLIENT_SECRET: ${TAPTAP_MCP_CLIENT_SECRET}
+      # TAPTAP_MCP_MAC_TOKEN: ${TAPTAP_MCP_MAC_TOKEN}  # 可选，如果有预设 token
+      
+      # 缓存和临时目录
+      TAPTAP_MCP_CACHE_DIR: /var/lib/taptap-mcp/cache
+      TAPTAP_MCP_TEMP_DIR: /tmp/taptap-mcp/temp
+      
       # 日志
-      - TAPTAP_MCP_VERBOSE=${TAPTAP_MCP_VERBOSE:-true}
-
-      # 缓存和临时文件目录
-      - TAPTAP_MCP_CACHE_DIR=/var/lib/taptap-mcp/cache
-      - TAPTAP_MCP_TEMP_DIR=/tmp/taptap-mcp/temp
-
-    # 数据卷
+      TAPTAP_MCP_VERBOSE: "false"
     volumes:
-      # Workspace 根目录（只读，用于读取用户代码）
-      - ${WORKSPACE_ROOT:-/tmp/workspace}:/workspace:ro
-
-      # 缓存和临时文件（可写）
-      - mcp-cache:/var/lib/taptap-mcp/cache
-      - mcp-temp:/tmp/taptap-mcp/temp
-
-    # 健康检查
+      # 持久化缓存（包含 OAuth token）
+      - taptap-mcp-cache:/var/lib/taptap-mcp/cache
+      # 临时文件（可选）
+      - taptap-mcp-temp:/tmp/taptap-mcp/temp
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
       interval: 30s
       timeout: 3s
-      retries: 3
       start_period: 5s
-
-    # 日志配置
-    logging:
-      driver: "json-file"
-      options:
-        max-size: "10m"
-        max-file: "3"
+      retries: 3
 
 volumes:
-  mcp-cache:
-    name: taptap-mcp-cache
-  mcp-temp:
-    name: taptap-mcp-temp
+  taptap-mcp-cache:
+    driver: local
+  taptap-mcp-temp:
+    driver: local
