@@ -203,7 +203,7 @@ git commit -m "feat: 添加云存档功能"
 
 ## 🎯 关键设计原则
 
-### 1. 统一格式（v1.2.0-beta.11+，当前 v1.2.0-beta.12）
+### 1. 统一格式
 
 所有 Tools 和 Resources 采用统一对象数组格式：
 
@@ -285,7 +285,7 @@ const appInfo = await ensureAppInfo(context.projectPath);
 // 获得: developer_id, app_id, miniapp_id, app_title, developer_name
 ```
 
-**注意**：从 v1.2.0-beta.11 开始（当前 v1.2.0-beta.12），应用操作已抽象到独立的 `app` 模块。
+**注意**：应用操作已抽象到独立的 `app` 模块。
 
 ### 缓存
 
@@ -351,7 +351,7 @@ TapTap API
 
 ### 代码度量
 
-当前项目（v1.2.0-beta.12）：
+当前项目统计：
 
 | 模块 | 文件数 | 代码行数 | 说明 |
 |------|-------|---------|------|

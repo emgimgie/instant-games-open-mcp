@@ -13,7 +13,7 @@
 - **🚀 三种传输模式** - stdio（本地）、SSE（远程/实时）、HTTP（兼容）
 - **🔌 多客户端并发** - 独立会话管理，无限并发
 
-**当前版本**: v1.4.13 | **NPM**: [@mikoto_zero/minigame-open-mcp](https://www.npmjs.com/package/@mikoto_zero/minigame-open-mcp)
+**NPM**: [@mikoto_zero/minigame-open-mcp](https://www.npmjs.com/package/@mikoto_zero/minigame-open-mcp)
 
 ## 🚀 快速开始
 
@@ -196,8 +196,8 @@ npm test
 
 **手动配置（可选）**:
 - `TDS_MCP_MAC_TOKEN` - MAC Token（JSON 格式）
-- `TDS_MCP_CLIENT_ID` - 客户端 ID（已内置）
-- `TDS_MCP_CLIENT_TOKEN` - 签名密钥（已内置）
+- `TDS_MCP_CLIENT_ID` - 客户端 ID（非必需，不配置会导致部分工具无法使用）
+- `TDS_MCP_CLIENT_TOKEN` - 签名密钥（非必需，不配置会导致部分工具无法使用）
 
 **其他**:
 - `TDS_MCP_ENV` - 环境：`production`（默认）或 `rnd`

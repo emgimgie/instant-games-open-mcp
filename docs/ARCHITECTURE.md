@@ -580,7 +580,7 @@ const overview = generateOverview(documentation);
 
 ## 8. 代码度量
 
-当前项目（v1.4.8）：
+当前项目统计：
 
 | 模块 | 文件数 | 代码行数 | 说明 |
 |------|-------|---------|------|
@@ -729,10 +729,10 @@ function generateRequestSign(
   - 不配置则使用 OAuth 2.0
   - Token 自动保存到本地
 
-#### 客户端配置（已内置）
+#### 客户端配置（可选）
 
-- `TDS_MCP_CLIENT_ID` - 客户端 ID（已内置默认值）
-- `TDS_MCP_CLIENT_TOKEN` - 请求签名密钥（已内置默认值）
+- `TDS_MCP_CLIENT_ID` - 客户端 ID（非必需，不配置会导致部分工具无法使用）
+- `TDS_MCP_CLIENT_TOKEN` - 请求签名密钥（非必需，不配置会导致部分工具无法使用）
 
 ---
 

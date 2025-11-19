@@ -8,11 +8,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### 文档更新规则
 
-- **自动更新文档**：当有重要代码改动时（新特性、架构变更、API 修改），必须同时更新：
+- **主动更新文档**：当有重要代码改动时（新特性、架构变更、API 修改），必须同时更新相关文档：
   - `CLAUDE.md` - 开发指南和技术文档
   - `README.md` - 用户文档和使用说明
-  - `CHANGELOG.md` - 版本变更记录
+  - `docs/` - 相关技术文档
   - **不需要每次都问用户是否更新文档，主动更新即可**
+  - **注意**：`CHANGELOG.md` 由 CI/CD 自动生成，无需手动维护
 
 ### Git 提交规范
 
@@ -61,7 +62,6 @@ feature 分支开发 → git commit (规范格式) → git push → 创建 PR
 
 **基本信息：**
 - **NPM 包：** `@mikoto_zero/minigame-open-mcp`
-- **当前版本：** v1.5.4
 - **官方 API 文档：** https://developer.taptap.cn/minigameapidoc/
 
 ## 架构概览
