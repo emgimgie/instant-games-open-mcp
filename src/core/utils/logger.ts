@@ -6,6 +6,7 @@
 import process from 'node:process';
 import type { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { stripPrivateParams } from '../types/privateParams.js';
+import { EnvConfig } from './env.js';
 
 /**
  * RFC 5424 log levels (syslog severity levels)
@@ -38,7 +39,7 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
  * Check if verbose logging is enabled
  */
 function isVerboseEnabled(): boolean {
-  return process.env.TDS_MCP_VERBOSE === 'true' || process.env.TDS_MCP_VERBOSE === '1';
+  return EnvConfig.isVerbose;
 }
 
 /**

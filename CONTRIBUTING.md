@@ -81,7 +81,7 @@ npx commitlint --from HEAD~1 --to HEAD
 - PR 必须至少 1 人批准
 - 所有 CI 检查必须通过
 
-详见：[docs/BRANCH_PROTECTION.md](docs/BRANCH_PROTECTION.md)
+详见：[docs/CI_CD.md](docs/CI_CD.md)
 
 ## 🏗️ 架构概览
 
@@ -190,7 +190,7 @@ git commit -m "feat: 添加云存档功能"
 ### Commit 和文档
 - [ ] Commit 消息符合 Conventional Commits 规范
 - [ ] 更新 README.md（如有用户可见的新特性）
-- [ ] 更新 CLAUDE.md（如有架构变更或开发规范调整，供 AI 参考）
+- [ ] 更新相关技术文档（如有架构变更，参考 [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)）
 
 ### PR 流程
 - [ ] 创建 PR 并填写详细描述
@@ -203,7 +203,7 @@ git commit -m "feat: 添加云存档功能"
 
 ## 🎯 关键设计原则
 
-### 1. 统一格式（v1.2.0-beta.11+，当前 v1.2.0-beta.12）
+### 1. 统一格式
 
 所有 Tools 和 Resources 采用统一对象数组格式：
 
@@ -285,7 +285,7 @@ const appInfo = await ensureAppInfo(context.projectPath);
 // 获得: developer_id, app_id, miniapp_id, app_title, developer_name
 ```
 
-**注意**：从 v1.2.0-beta.11 开始（当前 v1.2.0-beta.12），应用操作已抽象到独立的 `app` 模块。
+**注意**：应用操作已抽象到独立的 `app` 模块。
 
 ### 缓存
 
@@ -351,7 +351,7 @@ TapTap API
 
 ### 代码度量
 
-当前项目（v1.2.0-beta.12）：
+当前项目统计：
 
 | 模块 | 文件数 | 代码行数 | 说明 |
 |------|-------|---------|------|
@@ -370,4 +370,7 @@ TapTap API
 
 ## 🎊 享受模块化开发！
 
-模块化架构让添加新功能变得简单快捷！有问题请参考 `src/features/leaderboard/` 示例或查看 CLAUDE.md。
+模块化架构让添加新功能变得简单快捷！有问题请参考：
+- **代码示例**：`src/features/leaderboard/` 模块
+- **架构文档**：[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)
+- **部署测试**：[docs/DEPLOYMENT.md#4-开发者测试指南](docs/DEPLOYMENT.md#4-开发者测试指南)

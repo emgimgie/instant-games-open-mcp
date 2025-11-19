@@ -224,7 +224,7 @@ export function getRelativeToWorkspace(absolutePath: string): string
 
 ```bash
 # 启动时启用详细日志
-TDS_MCP_VERBOSE=true npm start
+TAPTAP_MCP_VERBOSE=true npm start
 ```
 
 ### 验证路径配置
@@ -247,4 +247,4 @@ await logger.info(`resolved path: ${resolvedPath}`);
 
 - [MCP Proxy 配置](../src/mcp-proxy/README.md)
 - [缓存系统说明](../src/core/utils/cache.ts)
-- [私有参数协议](./PRIVATE_PROTOCOL.md)
+- [私有参数协议](./PROXY.md#3-私有参数协议)

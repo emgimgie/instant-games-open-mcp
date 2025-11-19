@@ -8,6 +8,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import { MacToken } from '../types/index.js';
 
+import { EnvConfig } from '../utils/env.js';
 /**
  * Environment-specific host configuration
  */
@@ -77,7 +78,7 @@ export class DeviceFlowAuth {
 
   constructor(environment: string = 'production') {
     // Use cache directory for token (persistent across container restarts)
-    const cacheDir = process.env.TDS_MCP_CACHE_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
+    const cacheDir = EnvConfig.cacheDir;
     this.tokenPath = path.join(cacheDir, 'global', 'oauth-token.json');
     this.config = ENV_CONFIGS[environment] || ENV_CONFIGS.production;
   }
@@ -89,16 +90,17 @@ export class DeviceFlowAuth {
    */
   tryLoadToken(): MacToken | null {
     // 1. Check environment variable (highest priority)
-    if (process.env.TDS_MCP_MAC_TOKEN) {
+    const envToken = EnvConfig.macToken;
+    if (envToken) {
       try {
-        const token = JSON.parse(process.env.TDS_MCP_MAC_TOKEN) as MacToken;
+        const token = JSON.parse(envToken) as MacToken;
         if (token.kid && token.mac_key) {
           this.macToken = token;
           process.stderr.write('✅ Loaded MAC Token from environment variable\n');
           return this.macToken;
         }
       } catch (error) {
-        process.stderr.write('⚠️  Invalid TDS_MCP_MAC_TOKEN format in environment\n');
+        process.stderr.write('⚠️  Invalid TAPTAP_MCP_MAC_TOKEN format in environment\n');
       }
     }
 

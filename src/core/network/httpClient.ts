@@ -8,6 +8,7 @@ import cryptoJS from 'crypto-js';
 import { MacToken } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 
+import { getEnv, getEnvBoolean, EnvConfig } from '../utils/env.js';
 /**
  * Environment configuration
  */
@@ -22,7 +23,7 @@ export class ApiConfig {
 
   private constructor() {
     // Optional: default to production
-    this.environment = (process.env.TDS_MCP_ENV === 'rnd') ? 'rnd' : 'production';
+    this.environment = EnvConfig.environment;
 
     // Built-in OAuth Client ID (public, safe to include)
     // These match the values in deviceFlow.ts for OAuth consistency
@@ -30,17 +31,17 @@ export class ApiConfig {
       ? 'cadxxoz247zw0ug5i2'  // Production OAuth client ID (public)
       : 'm2dnabebip3fpardnm';  // RND OAuth client ID (public)
 
-    // Environment variables (TDS_MCP_* prefix for consistency)
-    const macTokenStr = process.env.TDS_MCP_MAC_TOKEN || '';
-    this.clientId = process.env.TDS_MCP_CLIENT_ID || DEFAULT_CLIENT_ID;
-    // CLIENT_TOKEN must be provided via environment variable (keep it secret!)
-    this.signingKey = process.env.TDS_MCP_CLIENT_TOKEN || '';
+    // Environment variables (TAPTAP_MCP_* prefix for consistency)
+    const macTokenStr = EnvConfig.macToken || '';
+    this.clientId = EnvConfig.clientId || DEFAULT_CLIENT_ID;
+    // CLIENT_SECRET must be provided via environment variable (keep it secret!)
+    this.signingKey = EnvConfig.clientSecret || '';
 
     // Parse MAC Token from JSON string (optional now, can be set later via Device Flow)
     try {
       this.macToken = macTokenStr ? JSON.parse(macTokenStr) : {} as MacToken;
     } catch (error) {
-      process.stderr.write('⚠️  Failed to parse TDS_MCP_MAC_TOKEN from environment, will use OAuth flow\n');
+      process.stderr.write('⚠️  Failed to parse TAPTAP_MCP_MAC_TOKEN from environment, will use OAuth flow\n');
       this.macToken = {} as MacToken;
     }
 
@@ -56,16 +57,16 @@ export class ApiConfig {
   private validateConfig(): void {
     // Client Token is required for API signing (keep it secret!)
     if (!this.signingKey) {
-      process.stderr.write('❌ Missing required environment variable: TDS_MCP_CLIENT_TOKEN\n\n');
+      process.stderr.write('❌ Missing required environment variable: TAPTAP_MCP_CLIENT_SECRET\n\n');
       process.stderr.write('This is the API request signing key (keep it secret!).\n');
       process.stderr.write('Please set it before starting the server:\n\n');
-      process.stderr.write('  export TDS_MCP_CLIENT_TOKEN="your_signing_key"\n\n');
-      process.stderr.write('Contact TapTap support to get your CLIENT_TOKEN.\n\n');
+      process.stderr.write('  export TAPTAP_MCP_CLIENT_SECRET="your_signing_key"\n\n');
+      process.stderr.write('Contact TapTap support to get your CLIENT_SECRET.\n\n');
       process.exit(1);
     }
 
     // Show info about CLIENT_ID
-    if (!process.env.TDS_MCP_CLIENT_ID) {
+    if (!EnvConfig.clientId) {
       process.stderr.write(`ℹ️  Using built-in OAuth CLIENT_ID: ${this.clientId}\n`);
     }
   }
@@ -81,7 +82,7 @@ export class ApiConfig {
    * Set MAC Token (called by Device Flow or manual configuration)
    */
   public setMacToken(token: MacToken): void {
-    if (process.env.TDS_MCP_VERBOSE === 'true') {
+    if (EnvConfig.isVerbose) {
       process.stderr.write('\n🔍 [DEBUG] ApiConfig.setMacToken() called:\n');
       process.stderr.write(`  - kid: ${token.kid?.substring(0, 20)}...\n`);
       process.stderr.write(`  - mac_key: ${token.mac_key?.substring(0, 10)}...\n`);
@@ -96,10 +97,10 @@ export class ApiConfig {
 
   public getConfigStatus(): Record<string, string> {
     return {
-      'TDS_MCP_MAC_TOKEN': this.macToken.kid ? `✅ 已配置 (kid: ${this.macToken.kid.substring(0, 8)}...)` : '❌ 未配置',
-      'TDS_MCP_CLIENT_ID': this.clientId ? '✅ 已配置' : '❌ 未配置',
-      'TDS_MCP_CLIENT_TOKEN': this.signingKey ? '✅ 已配置' : '❌ 未配置',
-      'TDS_MCP_ENV': `${this.environment} (${this.apiBaseUrl})`,
+      'TAPTAP_MCP_MAC_TOKEN': this.macToken.kid ? `✅ 已配置 (kid: ${this.macToken.kid.substring(0, 8)}...)` : '❌ 未配置',
+      'TAPTAP_MCP_CLIENT_ID': this.clientId ? '✅ 已配置' : '❌ 未配置',
+      'TAPTAP_MCP_CLIENT_SECRET': this.signingKey ? '✅ 已配置' : '❌ 未配置',
+      'TAPTAP_MCP_ENV': `${this.environment} (${this.apiBaseUrl})`,
     };
   }
 
@@ -213,7 +214,7 @@ export class HttpClient {
     const effectiveMacToken = this.overrideMacToken || ApiConfig.getInstance().macToken;
 
     // Debug: Log token retrieval
-    if (process.env.TDS_MCP_VERBOSE === 'true') {
+    if (EnvConfig.isVerbose) {
       process.stderr.write('\n🔍 [DEBUG] HttpClient Token Retrieval:\n');
       process.stderr.write(`  - Using override: ${!!this.overrideMacToken}\n`);
       process.stderr.write(`  - Token kid: ${effectiveMacToken?.kid?.substring(0, 20) || 'N/A'}...\n`);
@@ -281,7 +282,7 @@ export class HttpClient {
               `1. 调用 clear_auth_data 工具清除过期的认证数据\n` +
               `2. 调用需要认证的工具会自动触发新的授权流程\n` +
               `3. 使用 TapTap App 扫码重新授权\n\n` +
-              `💡 提示：如果使用的是环境变量中的 Token，请更新 TDS_MCP_MAC_TOKEN 环境变量并重启服务器。`
+              `💡 提示：如果使用的是环境变量中的 Token，请更新 TAPTAP_MCP_MAC_TOKEN 环境变量并重启服务器。`
             );
             (authError as any).isAuthError = true;
 
@@ -305,7 +306,7 @@ export class HttpClient {
               `1. 调用 clear_auth_data 工具清除过期的认证数据\n` +
               `2. 调用需要认证的工具会自动触发新的授权流程\n` +
               `3. 使用 TapTap App 扫码重新授权\n\n` +
-              `💡 提示：如果使用的是环境变量中的 Token，请更新 TDS_MCP_MAC_TOKEN 环境变量并重启服务器。`
+              `💡 提示：如果使用的是环境变量中的 Token，请更新 TAPTAP_MCP_MAC_TOKEN 环境变量并重启服务器。`
             );
             (authError as any).isAuthError = true;
 
@@ -395,7 +396,7 @@ export class HttpClient {
     const signatureBase = this.buildMacSignatureBase(timestamp, nonce, method, uri, host, port, other);
 
     // Debug: Log MAC signature generation
-    if (process.env.TDS_MCP_VERBOSE === 'true') {
+    if (EnvConfig.isVerbose) {
       process.stderr.write('\n🔍 [DEBUG] MAC Authorization Generation:\n');
       process.stderr.write(`MAC Key: ${macToken.mac_key.substring(0, 10)}...\n`);
       process.stderr.write(`MAC KID: ${macToken.kid.substring(0, 10)}...\n`);
@@ -412,7 +413,7 @@ export class HttpClient {
 
     const macSignature = cryptoJS.enc.Base64.stringify(hmac);
 
-    if (process.env.TDS_MCP_VERBOSE === 'true') {
+    if (EnvConfig.isVerbose) {
       process.stderr.write(`MAC Signature: ${macSignature.substring(0, 20)}...\n\n`);
     }
 
@@ -455,7 +456,7 @@ export class HttpClient {
     try {
       // Debug: Check signing key
       if (!this.config.signingKey) {
-        throw new Error('Signing key (TDS_MCP_CLIENT_TOKEN) is empty or undefined');
+        throw new Error('Signing key (TAPTAP_MCP_CLIENT_SECRET) is empty or undefined');
       }
 
       const methodPart = method;
@@ -465,7 +466,7 @@ export class HttpClient {
       const signParts = `${methodPart}\n${urlPart}\n${headersPart}\n${bodyPart}\n`;
 
       // Debug: Log signature base string
-      if (process.env.TDS_MCP_VERBOSE === 'true') {
+      if (EnvConfig.isVerbose) {
         process.stderr.write('\n🔍 [DEBUG] Signature Generation:\n');
         process.stderr.write(`Signing Key: ${this.config.signingKey.substring(0, 10)}...\n`);
         process.stderr.write(`Sign Parts:\n${signParts}\n`);
@@ -480,7 +481,7 @@ export class HttpClient {
 
       const signatureBase64 = cryptoJS.enc.Base64.stringify(hmacResult);
 
-      if (process.env.TDS_MCP_VERBOSE === 'true') {
+      if (EnvConfig.isVerbose) {
         process.stderr.write(`Signature: ${signatureBase64.substring(0, 20)}...\n\n`);
       }
 

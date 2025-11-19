@@ -41,11 +41,12 @@ import { leaderboardModule } from './features/leaderboard/index.js';
 import { h5GameModule } from './features/h5Game/index.js';
 import { vibrateModule } from './features/vibrate/index.js';
 import type { HandlerContext, FeatureModule } from './core/types/index.js';
+import { EnvConfig, printDeprecationWarnings, getEnv } from './core/utils/env.js';
 
 // 环境变量配置
 const apiConfig = ApiConfig.getInstance();
-const TDS_MCP_TRANSPORT = (process.env.TDS_MCP_TRANSPORT || 'stdio').toLowerCase();
-const TDS_MCP_PORT = parseInt(process.env.TDS_MCP_PORT || '3000', 10);
+const transportMode = EnvConfig.transport;
+const serverPort = EnvConfig.port;
 
 // 所有功能模块
 const allModules: FeatureModule[] = [
@@ -351,7 +352,7 @@ class TapTapMinigameMCPServer {
     const totalTools = allModules.reduce((sum, m) => sum + m.tools.length, 0);
     const totalResources = allModules.reduce((sum, m) => sum + m.resources.length, 0);
 
-    if (TDS_MCP_TRANSPORT === 'sse' || TDS_MCP_TRANSPORT === 'http') {
+    if (transportMode === 'sse' || transportMode === 'http') {
       // SSE mode: Start HTTP server
       await this.startSSEServer(totalTools, totalResources);
     } else {
@@ -387,11 +388,11 @@ class TapTapMinigameMCPServer {
     });
 
     if (logger.isVerbose()) {
-      process.stderr.write('\n🔍 Verbose logging enabled (TDS_MCP_VERBOSE=true)\n');
+      process.stderr.write('\n🔍 Verbose logging enabled (TAPTAP_MCP_VERBOSE=true)\n');
       process.stderr.write('   - Tool call inputs and outputs will be logged\n');
       process.stderr.write('   - HTTP requests and responses will be logged\n');
     } else {
-      process.stderr.write('\n💡 Tip: Set TDS_MCP_VERBOSE=true for detailed logs\n');
+      process.stderr.write('\n💡 Tip: Set TAPTAP_MCP_VERBOSE=true for detailed logs\n');
     }
   }
 
@@ -406,7 +407,7 @@ class TapTapMinigameMCPServer {
     // Set transport mode for authentication
     // - 'sse': enables auto-authorization with progress streaming
     // - 'http' (JSON only): uses two-step auth (no progress streaming available)
-    const authMode = TDS_MCP_TRANSPORT === 'sse' ? 'sse' : 'stdio';
+    const authMode = transportMode === 'sse' ? 'sse' : 'stdio';
     setTransportMode(authMode);
 
     // Store active transport instances by session ID
@@ -478,7 +479,7 @@ class TapTapMinigameMCPServer {
         // Response mode based on transport type:
         // - 'http': JSON responses only (for clients that don't support SSE)
         // - 'sse': SSE streaming (for Streamable HTTP clients)
-        enableJsonResponse: TDS_MCP_TRANSPORT === 'http',
+        enableJsonResponse: transportMode === 'http',
         // Log client connections
         onsessioninitialized: async (newSessionId: string) => {
           await logger.logClientConnection(newSessionId);
@@ -500,13 +501,13 @@ class TapTapMinigameMCPServer {
       await sessionTransport.handleRequest(req, res);
     });
 
-    httpServer.listen(TDS_MCP_PORT, () => {
+    httpServer.listen(serverPort, () => {
       process.stderr.write(`🚀 TapTap Open API MCP Server v${VERSION} (Minigame & H5)\n`);
-      const responseMode = TDS_MCP_TRANSPORT === 'http' ? 'JSON Only' : 'SSE Streaming';
+      const responseMode = transportMode === 'http' ? 'JSON Only' : 'SSE Streaming';
       process.stderr.write(`🔌 Transport: Streamable HTTP (${responseMode})\n`);
-      process.stderr.write(`🌐 HTTP Server: http://localhost:${TDS_MCP_PORT}\n`);
-      process.stderr.write(`📡 MCP Endpoint: http://localhost:${TDS_MCP_PORT}/\n`);
-      process.stderr.write(`💚 Health Check: http://localhost:${TDS_MCP_PORT}/health\n`);
+      process.stderr.write(`🌐 HTTP Server: http://localhost:${serverPort}\n`);
+      process.stderr.write(`📡 MCP Endpoint: http://localhost:${serverPort}/\n`);
+      process.stderr.write(`💚 Health Check: http://localhost:${serverPort}/health\n`);
       process.stderr.write(`📚 Providing ${totalTools} tools, ${totalResources} resources\n`);
       process.stderr.write('🏆 Features: Leaderboard Documentation & Management API\n');
       process.stderr.write(`🌍 Environment: ${apiConfig.environment}\n`);
@@ -516,19 +517,19 @@ class TapTapMinigameMCPServer {
       process.stderr.write('\n📂 Directory Configuration:\n');
 
       // WORKSPACE_ROOT
-      const workspaceRoot = process.env.WORKSPACE_ROOT || process.cwd();
-      const workspaceRootLabel = process.env.WORKSPACE_ROOT ? '(env)' : '(default: cwd)';
+      const workspaceRoot = getEnv('TAPTAP_MCP_WORKSPACE_ROOT') || process.cwd();
+      const workspaceRootLabel = getEnv('TAPTAP_MCP_WORKSPACE_ROOT') ? '(env)' : '(default: cwd)';
       process.stderr.write(`   📁 WORKSPACE_ROOT: ${workspaceRoot} ${workspaceRootLabel}\n`);
 
-      // TDS_MCP_CACHE_DIR
-      const cacheDir = process.env.TDS_MCP_CACHE_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
-      const cacheDirLabel = process.env.TDS_MCP_CACHE_DIR ? '(env)' : '(default)';
-      process.stderr.write(`   📦 TDS_MCP_CACHE_DIR: ${cacheDir} ${cacheDirLabel}\n`);
+      // TAPTAP_MCP_CACHE_DIR
+      const cacheDir = getEnv('TAPTAP_MCP_CACHE_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
+      const cacheDirLabel = getEnv('TAPTAP_MCP_CACHE_DIR') ? '(env)' : '(default)';
+      process.stderr.write(`   📦 TAPTAP_MCP_CACHE_DIR: ${cacheDir} ${cacheDirLabel}\n`);
 
-      // TDS_MCP_TEMP_DIR
-      const tempDir = process.env.TDS_MCP_TEMP_DIR || path.join(os.tmpdir(), 'taptap-mcp', 'temp');
-      const tempDirLabel = process.env.TDS_MCP_TEMP_DIR ? '(env)' : '(default)';
-      process.stderr.write(`   📂 TDS_MCP_TEMP_DIR: ${tempDir} ${tempDirLabel}\n`);
+      // TAPTAP_MCP_TEMP_DIR
+      const tempDir = getEnv('TAPTAP_MCP_TEMP_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'temp');
+      const tempDirLabel = getEnv('TAPTAP_MCP_TEMP_DIR') ? '(env)' : '(default)';
+      process.stderr.write(`   📂 TAPTAP_MCP_TEMP_DIR: ${tempDir} ${tempDirLabel}\n`);
 
       process.stderr.write('\n📖 MCP Capabilities:\n');
       process.stderr.write(`   ✅ Tools (${totalTools}) - Execute operations with side effects\n`);
@@ -541,12 +542,15 @@ class TapTapMinigameMCPServer {
       });
 
       if (logger.isVerbose()) {
-        process.stderr.write('\n🔍 Verbose logging enabled (TDS_MCP_VERBOSE=true)\n');
+        process.stderr.write('\n🔍 Verbose logging enabled (TAPTAP_MCP_VERBOSE=true)\n');
         process.stderr.write('   - Tool call inputs and outputs will be logged\n');
         process.stderr.write('   - HTTP requests and responses will be logged\n');
       } else {
-        process.stderr.write('\n💡 Tip: Set TDS_MCP_VERBOSE=true for detailed logs\n');
+        process.stderr.write('\n💡 Tip: Set TAPTAP_MCP_VERBOSE=true for detailed logs\n');
       }
+
+      // Print deprecation warnings for old environment variables
+      printDeprecationWarnings();
     });
 
     // Handle server shutdown
@@ -638,7 +642,7 @@ async function main(): Promise<void> {
   const server = new TapTapMinigameMCPServer(ensureAuthenticated);
 
   // 处理优雅关闭（仅在 stdio 模式下需要，SSE 模式在 startSSEServer 中处理）
-  if (TDS_MCP_TRANSPORT !== 'sse' && TDS_MCP_TRANSPORT !== 'http') {
+  if (transportMode !== 'sse' && transportMode !== 'http') {
     process.on('SIGINT', () => {
       process.stderr.write('\n📴 收到中断信号，正在关闭服务器...\n');
       process.exit(0);
@@ -656,6 +660,9 @@ async function main(): Promise<void> {
     process.stderr.write(`❌ 服务器启动失败: ${error}\n`);
     process.exit(1);
   }
+
+      // Print deprecation warnings for old environment variables
+      printDeprecationWarnings();
 }
 
 // 启动主函数
