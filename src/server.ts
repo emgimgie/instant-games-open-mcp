@@ -41,12 +41,12 @@ import { leaderboardModule } from './features/leaderboard/index.js';
 import { h5GameModule } from './features/h5Game/index.js';
 import { vibrateModule } from './features/vibrate/index.js';
 import type { HandlerContext, FeatureModule } from './core/types/index.js';
-import { getEnv, getEnvInt, getEnvBoolean, printDeprecationWarnings } from './core/utils/env.js';
+import { EnvConfig, printDeprecationWarnings, getEnv } from './core/utils/env.js';
 
 // 环境变量配置
 const apiConfig = ApiConfig.getInstance();
-const transportMode = (getEnv('TAPTAP_MCP_TRANSPORT', 'stdio')).toLowerCase();
-const serverPort = getEnvInt('TAPTAP_MCP_PORT', 3000);
+const transportMode = EnvConfig.transport;
+const serverPort = EnvConfig.port;
 
 // 所有功能模块
 const allModules: FeatureModule[] = [

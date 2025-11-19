@@ -8,7 +8,7 @@ import * as fs from 'node:fs';
 import * as os from 'node:os';
 import { MacToken } from '../types/index.js';
 
-import { getEnv } from '../utils/env.js';
+import { EnvConfig } from '../utils/env.js';
 /**
  * Environment-specific host configuration
  */
@@ -78,7 +78,7 @@ export class DeviceFlowAuth {
 
   constructor(environment: string = 'production') {
     // Use cache directory for token (persistent across container restarts)
-    const cacheDir = getEnv('TAPTAP_MCP_CACHE_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
+    const cacheDir = EnvConfig.cacheDir;
     this.tokenPath = path.join(cacheDir, 'global', 'oauth-token.json');
     this.config = ENV_CONFIGS[environment] || ENV_CONFIGS.production;
   }
@@ -90,7 +90,7 @@ export class DeviceFlowAuth {
    */
   tryLoadToken(): MacToken | null {
     // 1. Check environment variable (highest priority)
-    const envToken = getEnv('TAPTAP_MCP_MAC_TOKEN');
+    const envToken = EnvConfig.macToken;
     if (envToken) {
       try {
         const token = JSON.parse(envToken) as MacToken;

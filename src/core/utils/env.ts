@@ -5,6 +5,10 @@
  * Old TDS_MCP_* variables are deprecated in favor of TAPTAP_MCP_*.
  */
 
+import * as path from 'node:path';
+import * as os from 'node:os';
+import process from 'node:process';
+
 interface EnvMapping {
   new: string;
   old: string;
@@ -132,5 +136,62 @@ export function printDeprecationWarnings(): void {
     console.error('Please update your configuration to use the new variable names.');
     console.error('Old variables will be removed in a future major version.');
     console.error('');
+  }
+}
+
+/**
+ * Type-safe Environment Configuration
+ */
+export class EnvConfig {
+  // 基础配置
+  static get macToken(): string | undefined {
+    return getEnv('TAPTAP_MCP_MAC_TOKEN');
+  }
+
+  static get clientId(): string | undefined {
+    return getEnv('TAPTAP_MCP_CLIENT_ID');
+  }
+
+  static get clientSecret(): string | undefined {
+    return getEnv('TAPTAP_MCP_CLIENT_SECRET');
+  }
+
+  static get environment(): 'production' | 'rnd' {
+    const env = getEnv('TAPTAP_MCP_ENV', 'production');
+    return env === 'rnd' ? 'rnd' : 'production';
+  }
+
+  // 传输配置
+  static get transport(): 'stdio' | 'sse' | 'http' {
+    const transport = getEnv('TAPTAP_MCP_TRANSPORT', 'stdio').toLowerCase();
+    if (['stdio', 'sse', 'http'].includes(transport)) {
+      return transport as 'stdio' | 'sse' | 'http';
+    }
+    return 'stdio';
+  }
+
+  static get port(): number {
+    return getEnvInt('TAPTAP_MCP_PORT', 3000);
+  }
+
+  static get isVerbose(): boolean {
+    return getEnvBoolean('TAPTAP_MCP_VERBOSE');
+  }
+
+  // 路径配置
+  static get cacheDir(): string {
+    return getEnv('TAPTAP_MCP_CACHE_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
+  }
+
+  static get tempDir(): string {
+    return getEnv('TAPTAP_MCP_TEMP_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'temp');
+  }
+
+  static get workspaceRoot(): string {
+    return getEnv('TAPTAP_MCP_WORKSPACE_ROOT') || process.cwd();
+  }
+
+  static get proxyConfig(): string | undefined {
+    return getEnv('TAPTAP_MCP_PROXY_CONFIG');
   }
 }

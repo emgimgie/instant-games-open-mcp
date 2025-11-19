@@ -8,7 +8,7 @@ import cryptoJS from 'crypto-js';
 import { MacToken } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 
-import { getEnv, getEnvBoolean } from '../utils/env.js';
+import { getEnv, getEnvBoolean, EnvConfig } from '../utils/env.js';
 /**
  * Environment configuration
  */
@@ -23,7 +23,7 @@ export class ApiConfig {
 
   private constructor() {
     // Optional: default to production
-    this.environment = (getEnv('TAPTAP_MCP_ENV') === 'rnd') ? 'rnd' : 'production';
+    this.environment = EnvConfig.environment;
 
     // Built-in OAuth Client ID (public, safe to include)
     // These match the values in deviceFlow.ts for OAuth consistency
@@ -32,10 +32,10 @@ export class ApiConfig {
       : 'm2dnabebip3fpardnm';  // RND OAuth client ID (public)
 
     // Environment variables (TAPTAP_MCP_* prefix for consistency)
-    const macTokenStr = getEnv('TAPTAP_MCP_MAC_TOKEN') || '';
-    this.clientId = getEnv('TAPTAP_MCP_CLIENT_ID') || DEFAULT_CLIENT_ID;
+    const macTokenStr = EnvConfig.macToken || '';
+    this.clientId = EnvConfig.clientId || DEFAULT_CLIENT_ID;
     // CLIENT_SECRET must be provided via environment variable (keep it secret!)
-    this.signingKey = getEnv('TAPTAP_MCP_CLIENT_SECRET') || '';
+    this.signingKey = EnvConfig.clientSecret || '';
 
     // Parse MAC Token from JSON string (optional now, can be set later via Device Flow)
     try {
@@ -66,7 +66,7 @@ export class ApiConfig {
     }
 
     // Show info about CLIENT_ID
-    if (!getEnv('TAPTAP_MCP_CLIENT_ID')) {
+    if (!EnvConfig.clientId) {
       process.stderr.write(`ℹ️  Using built-in OAuth CLIENT_ID: ${this.clientId}\n`);
     }
   }
@@ -82,7 +82,7 @@ export class ApiConfig {
    * Set MAC Token (called by Device Flow or manual configuration)
    */
   public setMacToken(token: MacToken): void {
-    if (getEnvBoolean('TAPTAP_MCP_VERBOSE')) {
+    if (EnvConfig.isVerbose) {
       process.stderr.write('\n🔍 [DEBUG] ApiConfig.setMacToken() called:\n');
       process.stderr.write(`  - kid: ${token.kid?.substring(0, 20)}...\n`);
       process.stderr.write(`  - mac_key: ${token.mac_key?.substring(0, 10)}...\n`);
@@ -214,7 +214,7 @@ export class HttpClient {
     const effectiveMacToken = this.overrideMacToken || ApiConfig.getInstance().macToken;
 
     // Debug: Log token retrieval
-    if (getEnvBoolean('TAPTAP_MCP_VERBOSE')) {
+    if (EnvConfig.isVerbose) {
       process.stderr.write('\n🔍 [DEBUG] HttpClient Token Retrieval:\n');
       process.stderr.write(`  - Using override: ${!!this.overrideMacToken}\n`);
       process.stderr.write(`  - Token kid: ${effectiveMacToken?.kid?.substring(0, 20) || 'N/A'}...\n`);
@@ -396,7 +396,7 @@ export class HttpClient {
     const signatureBase = this.buildMacSignatureBase(timestamp, nonce, method, uri, host, port, other);
 
     // Debug: Log MAC signature generation
-    if (getEnvBoolean('TAPTAP_MCP_VERBOSE')) {
+    if (EnvConfig.isVerbose) {
       process.stderr.write('\n🔍 [DEBUG] MAC Authorization Generation:\n');
       process.stderr.write(`MAC Key: ${macToken.mac_key.substring(0, 10)}...\n`);
       process.stderr.write(`MAC KID: ${macToken.kid.substring(0, 10)}...\n`);
@@ -413,7 +413,7 @@ export class HttpClient {
 
     const macSignature = cryptoJS.enc.Base64.stringify(hmac);
 
-    if (getEnvBoolean('TAPTAP_MCP_VERBOSE')) {
+    if (EnvConfig.isVerbose) {
       process.stderr.write(`MAC Signature: ${macSignature.substring(0, 20)}...\n\n`);
     }
 
@@ -466,7 +466,7 @@ export class HttpClient {
       const signParts = `${methodPart}\n${urlPart}\n${headersPart}\n${bodyPart}\n`;
 
       // Debug: Log signature base string
-      if (getEnvBoolean('TAPTAP_MCP_VERBOSE')) {
+      if (EnvConfig.isVerbose) {
         process.stderr.write('\n🔍 [DEBUG] Signature Generation:\n');
         process.stderr.write(`Signing Key: ${this.config.signingKey.substring(0, 10)}...\n`);
         process.stderr.write(`Sign Parts:\n${signParts}\n`);
@@ -481,7 +481,7 @@ export class HttpClient {
 
       const signatureBase64 = cryptoJS.enc.Base64.stringify(hmacResult);
 
-      if (getEnvBoolean('TAPTAP_MCP_VERBOSE')) {
+      if (EnvConfig.isVerbose) {
         process.stderr.write(`Signature: ${signatureBase64.substring(0, 20)}...\n\n`);
       }
 
