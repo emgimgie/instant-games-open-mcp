@@ -76,7 +76,7 @@ npx @mikoto_zero/minigame-open-mcp
 }
 ```
 
-✅ SSE 模式支持自动授权和实时进度推送！
+✅ SSE 模式支持实时进度推送！
 
 ### Docker 部署
 

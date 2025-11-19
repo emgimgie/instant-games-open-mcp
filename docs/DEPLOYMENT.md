@@ -126,7 +126,6 @@ TDS_MCP_PORT=8080 npm run serve:sse
 #### SSE 模式特性
 
 - ✅ 实时进度推送（压缩、上传、授权等）
-- ✅ 一步式自动授权（无需手动调用 `complete_oauth_authorization`）
 - ✅ 多客户端并发支持
 - ✅ 客户端连接日志
 - ✅ 健康检查：`GET http://localhost:3000/health`
@@ -158,11 +157,13 @@ npm run serve:http
 
 #### 认证相关（可选）
 
-| 变量 | 说明 | 默认值 |
-|------|------|--------|
-| `TDS_MCP_MAC_TOKEN` | 用户 MAC Token（JSON 格式） | 使用 OAuth |
-| `TDS_MCP_CLIENT_ID` | 客户端 ID | 已内置 |
-| `TDS_MCP_CLIENT_TOKEN` | 请求签名密钥 | 已内置 |
+| 变量 | 说明 | 是否必需 | 默认值 |
+|------|------|---------|--------|
+| `TDS_MCP_MAC_TOKEN` | 用户 MAC Token（JSON 格式） | 否 | 使用 OAuth |
+| `TDS_MCP_CLIENT_ID` | 客户端 ID | 否* | 无 |
+| `TDS_MCP_CLIENT_TOKEN` | 请求签名密钥 | 否* | 无 |
+
+**注意**：`TDS_MCP_CLIENT_ID` 和 `TDS_MCP_CLIENT_TOKEN` 不是必需的，但不配置会导致部分工具无法使用。
 
 **OAuth Token 格式**：
 ```bash
@@ -371,88 +372,6 @@ docker-compose down -v
 
 ---
 
-### 2.4 TapCode 平台集成
-
-#### 架构设计
-
-```
-┌─────────────────────────────────────────────────────────┐
-│ TapCode 平台服务器                                       │
-│                                                         │
-│  docker-compose.yml                                     │
-│    ├── taptap-mcp-server (独立容器)                    │
-│    └── redis, postgres, etc.                            │
-└─────────────────────────────────────────────────────────┘
-           │
-           │ Docker Network (host.docker.internal)
-           ↓
-┌─────────────────────────────────────────────────────────┐
-│ TapTap MCP Server 容器                                   │
-│  - Image: taptap-mcp-server:latest                      │
-│  - Port: 5003                                           │
-│  - Mode: SSE Streaming                                  │
-│  - Health: /health endpoint                             │
-└─────────────────────────────────────────────────────────┘
-           ↑
-           │ HTTP/SSE (port 5003)
-           │
-┌─────────────────────────────────────────────────────────┐
-│ 用户容器 1-N（动态创建）                                │
-│                                                         │
-│  MCP Proxy (子进程)                                     │
-│    → 连接: http://host.docker.internal:5003            │
-│    → 注入: MAC Token (per user)                         │
-└─────────────────────────────────────────────────────────┘
-```
-
-详见：[PROXY.md#TapCode 集成示例](PROXY.md#tapcode-集成示例)
-
-#### docker-compose 集成
-
-```yaml
-# TapCode 平台的 docker-compose.yml
-version: '3.8'
-
-services:
-  # TapCode 主服务
-  tapcode-app:
-    image: tapcode:latest
-    depends_on:
-      taptap-mcp-server:
-        condition: service_healthy
-    environment:
-      - TAPTAP_MCP_SERVER_URL=http://taptap-mcp-server:3000
-
-  # TapTap MCP Server
-  taptap-mcp-server:
-    image: taptap-mcp-server:latest
-    environment:
-      - TDS_MCP_TRANSPORT=sse
-      - TDS_MCP_PORT=3000
-      - TDS_MCP_ENV=rnd
-      - TDS_MCP_CLIENT_ID=${TDS_MCP_CLIENT_ID}
-      - TDS_MCP_CLIENT_TOKEN=${TDS_MCP_CLIENT_TOKEN}
-      - TDS_MCP_CACHE_DIR=/var/lib/taptap-mcp/cache
-      - TDS_MCP_TEMP_DIR=/tmp/taptap-mcp/temp
-    volumes:
-      - taptap-mcp-cache:/var/lib/taptap-mcp/cache
-      - taptap-mcp-temp:/tmp/taptap-mcp/temp
-    healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-
-  # 其他服务...
-  redis:
-    image: redis:7-alpine
-
-volumes:
-  taptap-mcp-cache:
-  taptap-mcp-temp:
-```
-
----
 
 ## 3. 生产环境配置
 
