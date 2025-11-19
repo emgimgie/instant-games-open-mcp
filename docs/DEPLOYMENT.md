@@ -205,61 +205,65 @@ export TAPTAP_MCP_MAC_TOKEN='{"kid":"your_kid","token_type":"mac","mac_key":"you
 
 ## 2. Docker 部署
 
+### 优势
+
+使用单文件 Bundle 部署，相比传统 npm 安装方式：
+
+| 特性 | 优势 |
+|------|------|
+| **镜像大小** | ~193 MB（vs 传统 ~250 MB） |
+| **构建时间** | ~10 秒（vs 传统 ~2 分钟） |
+| **依赖管理** | 零运行时依赖 |
+| **启动速度** | 更快 |
+
 ### 2.1 快速开始
 
 #### 方式 1：使用 docker-compose（推荐）
 
 ```bash
 # 1. 配置环境变量
-cp .env.docker .env
-# 编辑 .env，填入：
-#   - WORKSPACE_ROOT（可选）- workspace 根目录路径
-#   - TAPTAP_MCP_CLIENT_ID（必需）
-#   - TAPTAP_MCP_CLIENT_SECRET（必需）
+cat > .env << 'EOF'
+TAPTAP_MCP_CLIENT_ID=your_client_id
+TAPTAP_MCP_CLIENT_SECRET=your_client_secret
+EOF
 
-# 2. 启动服务
-./scripts/docker-start.sh
+# 2. 确保已构建 bundle
+npm run build:all
 
-# 或手动启动
+# 3. 启动服务
 docker-compose up -d
-```
 
-**重要**：如果需要 H5 游戏上传功能，MCP Server 需要挂载 workspace 根目录（只读）以访问用户代码进行压缩上传。
+# 查看日志
+docker-compose logs -f
+
+# 停止服务
+docker-compose down
+```
 
 #### 方式 2：使用 Docker 命令
 
 ```bash
-# 构建镜像
+# 1. 构建 bundle
+npm run build:all
+
+# 2. 构建镜像
 docker build -t taptap-mcp-server:latest .
 
-# 启动容器
+# 3. 启动容器
 docker run -d \
   --name taptap-mcp-server \
-  -p 5003:3000 \
-  -e TAPTAP_MCP_TRANSPORT=sse \
-  -e TAPTAP_MCP_PORT=3000 \
-  -e TAPTAP_MCP_ENV=rnd \
+  -p 3000:3000 \
   -e TAPTAP_MCP_CLIENT_ID=your_client_id \
-  -e TAPTAP_MCP_CLIENT_SECRET=your_client_token \
-  -e TAPTAP_MCP_VERBOSE=false \
-  -v /path/to/workspace:/workspace:ro \
+  -e TAPTAP_MCP_CLIENT_SECRET=your_client_secret \
   -v taptap-mcp-cache:/var/lib/taptap-mcp/cache \
-  -v taptap-mcp-temp:/tmp/taptap-mcp/temp \
   taptap-mcp-server:latest
 ```
 
-#### 方式 3：直接使用 NPM 镜像（无需构建）
+#### 方式 3：直接使用 NPM（npx）
 
 ```bash
-docker run -d \
-  --name taptap-mcp-server \
-  -p 5003:3000 \
-  -e TAPTAP_MCP_TRANSPORT=sse \
-  -e TAPTAP_MCP_PORT=3000 \
-  -e TAPTAP_MCP_CLIENT_ID=your_client_id \
-  -e TAPTAP_MCP_CLIENT_SECRET=your_client_token \
-  node:20-alpine \
-  sh -c "npm install -g @mikoto_zero/minigame-open-mcp@latest && minigame-open-mcp"
+# 无需 Docker，直接使用 npx（推荐用于本地测试）
+npx -y @mikoto_zero/minigame-open-mcp
 ```
 
 ---
@@ -273,30 +277,32 @@ version: '3.8'
 
 services:
   taptap-mcp-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
     image: taptap-mcp-server:latest
     container_name: taptap-mcp-server
+    restart: unless-stopped
     ports:
-      - "5003:3000"
+      - "3000:3000"
     environment:
-      - TAPTAP_MCP_TRANSPORT=sse
-      - TAPTAP_MCP_PORT=3000
-      - TAPTAP_MCP_ENV=${TAPTAP_MCP_ENV:-rnd}
-      - TAPTAP_MCP_CLIENT_ID=${TAPTAP_MCP_CLIENT_ID}
-      - TAPTAP_MCP_CLIENT_SECRET=${TAPTAP_MCP_CLIENT_SECRET}
-      - TAPTAP_MCP_VERBOSE=${TAPTAP_MCP_VERBOSE:-false}
-      - TAPTAP_MCP_CACHE_DIR=/var/lib/taptap-mcp/cache
-      - TAPTAP_MCP_TEMP_DIR=/tmp/taptap-mcp/temp
-      - WORKSPACE_ROOT=${WORKSPACE_ROOT:-}
+      TAPTAP_MCP_TRANSPORT: sse
+      TAPTAP_MCP_PORT: 3000
+      TAPTAP_MCP_ENV: production
+      TAPTAP_MCP_CLIENT_ID: ${TAPTAP_MCP_CLIENT_ID}
+      TAPTAP_MCP_CLIENT_SECRET: ${TAPTAP_MCP_CLIENT_SECRET}
+      TAPTAP_MCP_CACHE_DIR: /var/lib/taptap-mcp/cache
+      TAPTAP_MCP_TEMP_DIR: /tmp/taptap-mcp/temp
+      TAPTAP_MCP_VERBOSE: "false"
     volumes:
-      - ${WORKSPACE_ROOT:-/tmp/empty}:/workspace:ro
       - taptap-mcp-cache:/var/lib/taptap-mcp/cache
       - taptap-mcp-temp:/tmp/taptap-mcp/temp
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/health"]
-      interval: 10s
+      interval: 30s
       timeout: 3s
+      start_period: 5s
       retries: 3
-    restart: unless-stopped
 
 volumes:
   taptap-mcp-cache:

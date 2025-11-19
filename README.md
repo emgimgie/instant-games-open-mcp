@@ -2,7 +2,7 @@
 
 > 基于 Model Context Protocol (MCP) 的 **TapTap 小游戏和 H5 游戏**服务器 - 提供排行榜文档和管理 API，支持 **OAuth 2.0 零配置认证**。
 
-🔐 **零配置 OAuth** | 📚 **完整文档** | 🎯 **19 Tools + 7 Resources** | 🌍 **小游戏 & H5**
+🔐 **零配置 OAuth** | 📚 **完整文档** | 🎯 **19 Tools + 7 Resources** | 🌍 **小游戏 & H5** | 📦 **单文件 Bundle**
 
 ## ✨ 核心特性
 
@@ -12,6 +12,7 @@
 - **🎮 H5 游戏支持** - 上传、发布、状态查询
 - **🚀 三种传输模式** - stdio（本地）、SSE（远程/实时）、HTTP（兼容）
 - **🔌 多客户端并发** - 独立会话管理，无限并发
+- **📦 单文件 Bundle** - 零依赖，包体积减少 96%（567 KB）
 
 **NPM**: [@mikoto_zero/minigame-open-mcp](https://www.npmjs.com/package/@mikoto_zero/minigame-open-mcp)
 
