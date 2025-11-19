@@ -46,9 +46,8 @@ import { vibrateModule } from './features/vibrate/index.js';
 import type { HandlerContext, FeatureModule } from './core/types/index.js';
 import { EnvConfig, printDeprecationWarnings, getEnv } from './core/utils/env.js';
 
-// Version placeholder - replaced at build time by esbuild
-declare const __SERVER_VERSION__: string;
-const VERSION = typeof __SERVER_VERSION__ !== 'undefined' ? __SERVER_VERSION__ : 'dev';
+// Version import
+import { VERSION } from './version.js';
 
 // 环境变量配置
 const apiConfig = ApiConfig.getInstance();
