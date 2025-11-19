@@ -86,9 +86,16 @@ class TapTapMinigameMCPServer {
     );
 
     // Context with dynamic token getter (supports OAuth updates)
+    // 只返回有效的 token，避免 undefined 或无效 token 污染 context
     this.context = {
       get macToken() {
-        return apiConfig.macToken;
+        const token = apiConfig.macToken;
+        // 只有当 token 有效（包含 kid 和 mac_key）时才返回
+        // 否则返回 undefined，让后续逻辑使用其他来源的 token
+        if (token?.kid && token?.mac_key) {
+          return token;
+        }
+        return undefined;
       }
     };
 

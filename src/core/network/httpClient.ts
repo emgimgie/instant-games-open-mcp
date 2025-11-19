@@ -126,7 +126,10 @@ export class HttpClient {
    */
   constructor(context?: import('../types/index.js').HandlerContext) {
     this.config = ApiConfig.getInstance();
-    this.overrideMacToken = context?.macToken;
+    // Only set override if context.macToken exists and has valid data
+    if (context?.macToken?.kid && context?.macToken?.mac_key) {
+      this.overrideMacToken = context.macToken;
+    }
   }
 
   /**
