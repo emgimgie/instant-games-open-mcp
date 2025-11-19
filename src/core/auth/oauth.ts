@@ -3,7 +3,8 @@
  * 职责：处理 OAuth 网络请求
  */
 
-import { getOAuthEndpoints, getClientId } from './config.js';
+import { getEnvironmentConfig } from '../config/environment.js';
+import { EnvConfig } from '../utils/env.js';
 import type { MacToken } from '../types/index.js';
 
 /**
@@ -28,9 +29,21 @@ export interface PollOptions {
  * 请求 device code
  */
 export async function requestDeviceCode(environment: string = 'production'): Promise<DeviceCodeData> {
-  const endpoints = getOAuthEndpoints(environment);
-  const clientId = getClientId();
-  const url = `https://${endpoints.authHost}/oauth2/v1/device/code`;
+  const envConfig = getEnvironmentConfig(environment);
+  const clientId = EnvConfig.clientId;
+  
+  if (!clientId) {
+    throw new Error(
+      '❌ 未配置 Client ID\n\n' +
+      '请设置环境变量：TAPTAP_MCP_CLIENT_ID\n\n' +
+      '获取方式：\n' +
+      '1. 登录 TapTap 开放平台: https://developer.taptap.cn\n' +
+      '2. 创建或选择应用\n' +
+      '3. 在「开发者中心 - 应用配置」中获取 Client ID'
+    );
+  }
+  
+  const url = `https://${envConfig.authHost}/oauth2/v1/device/code`;
   
   const params = new URLSearchParams({
     client_id: clientId,
@@ -63,8 +76,8 @@ export async function requestDeviceCode(environment: string = 'production'): Pro
  * 生成授权 URL
  */
 export function generateAuthUrl(qrcodeUrl: string, environment: string = 'production'): string {
-  const endpoints = getOAuthEndpoints(environment);
-  return endpoints.qrcodeBaseUrl + encodeURIComponent(qrcodeUrl);
+  const envConfig = getEnvironmentConfig(environment);
+  return envConfig.qrcodeBaseUrl + encodeURIComponent(qrcodeUrl);
 }
 
 /**
@@ -75,9 +88,14 @@ export async function pollForToken(
   environment: string = 'production',
   options?: PollOptions
 ): Promise<MacToken> {
-  const endpoints = getOAuthEndpoints(environment);
-  const clientId = getClientId();
-  const url = `https://${endpoints.authHost}/oauth2/v1/token`;
+  const envConfig = getEnvironmentConfig(environment);
+  const clientId = EnvConfig.clientId;
+  
+  if (!clientId) {
+    throw new Error('❌ 未配置 Client ID，请设置环境变量：TAPTAP_MCP_CLIENT_ID');
+  }
+  
+  const url = `https://${envConfig.authHost}/oauth2/v1/token`;
   const maxAttempts = options?.maxAttempts || 60;
   const intervalMs = options?.intervalMs || 2000;
   
