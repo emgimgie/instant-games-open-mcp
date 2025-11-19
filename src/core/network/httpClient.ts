@@ -92,13 +92,6 @@ export class ApiConfig {
   public isConfigured(): boolean {
     return !!(this.macToken.kid && this.macToken.mac_key && this.clientId && this.signingKey);
   }
-
-  /**
-   * Get current environment
-   */
-  public getEnvironment(): 'rnd' | 'production' {
-    return this.environment;
-  }
 }
 
 /**
@@ -517,19 +510,5 @@ export class HttpClient {
       result += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return result;
-  }
-
-  /**
-   * Get current environment
-   */
-  getEnvironment(): string {
-    return this.config.environment;
-  }
-
-  /**
-   * Get API base URL
-   */
-  getBaseUrl(): string {
-    return this.config.apiBaseUrl;
   }
 }

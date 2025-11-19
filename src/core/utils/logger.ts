@@ -36,13 +36,6 @@ const LOG_LEVEL_PRIORITY: Record<LogLevel, number> = {
 };
 
 /**
- * Check if verbose logging is enabled
- */
-function isVerboseEnabled(): boolean {
-  return EnvConfig.isVerbose;
-}
-
-/**
  * Format object for logging
  */
 function formatObject(obj: any): string {
@@ -93,7 +86,7 @@ export class Logger {
   private transport?: 'stdio' | 'sse';
 
   constructor() {
-    this.verbose = isVerboseEnabled();
+    this.verbose = EnvConfig.isVerbose;
   }
 
   /**
