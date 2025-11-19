@@ -282,7 +282,7 @@ export class HttpClient {
               `1. 调用 clear_auth_data 工具清除过期的认证数据\n` +
               `2. 调用需要认证的工具会自动触发新的授权流程\n` +
               `3. 使用 TapTap App 扫码重新授权\n\n` +
-              `💡 提示：如果使用的是环境变量中的 Token，请更新 TDS_MCP_MAC_TOKEN 环境变量并重启服务器。`
+              `💡 提示：如果使用的是环境变量中的 Token，请更新 TAPTAP_MCP_MAC_TOKEN 环境变量并重启服务器。`
             );
             (authError as any).isAuthError = true;
 
@@ -306,7 +306,7 @@ export class HttpClient {
               `1. 调用 clear_auth_data 工具清除过期的认证数据\n` +
               `2. 调用需要认证的工具会自动触发新的授权流程\n` +
               `3. 使用 TapTap App 扫码重新授权\n\n` +
-              `💡 提示：如果使用的是环境变量中的 Token，请更新 TDS_MCP_MAC_TOKEN 环境变量并重启服务器。`
+              `💡 提示：如果使用的是环境变量中的 Token，请更新 TAPTAP_MCP_MAC_TOKEN 环境变量并重启服务器。`
             );
             (authError as any).isAuthError = true;
 

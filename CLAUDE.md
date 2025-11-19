@@ -315,7 +315,7 @@ const allModules = [..., yourFeatureModule];
 ## 注意事项
 
 - 所有工具描述使用英文，便于 AI Agent 理解
-- 环境变量名称使用 TDS_MCP_ 前缀
+- 环境变量名称使用 TAPTAP_MCP_ 前缀
 - MAC Token 必须是 JSON 字符串格式
 - 请求签名使用两层机制（MAC + X-Tap-Sign）
 - 默认环境为 production，可通过 TAPTAP_MCP_ENV 切换

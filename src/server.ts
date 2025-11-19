@@ -521,12 +521,12 @@ class TapTapMinigameMCPServer {
       const workspaceRootLabel = getEnv('TAPTAP_MCP_WORKSPACE_ROOT') ? '(env)' : '(default: cwd)';
       process.stderr.write(`   📁 WORKSPACE_ROOT: ${workspaceRoot} ${workspaceRootLabel}\n`);
 
-      // TDS_MCP_CACHE_DIR
+      // TAPTAP_MCP_CACHE_DIR
       const cacheDir = getEnv('TAPTAP_MCP_CACHE_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
       const cacheDirLabel = getEnv('TAPTAP_MCP_CACHE_DIR') ? '(env)' : '(default)';
       process.stderr.write(`   📦 TAPTAP_MCP_CACHE_DIR: ${cacheDir} ${cacheDirLabel}\n`);
 
-      // TDS_MCP_TEMP_DIR
+      // TAPTAP_MCP_TEMP_DIR
       const tempDir = getEnv('TAPTAP_MCP_TEMP_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'temp');
       const tempDirLabel = getEnv('TAPTAP_MCP_TEMP_DIR') ? '(env)' : '(default)';
       process.stderr.write(`   📂 TAPTAP_MCP_TEMP_DIR: ${tempDir} ${tempDirLabel}\n`);
