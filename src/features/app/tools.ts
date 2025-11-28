@@ -16,7 +16,7 @@ export const appTools: ToolRegistration[] = [
   {
     definition: {
       name: 'get_current_app_info',
-      description: '[General] Get currently selected app/game information including developer_id, app_id, miniapp_id, and app name. Use this for: 1) Checking current selection, 2) Building preview links, 3) Verifying cached app. Not for H5 upload workflow.',
+      description: '[General] Get currently selected app/game information including developer_id, app_id, miniapp_id, and app name. **CRITICAL: Call this tool FIRST before executing any leaderboard operations (create_leaderboard, list_leaderboards, etc.) to verify that an app has been selected. If no app is selected, guide the user through the selection process using list_developers_and_apps and select_app.** Use this for: 1) Checking current selection before leaderboard operations, 2) Building preview links, 3) Verifying cached app. Not for H5 upload workflow.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -76,7 +76,7 @@ export const appTools: ToolRegistration[] = [
   {
     definition: {
       name: 'list_developers_and_apps',
-      description: '[General App Management] List all developers and their apps/games for the current user. Use this for: 1) Initial exploration of available apps, 2) Switching between apps, 3) General app management (not H5 upload workflow). For H5 game upload, use h5_game_info_gatherer instead.',
+      description: '[General App Management] List all developers and their apps/games for the current user. **CRITICAL: ALWAYS show the full list to the user and explicitly ASK them to choose which app to use - DO NOT automatically select an app without user confirmation, even if there is only one option.** Use this for: 1) Initial exploration of available apps, 2) Switching between apps, 3) General app management (not H5 upload workflow). For H5 game upload, use h5_game_info_gatherer instead.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -93,7 +93,7 @@ export const appTools: ToolRegistration[] = [
   {
     definition: {
       name: 'select_app',
-      description: '[General] Select a specific developer and app to use for subsequent operations. This will cache the selection for all modules (leaderboard, H5, etc.). Use this for: 1) General app selection, 2) Switching accounts, 3) After listing with list_developers_and_apps. For H5 upload, you can also pass developerId/appId to h5_game_info_gatherer directly.',
+      description: '[General] Select a specific developer and app to use for subsequent operations. This will cache the selection for all modules (leaderboard, H5, etc.). **IMPORTANT: Only call this tool AFTER the user has explicitly confirmed which app they want to use. DO NOT call this tool automatically without user confirmation.** Use this for: 1) General app selection, 2) Switching accounts, 3) After listing with list_developers_and_apps and receiving user confirmation. For H5 upload, you can also pass developerId/appId to h5_game_info_gatherer directly.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -134,6 +134,85 @@ export const appTools: ToolRegistration[] = [
              `- 名称: ${result.developer_name}\n` +
              `- ID: ${result.developer_id}\n\n` +
              `💡 下一步：使用 create_app 创建应用，或使用 select_app 选择此开发者。`;
+    },
+    requiresAuth: true
+  },
+
+  // 🆕 Create App
+  {
+    definition: {
+      name: 'create_app',
+      description: 'Create a new app/game on TapTap platform. Use this when user wants to create a new app.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          developerId: {
+            type: 'number',
+            description: 'The developer id of the app. Leave empty if the user has not specified a particular ID'
+          },
+          appName: {
+            type: 'string',
+            description: 'The name of the app'
+          },
+          genre: {
+            type: 'string',
+            description: 'Game genre (e.g. rpg, casual, action, strategy, simulation, etc.)'
+          }
+        }
+      }
+    },
+    handler: async (args: { developerId?: number; appName?: string; genre?: string }, context) => {
+      return appHandlers.createApp(args, context);
+    },
+    requiresAuth: true
+  },
+
+  // ✏️ Update App Info
+  {
+    definition: {
+      name: 'update_app_info',
+      description: "Update the app's name, genre, description, chatting_label, chatting_number, screen_orientation on TapTap platform",
+      inputSchema: {
+        type: 'object',
+        properties: {
+          developerId: {
+            type: 'number',
+            description: 'The developer id of the app'
+          },
+          appId: {
+            type: 'number',
+            description: 'The app id of the game'
+          },
+          appName: {
+            type: 'string',
+            description: 'The name of the app'
+          },
+          genre: {
+            type: 'string',
+            description: 'Game genre'
+          },
+          description: {
+            type: 'string',
+            description: 'The description of the app'
+          },
+          chattingLabel: {
+            type: 'string',
+            description: 'The name of the QQ group'
+          },
+          chattingNumber: {
+            type: 'string',
+            description: 'The number of the QQ group'
+          },
+          screenOrientation: {
+            type: 'number',
+            description: 'The screen orientation of the app, 1: vertical, 2: horizontal'
+          }
+        },
+        required: ['developerId', 'appId']
+      }
+    },
+    handler: async (args, context) => {
+      return appHandlers.updateAppInfo(args, context);
     },
     requiresAuth: true
   },

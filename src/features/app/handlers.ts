@@ -4,12 +4,43 @@
  */
 
 import type { ResolvedContext } from '../../core/types/context.js';
-import { getAllDevelopersAndApps, selectApp as selectAppApi } from './api.js';
+import { 
+  getAllDevelopersAndApps, 
+  selectApp as selectAppApi,
+  createDeveloper,
+  createAppForDeveloper,
+  editAppInfo as editAppInfoApi
+} from './api.js';
 import { clearAppCache } from '../../core/utils/cache.js';
 import { clearToken, saveToken } from '../../core/auth/tokenStorage.js';
 import { EnvConfig } from '../../core/utils/env.js';
 import { requestDeviceCode, generateAuthUrl, pollForToken } from '../../core/auth/oauth.js';
 import { oauthState } from '../../core/auth/oauthState.js';
+
+// Messages for App operations
+const MESSAGES = {
+  SELECT_DEVELOPER_FOR_CREATE: (developers: any[]) => {
+    let msg = `⚠️ **需要选择开发者身份**\n\n`;
+    msg += `您有多个开发者身份，请在 create_app 工具的 parameters 中指定 \`developerId\`。\n\n`;
+    msg += `**可用的开发者身份：**\n`;
+    developers.forEach((dev) => {
+      msg += `- ${dev.developer_name} (ID: ${dev.developer_id})\n`;
+    });
+    return msg;
+  },
+  DEVELOPER_ID_NOT_EXISTS: `❌ **找不到开发者身份**\n\n请先使用 \`create_developer\` 创建开发者身份，或使用 \`list_developers_and_apps\` 查看现有身份。`,
+  CREATE_DEVELOPER_FAILED: `❌ **创建开发者身份失败**`,
+  CREATE_GAME_SUCCESS: (devId: number, appId: number, name: string, displayName: string) => 
+    `✅ **创建应用成功！**\n\n` +
+    `应用名称：${name}\n` +
+    `显示名称：${displayName}\n` +
+    `App ID：${appId}\n` +
+    `Developer ID：${devId}\n\n` +
+    `💡 **下一步**：您可以使用 \`select_app\` 选择此应用，然后开始开发功能（如排行榜）。`,
+  CREATE_GAME_FAILED: `❌ **创建应用失败**`,
+  EDIT_GAME_INFO_CONFIRMATION: `⚠️ **参数缺失**\n\n请提供 developerId 和 appId 以更新应用信息。`,
+  EDIT_GAME_INFO_SUCCESS: `✅ **更新应用信息成功！**`
+};
 
 /**
  * List all developers and apps for the current user
@@ -315,4 +346,92 @@ export async function checkEnvironment(ctx: ResolvedContext): Promise<string> {
   }
 
   return `🔧 环境配置检查结果:\n\n${envResult}${statusMessage}`;
+}
+
+/**
+ * Create a new app (General version)
+ */
+export async function createApp(
+  args: {
+    developerId?: number;
+    appName?: string;
+    genre?: string;
+  },
+  ctx: ResolvedContext
+): Promise<string> {
+  let developerId = args.developerId;
+
+  if (!developerId) {
+    const response = await getAllDevelopersAndApps(ctx);
+    const results = response.list;
+
+    // 开发者身份信息存在
+    if (results && results.length > 0) {
+      // 只有一个开发者身份，直接选择
+      if (results.length === 1) {
+        developerId = results[0].developer_id;
+      } else {
+        return MESSAGES.SELECT_DEVELOPER_FOR_CREATE(results);
+      }
+    } else {
+      // 开发者身份信息不存在，创建开发者身份
+      const createDevResult = await createDeveloper(ctx);
+      if (createDevResult && createDevResult.developer_id) {
+        developerId = createDevResult.developer_id;
+      }
+    }
+  }
+
+  // 确定开发者身份 id, 创建游戏
+  if (!developerId) {
+    return MESSAGES.DEVELOPER_ID_NOT_EXISTS;
+  }
+
+  const results = await createAppForDeveloper(developerId, args.appName, args.genre, ctx);
+  if (results && results.app_id) {
+    return MESSAGES.CREATE_GAME_SUCCESS(
+      developerId,
+      results.app_id,
+      results.app_title,
+      results.display_app_title
+    );
+  } else {
+    return MESSAGES.CREATE_GAME_FAILED;
+  }
+}
+
+/**
+ * Update app information (General version)
+ */
+export async function updateAppInfo(
+  args: {
+    developerId?: number;
+    appId?: number;
+    appName?: string;
+    genre?: string;
+    description?: string;
+    chattingLabel?: string;
+    chattingNumber?: string;
+    screenOrientation?: number;
+  },
+  ctx: ResolvedContext
+): Promise<string> {
+  if (!args.developerId || !args.appId) {
+    return MESSAGES.EDIT_GAME_INFO_CONFIRMATION;
+  }
+
+  await editAppInfoApi(
+    args.appId,
+    args.developerId,
+    undefined,                // package_id
+    args.appName,
+    args.genre,
+    args.description,
+    args.chattingLabel,
+    args.chattingNumber,
+    args.screenOrientation,
+    ctx
+  );
+
+  return MESSAGES.EDIT_GAME_INFO_SUCCESS;
 }

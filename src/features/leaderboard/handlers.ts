@@ -16,6 +16,29 @@ import {
 import { SelectionRequiredError } from '../app/api.js';
 import { leaderboardTools } from './docTools.js';
 
+// Parameter maps for string to number conversion
+const PARAM_MAPS = {
+  period_type: {
+    'always': PeriodType.ALWAYS,
+    'daily': PeriodType.DAILY,
+    'weekly': PeriodType.WEEKLY,
+    'monthly': PeriodType.MONTHLY
+  },
+  score_type: {
+    'numeric': ScoreType.INTEGER,
+    'time': ScoreType.TIME
+  },
+  score_order: {
+    'desc': ScoreOrder.DESCENDING,
+    'asc': ScoreOrder.ASCENDING
+  },
+  calc_type: {
+    'sum': CalcType.SUM,
+    'best': CalcType.BEST,
+    'latest': CalcType.LATEST
+  }
+};
+
 /**
  * Start leaderboard integration workflow - guides user through the process
  */
@@ -130,10 +153,10 @@ export async function createLeaderboard(
     developer_id?: number;
     app_id?: number;
     title: string;
-    period_type: number;
-    score_type: number;
-    score_order: number;
-    calc_type: number;
+    period_type?: string;
+    score_type?: string;
+    score_order?: string;
+    calc_type?: string;
     display_limit?: number;
     period_time?: string;
     score_unit?: string;
@@ -155,14 +178,26 @@ export async function createLeaderboard(
              `提示：使用 list_developers_and_apps 查看可用的应用列表`;
     }
 
+    // Convert string enums to numbers with defaults
+    const periodType = args.period_type ? PARAM_MAPS.period_type[args.period_type as keyof typeof PARAM_MAPS.period_type] : PeriodType.ALWAYS;
+    const scoreType = args.score_type ? PARAM_MAPS.score_type[args.score_type as keyof typeof PARAM_MAPS.score_type] : ScoreType.INTEGER;
+    const scoreOrder = args.score_order ? PARAM_MAPS.score_order[args.score_order as keyof typeof PARAM_MAPS.score_order] : ScoreOrder.DESCENDING;
+    const calcType = args.calc_type ? PARAM_MAPS.calc_type[args.calc_type as keyof typeof PARAM_MAPS.calc_type] : CalcType.SUM;
+
+    // Validate conversions
+    if (!periodType) throw new Error(`Invalid period_type: ${args.period_type}`);
+    if (!scoreType) throw new Error(`Invalid score_type: ${args.score_type}`);
+    if (!scoreOrder) throw new Error(`Invalid score_order: ${args.score_order}`);
+    if (!calcType) throw new Error(`Invalid calc_type: ${args.calc_type}`);
+
     const result = await createLeaderboardApi({
       developer_id: developerId,
       app_id: appId,
       title: args.title,
-      period_type: args.period_type as PeriodType,
-      score_type: args.score_type as ScoreType,
-      score_order: args.score_order as ScoreOrder,
-      calc_type: args.calc_type as CalcType,
+      period_type: periodType,
+      score_type: scoreType,
+      score_order: scoreOrder,
+      calc_type: calcType,
       display_limit: args.display_limit,
       period_time: args.period_time,
       score_unit: args.score_unit
@@ -226,17 +261,7 @@ export async function createLeaderboard(
     // 解析具体错误，提供更有针对性的建议
     let specificHelp = '';
 
-    if (errorMsg.includes('score_type') || errorMsg.includes('period_type') ||
-        errorMsg.includes('score_order') || errorMsg.includes('calc_type')) {
-      specificHelp = `\n⚠️ **参数错误：**\n` +
-                     `所有枚举参数的值不能为 0！（0 = 未指定/无效）\n` +
-                     `正确的值：\n` +
-                     `- period_type: 1=永久, 2=每日, 3=每周, 4=每月\n` +
-                     `- score_type: 1=数值型, 2=时间型\n` +
-                     `- score_order: 1=降序(越高越好), 2=升序(越低越好)\n` +
-                     `- calc_type: 1=累计, 2=最佳, 3=最新\n\n` +
-                     `请使用正确的枚举值重试。`;
-    } else if (errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
+    if (errorMsg.includes('Unauthorized') || errorMsg.includes('401')) {
       specificHelp = `\n🔑 **认证错误：**\n` +
                      `请检查环境变量:\n` +
                      `- TAPTAP_MCP_MAC_TOKEN\n` +
@@ -245,15 +270,16 @@ export async function createLeaderboard(
     } else if (errorMsg.includes('403') || errorMsg.includes('Forbidden')) {
       specificHelp = `\n🚫 **权限错误：**\n` +
                      `当前用户可能没有创建排行榜的权限，请检查开发者账号权限。`;
+    } else if (errorMsg.includes('Invalid')) {
+      specificHelp = `\n⚠️ **参数错误：**\n请检查枚举值是否正确 (period_type, score_type, etc.)`;
     }
 
     return `❌ 创建排行榜失败\n\n` +
            `**错误信息：**\n${errorMsg}\n${specificHelp}\n\n` +
            `**常见问题检查：**\n` +
-           `1. 所有枚举参数是否使用了正确的值（不能为 0）\n` +
-           `2. 环境变量是否正确配置\n` +
-           `3. 用户是否有创建排行榜的权限\n` +
-           `4. 是否有多个应用需要选择`;
+           `1. 环境变量是否正确配置\n` +
+           `2. 用户是否有创建排行榜的权限\n` +
+           `3. 是否有多个应用需要选择`;
   }
 }
 
