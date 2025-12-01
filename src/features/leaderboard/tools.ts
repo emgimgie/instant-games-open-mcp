@@ -33,7 +33,7 @@ export const leaderboardTools: ToolRegistration[] = [
   {
     definition: {
       name: 'create_leaderboard',
-      description: 'Create a new leaderboard on TapTap server. Auto-fetches developer_id and app_id if not provided. Returns leaderboard_id for client-side APIs.',
+      description: '**PREREQUISITE: An app MUST be selected first.** Before calling this tool, ALWAYS call get_current_app_info to verify an app is selected. If not, guide user through: 1) Call list_developers_and_apps, 2) Show list to user and ASK them to choose, 3) Call select_app with user\'s choice. Create a new leaderboard on TapTap server. Auto-fetches developer_id and app_id from selected app. Returns leaderboard_id for client-side APIs.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -42,24 +42,24 @@ export const leaderboardTools: ToolRegistration[] = [
             description: 'Leaderboard title/name (REQUIRED)'
           },
           period_type: {
-            type: 'number',
-            description: 'Reset period: 1=Always, 2=Daily, 3=Weekly, 4=Monthly (REQUIRED)',
-            enum: [1, 2, 3, 4]
+            type: 'string',
+            description: 'Reset period: "always" (default), "daily", "weekly", "monthly"',
+            enum: ['always', 'daily', 'weekly', 'monthly']
           },
           score_type: {
-            type: 'number',
-            description: 'Score type: 1=Integer, 2=Time (REQUIRED)',
-            enum: [1, 2]
+            type: 'string',
+            description: 'Score type: "numeric" (default), "time"',
+            enum: ['numeric', 'time']
           },
           score_order: {
-            type: 'number',
-            description: 'Score order: 1=Descending (high to low), 2=Ascending (low to high) (REQUIRED)',
-            enum: [1, 2]
+            type: 'string',
+            description: 'Score order: "desc" (high to low, default), "asc" (low to high)',
+            enum: ['desc', 'asc']
           },
           calc_type: {
-            type: 'number',
-            description: 'Calculation type: 1=Sum, 2=Best, 3=Latest (REQUIRED)',
-            enum: [1, 2, 3]
+            type: 'string',
+            description: 'Calculation type: "sum" (default), "best", "latest"',
+            enum: ['sum', 'best', 'latest']
           },
           display_limit: {
             type: 'number',
@@ -67,18 +67,18 @@ export const leaderboardTools: ToolRegistration[] = [
           },
           period_time: {
             type: 'string',
-            description: 'Reset time like "08:00:00" (required if period_type is not 1)'
+            description: 'Reset time like "08:00:00" (required if period_type is not "always")'
           }
         },
-        required: ['title', 'period_type', 'score_type', 'score_order', 'calc_type']
+        required: ['title']
       }
     },
     handler: async (args: {
       title: string;
-      period_type: 1 | 2 | 3 | 4;
-      score_type: 1 | 2;
-      score_order: 1 | 2;
-      calc_type: 1 | 2 | 3;
+      period_type?: string;
+      score_type?: string;
+      score_order?: string;
+      calc_type?: string;
       display_limit?: number;
       period_time?: string;
     }, context) => {
@@ -90,7 +90,7 @@ export const leaderboardTools: ToolRegistration[] = [
   {
     definition: {
       name: 'list_leaderboards',
-      description: 'List all leaderboards for current app. Auto-fetches developer_id and app_id.',
+      description: '**PREREQUISITE: An app MUST be selected first.** Before calling this tool, ALWAYS call get_current_app_info to verify an app is selected. If not, guide user through: 1) Call list_developers_and_apps, 2) Show list to user and ASK them to choose, 3) Call select_app with user\'s choice. List all leaderboards for currently selected app. **IMPORTANT: When multiple leaderboards exist, ALWAYS show the complete list to the user and explicitly ASK them which one they want to use - DO NOT automatically choose a leaderboard without user confirmation.**',
       inputSchema: {
         type: 'object',
         properties: {
@@ -114,7 +114,7 @@ export const leaderboardTools: ToolRegistration[] = [
   {
     definition: {
       name: 'publish_leaderboard',
-      description: 'Publish leaderboard or set to whitelist-only mode.',
+      description: '**PREREQUISITE: An app MUST be selected first.** Publish leaderboard or set to whitelist-only mode. Before calling this tool, ensure an app is selected by calling get_current_app_info. **IMPORTANT: If the leaderboard ID is not clear, call list_leaderboards first, show the list to the user, and ASK them which leaderboard they want to publish - DO NOT automatically select a leaderboard.**',
       inputSchema: {
         type: 'object',
         properties: {
