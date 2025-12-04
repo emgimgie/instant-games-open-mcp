@@ -77,18 +77,35 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          # macOS Intel (x64) - 暂时禁用，PATH 问题待解决
-          # - host: macos-13
-          #   target: x86_64-apple-darwin
-          #   build: |
-          #     cd native
-          #     npm run build
-          #     strip -x *.node
+          # macOS Intel (x64)
+          # 注意：macos-13 预装的 Rust 配置已损坏（符号链接指向 ARM64 路径）
+          # 需要清理损坏的配置并重新安装 Rust
+          - host: macos-13
+            target: x86_64-apple-darwin
+            build: |
+              # 检查 cargo 是否真正可用（不只是符号链接存在）
+              if ! cargo --version &> /dev/null; then
+                echo "cargo not working, cleaning up and reinstalling Rust..."
+                # 删除损坏的 cargo bin 目录（保留缓存）
+                rm -rf "$HOME/.cargo/bin"
+                # 删除损坏的 rustup 设置
+                rm -f "$HOME/.rustup/settings.toml"
+                # 重新安装 Rust
+                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target x86_64-apple-darwin
+                source "$HOME/.cargo/env"
+              fi
+              # 确保 PATH 正确
+              export PATH="$HOME/.cargo/bin:$PATH"
+              echo "cargo version: $(cargo --version)"
+              cd native
+              npm run build
+              strip -x *.node
 
           # macOS Apple Silicon (ARM64)
           - host: macos-latest
             target: aarch64-apple-darwin
             build: |
+              export PATH="$CARGO_HOME/bin:$PATH"
               cd native
               npm run build -- --target aarch64-apple-darwin
               strip -x *.node
@@ -150,6 +167,15 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.settings.target }}
+
+      # 修复：dtolnay/rust-toolchain 在 rustup 已存在时不会添加 PATH
+      # macos-13 预装了 Rust，但 PATH 可能没有正确设置
+      - name: Ensure Cargo in PATH
+        if: ${{ !matrix.settings.docker }}
+        shell: bash
+        run: |
+          echo "$CARGO_HOME/bin" >> $GITHUB_PATH
+          echo "Added $CARGO_HOME/bin to PATH"
 
       - name: Cache Cargo
         uses: actions/cache@v4
