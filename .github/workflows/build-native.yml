@@ -32,8 +32,8 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          # macOS
-          - host: macos-latest
+          # macOS Intel (x64)
+          - host: macos-13
             target: x86_64-apple-darwin
             artifact: taptap-signer.darwin-x64.node
             build: |
@@ -41,6 +41,7 @@ jobs:
               npm run build
               strip -x *.node
 
+          # macOS Apple Silicon (ARM64)
           - host: macos-latest
             target: aarch64-apple-darwin
             artifact: taptap-signer.darwin-arm64.node
