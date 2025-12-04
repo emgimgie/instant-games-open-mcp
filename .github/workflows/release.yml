@@ -78,9 +78,12 @@ jobs:
       matrix:
         settings:
           # macOS Intel (x64)
+          # 注意：macos-13 预装了 Rust，但 napi-rs 使用 /bin/sh 调用 cargo
+          # 需要在 build 命令中显式设置 PATH，确保子进程能找到 cargo
           - host: macos-13
             target: x86_64-apple-darwin
             build: |
+              export PATH="$CARGO_HOME/bin:$PATH"
               cd native
               npm run build
               strip -x *.node
@@ -89,6 +92,7 @@ jobs:
           - host: macos-latest
             target: aarch64-apple-darwin
             build: |
+              export PATH="$CARGO_HOME/bin:$PATH"
               cd native
               npm run build -- --target aarch64-apple-darwin
               strip -x *.node

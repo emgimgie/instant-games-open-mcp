@@ -33,10 +33,13 @@ jobs:
       matrix:
         settings:
           # macOS Intel (x64)
+          # 注意：macos-13 预装了 Rust，但 napi-rs 使用 /bin/sh 调用 cargo
+          # 需要在 build 命令中显式设置 PATH，确保子进程能找到 cargo
           - host: macos-13
             target: x86_64-apple-darwin
             artifact: taptap-signer.darwin-x64.node
             build: |
+              export PATH="$CARGO_HOME/bin:$PATH"
               cd native
               npm run build
               strip -x *.node
@@ -46,6 +49,7 @@ jobs:
             target: aarch64-apple-darwin
             artifact: taptap-signer.darwin-arm64.node
             build: |
+              export PATH="$CARGO_HOME/bin:$PATH"
               cd native
               npm run build -- --target aarch64-apple-darwin
               strip -x *.node
@@ -73,15 +77,22 @@ jobs:
               strip *.node
 
           # Linux Musl ARM64 (Alpine on ARM servers / Apple Silicon Docker)
+          # 使用 zig 作为交叉编译器
           - host: ubuntu-latest
             target: aarch64-unknown-linux-musl
             artifact: taptap-signer.linux-arm64-musl.node
             docker: ghcr.io/napi-rs/napi-rs/nodejs-rust:lts-alpine
             build: |
+              # 安装 zig 用于交叉编译
+              apk add --no-cache zig
+              # 更新 Rust 并添加 ARM64 target
               rustup update stable && rustup default stable
+              rustup target add aarch64-unknown-linux-musl
               cd native
-              npm run build -- --target aarch64-unknown-linux-musl
-              strip *.node
+              # 使用 zig 作为链接器进行交叉编译
+              npm run build -- --target aarch64-unknown-linux-musl --zig
+              # ARM64 需要使用 llvm-strip 或跳过 strip
+              llvm-strip *.node 2>/dev/null || aarch64-linux-gnu-strip *.node 2>/dev/null || echo "Skip strip for cross-compiled binary"
 
           # Windows
           - host: windows-latest
