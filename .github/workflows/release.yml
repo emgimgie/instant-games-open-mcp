@@ -77,13 +77,13 @@ jobs:
       fail-fast: false
       matrix:
         settings:
-          # macOS Intel (x64) - 暂时禁用，PATH 问题待解决
-          # - host: macos-13
-          #   target: x86_64-apple-darwin
-          #   build: |
-          #     cd native
-          #     npm run build
-          #     strip -x *.node
+          # macOS Intel (x64)
+          - host: macos-13
+            target: x86_64-apple-darwin
+            build: |
+              cd native
+              npm run build
+              strip -x *.node
 
           # macOS Apple Silicon (ARM64)
           - host: macos-latest
@@ -150,6 +150,15 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.settings.target }}
+
+      # 修复：dtolnay/rust-toolchain 在 rustup 已存在时不会添加 PATH
+      # macos-13 预装了 Rust，但 PATH 可能没有正确设置
+      - name: Ensure Cargo in PATH
+        if: ${{ !matrix.settings.docker }}
+        shell: bash
+        run: |
+          echo "$CARGO_HOME/bin" >> $GITHUB_PATH
+          echo "Added $CARGO_HOME/bin to PATH"
 
       - name: Cache Cargo
         uses: actions/cache@v4
