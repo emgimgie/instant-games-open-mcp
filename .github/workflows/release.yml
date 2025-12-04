@@ -78,15 +78,20 @@ jobs:
       matrix:
         settings:
           # macOS Intel (x64)
-          # 注意：macos-13 预装的 Rust 符号链接指向 /opt/homebrew（ARM64 路径）
-          # 这是 GitHub Actions runner 的配置问题，需要重新安装 Rust
+          # 注意：macos-13 预装的 Rust 配置已损坏（符号链接指向 ARM64 路径）
+          # 需要清理损坏的配置并重新安装 Rust
           - host: macos-13
             target: x86_64-apple-darwin
             build: |
-              # 检查 cargo 是否可用，如果不可用则重新安装 Rust
-              if ! command -v cargo &> /dev/null; then
-                echo "cargo not found, reinstalling Rust via rustup..."
-                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable
+              # 检查 cargo 是否真正可用（不只是符号链接存在）
+              if ! cargo --version &> /dev/null; then
+                echo "cargo not working, cleaning up and reinstalling Rust..."
+                # 删除损坏的 cargo bin 目录（保留缓存）
+                rm -rf "$HOME/.cargo/bin"
+                # 删除损坏的 rustup 设置
+                rm -f "$HOME/.rustup/settings.toml"
+                # 重新安装 Rust
+                curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --target x86_64-apple-darwin
                 source "$HOME/.cargo/env"
               fi
               # 确保 PATH 正确
