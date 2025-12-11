@@ -110,6 +110,14 @@ const multiplayerResourceDefinitions = [
     description: 'Communication protocol template for generating protocol docs in user project (docs/multiplayer-protocol.md)',
     mimeType: 'text/markdown'
   },
+  
+  // 完整联机功能示例
+  {
+    uri: 'docs://multiplayer/complete-example',
+    name: 'Complete Multiplayer Example',
+    description: 'Complete, copy-paste ready MultiplayerManager class template - handles initialization, events, room matching, data sync, and room exit. No game-specific logic.',
+    mimeType: 'text/markdown'
+  },
 
   // 单个 API 文档
   {
@@ -159,6 +167,58 @@ const multiplayerResourceDefinitions = [
     name: 'leaveRoom() API',
     description: 'Leave current room',
     mimeType: 'text/markdown'
+  },
+
+  // ====== 扩展 API 资源（中等优先级）======
+  {
+    uri: 'docs://multiplayer/extended-room-management',
+    name: 'Extended Room Management APIs',
+    description: 'Optional APIs for room list, create room, join room, kick player (ONLY when user explicitly requests)',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'docs://multiplayer/extended-connection',
+    name: 'Extended Connection Control API',
+    description: 'Optional API for disconnect control',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'docs://multiplayer/extended-player-status',
+    name: 'Extended Player Status API',
+    description: 'Optional API for additional player status field',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'docs://multiplayer/extended-events',
+    name: 'Extended Event Listeners',
+    description: 'Optional events: onBattleServiceError, onPlayerKicked, onPlayerCustomStatusChange',
+    mimeType: 'text/markdown'
+  },
+
+  // ====== 新增：专题指南资源 ======
+  {
+    uri: 'docs://multiplayer/player-id-guide',
+    name: 'Player ID Complete Guide',
+    description: 'Complete guide for playerId usage: getting local ID, checking "is this me?", field name compatibility across APIs/events, common errors and debugging',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'docs://multiplayer/joystick-sync-pattern',
+    name: 'Joystick Sync Strategy',
+    description: 'Best practices for joystick/continuous input synchronization: timer + change detection, rate limiting (100-200ms interval), client interpolation',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'docs://multiplayer/local-guide-template',
+    name: 'Local Guide Document Template',
+    description: 'Template for generating MULTIPLAYER_GUIDE.md in user project - enables MCP context persistence without MCP',
+    mimeType: 'text/markdown'
+  },
+  {
+    uri: 'docs://multiplayer/modular-templates',
+    name: 'Modular Code Templates',
+    description: 'Copy-paste ready modules: SyncThrottle.js, PlayerIdHelper.js, Enhanced MultiplayerManager.js with built-in rate limiting',
+    mimeType: 'text/markdown'
   }
 ];
 
@@ -184,6 +244,9 @@ const multiplayerResourceHandlers = [
   async () => multiplayerDocTools.getCommonPatterns(),
   async () => multiplayerDocTools.getApiEventRelations(),
   async () => multiplayerDocTools.getProtocolTemplate(),
+  
+  // 完整联机功能示例
+  async () => multiplayerDocTools.getCompleteExample(),
 
   // 单个 API
   async () => multiplayerDocTools.getGetOnlineBattleManager(),
@@ -193,7 +256,19 @@ const multiplayerResourceHandlers = [
   async () => multiplayerDocTools.getUpdatePlayerCustomProperties(),
   async () => multiplayerDocTools.getUpdateRoomProperties(),
   async () => multiplayerDocTools.getSendCustomMessage(),
-  async () => multiplayerDocTools.getLeaveRoom()
+  async () => multiplayerDocTools.getLeaveRoom(),
+
+  // 扩展 API（中等优先级）
+  async () => multiplayerDocTools.getExtendedRoomManagement(),
+  async () => multiplayerDocTools.getExtendedConnection(),
+  async () => multiplayerDocTools.getExtendedPlayerStatus(),
+  async () => multiplayerDocTools.getExtendedEvents(),
+
+  // 新增：专题指南
+  async () => multiplayerDocTools.getPlayerIdGuide(),
+  async () => multiplayerDocTools.getJoystickSyncPattern(),
+  async () => multiplayerDocTools.getLocalGuideTemplate(),
+  async () => multiplayerDocTools.getModularTemplates()
 ];
 
 /**
