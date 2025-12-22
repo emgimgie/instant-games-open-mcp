@@ -9,55 +9,55 @@ import { MacToken } from '../types/index.js';
 import { logger } from '../utils/logger.js';
 import { EnvConfig } from '../utils/env.js';
 import { parseMacToken, isValidMacToken } from '../utils/macTokenValidator.js';
-// 导入新的认证错误处理模块
-import { AuthError, createAuthError, extractAuthErrorFromResponse } from '../errors/authErrors.js';
+import { createAuthError, extractAuthErrorFromResponse } from '../errors/authErrors.js';
+import {
+  initSigner,
+  getClientIdSync,
+  computeTapSignSync,
+  isSignerAvailable,
+  isUsingNativeSigner,
+} from './nativeSigner.js';
 
 /**
  * API 配置验证
- * 只负责启动时验证必需的环境变量
+ * 启动时验证签名器可用性（native 或 env fallback）
  * Token 管理已移至 tokenResolver（无全局状态）
  */
 export class ApiConfig {
   private static instance: ApiConfig;
+  private static initialized = false;
 
   private constructor() {
-    // 启动时验证必需的环境变量
-    this.validateConfig();
+    // Constructor is sync, actual validation happens in initAsync
   }
 
-  private validateConfig(): void {
-    const clientId = EnvConfig.clientId;
-    const clientSecret = EnvConfig.clientSecret;
+  /**
+   * 异步初始化（在服务器启动时调用）
+   */
+  public static async initAsync(): Promise<void> {
+    if (ApiConfig.initialized) return;
 
-    // Client ID is required
-    if (!clientId) {
-      process.stderr.write('❌ Missing required environment variable: TAPTAP_MCP_CLIENT_ID\n\n');
-      process.stderr.write('Please set it before starting the server:\n\n');
-      process.stderr.write('  export TAPTAP_MCP_CLIENT_ID="your_client_id"\n\n');
-      process.stderr.write('Get it from TapTap Developer Center: https://developer.taptap.cn\n\n');
-      process.exit(1);
-    }
+    // 初始化 native signer
+    await initSigner();
 
-    // Validate Client ID format (basic check)
-    if (clientId.trim().length === 0) {
-      process.stderr.write('❌ Invalid TAPTAP_MCP_CLIENT_ID: cannot be empty or whitespace\n\n');
-      process.exit(1);
-    }
+    // 检查签名器是否可用
+    const available = await isSignerAvailable();
 
-    // Client Secret is required for API signing (keep it secret!)
-    if (!clientSecret) {
-      process.stderr.write('❌ Missing required environment variable: TAPTAP_MCP_CLIENT_SECRET\n\n');
-      process.stderr.write('This is the API request signing key (keep it secret!).\n');
-      process.stderr.write('Please set it before starting the server:\n\n');
+    if (!available) {
+      process.stderr.write('❌ Signer not available!\n\n');
+      process.stderr.write('Option 1 (Production): Use npm package with native signer\n');
+      process.stderr.write('  npx @mikoto_zero/minigame-open-mcp\n\n');
+      process.stderr.write('Option 2 (Development): Set environment variables\n');
+      process.stderr.write('  export TAPTAP_MCP_CLIENT_ID="your_client_id"\n');
       process.stderr.write('  export TAPTAP_MCP_CLIENT_SECRET="your_signing_key"\n\n');
-      process.stderr.write('Contact TapTap support to get your CLIENT_SECRET.\n\n');
       process.exit(1);
     }
 
-    // Validate Client Secret format (basic check)
-    if (clientSecret.trim().length === 0) {
-      process.stderr.write('❌ Invalid TAPTAP_MCP_CLIENT_SECRET: cannot be empty or whitespace\n\n');
-      process.exit(1);
+    // 显示签名器状态
+    if (isUsingNativeSigner()) {
+      process.stderr.write('✅ Using native signer (CLIENT_SECRET protected)\n');
+    } else {
+      process.stderr.write('ℹ️  Using environment variables (development mode)\n');
     }
 
     // MAC Token 验证（可选，如果提供则必须有效）
@@ -65,9 +65,10 @@ export class ApiConfig {
     const parsedToken = macTokenEnv ? parseMacToken(macTokenEnv, 'environment variable') : null;
     if (macTokenEnv && macTokenEnv.trim().length > 0 && !parsedToken) {
       process.stderr.write('⚠️  Warning: TAPTAP_MCP_MAC_TOKEN provided but failed to parse\n');
-      process.stderr.write('   The token will be ignored and OAuth flow will be used instead.\n');
-      process.stderr.write('   If this is intentional, you can ignore this warning.\n\n');
+      process.stderr.write('   The token will be ignored and OAuth flow will be used instead.\n\n');
     }
+
+    ApiConfig.initialized = true;
   }
 
   public static getInstance(): ApiConfig {
@@ -128,15 +129,10 @@ export class HttpClient {
   /**
    * Generic request method with MAC authentication and signature
    */
-  private async request<T>(
-    method: string,
-    path: string,
-    options: RequestOptions = {}
-  ): Promise<T> {
-    // 直接从 EnvConfig 获取配置（不再通过 ApiConfig）
+  private async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
+    // 从 nativeSigner 获取 clientId（native 或 env fallback）
     const apiBaseUrl = EnvConfig.endpoints.apiBaseUrl;
-    const clientId = EnvConfig.clientId!;
-    const signingKey = EnvConfig.clientSecret!;
+    const clientId = getClientIdSync();
 
     // Build full URL with query parameters
     let fullUrl = `${apiBaseUrl}${path}`;
@@ -159,7 +155,7 @@ export class HttpClient {
     let bodyString = method === 'POST' ? '{}' : '';
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...(options.headers || {})
+      ...(options.headers || {}),
     };
 
     if (options.body) {
@@ -181,7 +177,6 @@ export class HttpClient {
     // ✅ 直接使用 ResolvedContext 解析 token
     const effectiveMacToken = this.ctx?.resolveToken() || null;
 
-
     // Generate MAC Authorization header
     const authorization = this.generateMacAuthorization(fullUrl, method, effectiveMacToken);
     headers['Authorization'] = authorization;
@@ -192,8 +187,9 @@ export class HttpClient {
     headers['X-Tap-Ts'] = timestamp;
     headers['X-Tap-Nonce'] = nonce;
 
-    // Calculate signature using CLIENT_SECRET
-    const signature = this.generateSignature(method, signUrl, headers, bodyString, signingKey);
+    // Calculate signature using native signer or env fallback
+    const headersPart = this.getHeadersPart(headers);
+    const signature = computeTapSignSync(method, signUrl, headersPart, bodyString);
     headers['X-Tap-Sign'] = signature;
 
     // Log request
@@ -205,12 +201,11 @@ export class HttpClient {
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
-      // @ts-ignore - fetch is available in Node.js 18+
       const response = await fetch(fullUrl, {
         method,
         headers,
         body: bodyString || undefined,
-        signal: controller.signal
+        signal: controller.signal,
       });
 
       clearTimeout(timeoutId);
@@ -228,7 +223,7 @@ export class HttpClient {
         let errorBody: any = null;
 
         if (contentType?.includes('application/json')) {
-          const errorData = await response.json() as any;
+          const errorData = (await response.json()) as any;
           errorBody = errorData;
           errorMessage += ` - ${errorData.message || errorData.error || JSON.stringify(errorData)}`;
 
@@ -236,24 +231,48 @@ export class HttpClient {
           const authError = extractAuthErrorFromResponse(response, errorData);
           if (authError) {
             // Log auth error
-            await logger.logResponse(method, fullUrl, response.status, response.statusText, errorBody, false, responseHeaders);
+            await logger.logResponse(
+              method,
+              fullUrl,
+              response.status,
+              response.statusText,
+              errorBody,
+              false,
+              responseHeaders
+            );
             throw authError;
           }
         } else {
           const errorText = await response.text();
           errorBody = errorText;
           errorMessage += ` - ${errorText}`;
-          
+
           // 使用统一的认证错误提取 (含文本检测)
           const authError = extractAuthErrorFromResponse(response, null, errorText);
           if (authError) {
-             await logger.logResponse(method, fullUrl, response.status, response.statusText, errorBody, false, responseHeaders);
-             throw authError;
+            await logger.logResponse(
+              method,
+              fullUrl,
+              response.status,
+              response.statusText,
+              errorBody,
+              false,
+              responseHeaders
+            );
+            throw authError;
           }
         }
 
         // Log error
-        await logger.logResponse(method, fullUrl, response.status, response.statusText, errorBody, false, responseHeaders);
+        await logger.logResponse(
+          method,
+          fullUrl,
+          response.status,
+          response.statusText,
+          errorBody,
+          false,
+          responseHeaders
+        );
 
         // 创建通用的HTTP错误
         throw new Error(errorMessage);
@@ -263,10 +282,18 @@ export class HttpClient {
       const contentType = response.headers.get('content-type');
 
       if (contentType?.includes('application/json')) {
-        const jsonData = await response.json() as ApiResponse<T>;
+        const jsonData = (await response.json()) as ApiResponse<T>;
 
         // Log successful response with headers
-        await logger.logResponse(method, fullUrl, response.status, response.statusText, jsonData, true, responseHeaders);
+        await logger.logResponse(
+          method,
+          fullUrl,
+          response.status,
+          response.statusText,
+          jsonData,
+          true,
+          responseHeaders
+        );
 
         // Handle API response format
         if (jsonData.success === false) {
@@ -281,10 +308,17 @@ export class HttpClient {
       const text = await response.text();
 
       // Log text response with headers
-      await logger.logResponse(method, fullUrl, response.status, response.statusText, text, true, responseHeaders);
+      await logger.logResponse(
+        method,
+        fullUrl,
+        response.status,
+        response.statusText,
+        text,
+        true,
+        responseHeaders
+      );
 
       return text as T;
-
     } catch (error) {
       clearTimeout(timeoutId);
 
@@ -309,15 +343,15 @@ export class HttpClient {
    */
   private generateMacAuthorization(url: string, method: string, token: MacToken | null): string {
     if (!token || !isValidMacToken(token)) {
-      throw createAuthError(
-        'TOKEN_MISSING',
-        '无法生成MAC授权头：缺少有效的MAC Token',
-        { retryAvailable: true }
-      );
+      throw createAuthError('TOKEN_MISSING', '无法生成MAC授权头：缺少有效的MAC Token', {
+        retryAvailable: true,
+      });
     }
 
     const urlObj = new URL(url);
-    const timestamp = Math.floor(Date.now() / 1000).toString().padStart(10, '0');
+    const timestamp = Math.floor(Date.now() / 1000)
+      .toString()
+      .padStart(10, '0');
     const nonce = this.generateRandomString(16);
     const host = urlObj.hostname;
     const uri = urlObj.pathname + urlObj.search;
@@ -325,7 +359,15 @@ export class HttpClient {
     const other = '';
 
     // Build MAC signature base string
-    const signatureBase = this.buildMacSignatureBase(timestamp, nonce, method, uri, host, port, other);
+    const signatureBase = this.buildMacSignatureBase(
+      timestamp,
+      nonce,
+      method,
+      uri,
+      host,
+      port,
+      other
+    );
 
     // Sign with mac_key using HMAC-SHA1
     const hmac = cryptoJS.HmacSHA1(signatureBase, token.mac_key);
@@ -361,44 +403,6 @@ export class HttpClient {
     }
 
     return base;
-  }
-
-  /**
-   * Generate request signature for X-Tap-Sign header
-   * Format: HMAC-SHA256(method + url + headers + body, signing_key)
-   */
-  private generateSignature(
-    method: string,
-    url: string,
-    headers: Record<string, string>,
-    body: string,
-    signingKey: string
-  ): string {
-    try {
-      // Debug: Check signing key
-      if (!signingKey) {
-        throw new Error('Signing key (TAPTAP_MCP_CLIENT_SECRET) is empty or undefined');
-      }
-
-      const methodPart = method;
-      const urlPart = url;
-      const headersPart = this.getHeadersPart(headers);
-      const bodyPart = body;
-      const signParts = `${methodPart}\n${urlPart}\n${headersPart}\n${bodyPart}\n`;
-
-      const hmacResult = cryptoJS.HmacSHA256(signParts, signingKey);
-
-      // Debug: Check HMAC result
-      if (!hmacResult || hmacResult.sigBytes === undefined) {
-        throw new Error('HMAC-SHA256 returned undefined or invalid result. Check if crypto-js is properly installed.');
-      }
-
-      const signatureBase64 = cryptoJS.enc.Base64.stringify(hmacResult);
-
-      return signatureBase64;
-    } catch (error) {
-      throw new Error(`Failed to generate signature: ${error instanceof Error ? error.message : String(error)}`);
-    }
   }
 
   /**

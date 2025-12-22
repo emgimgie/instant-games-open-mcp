@@ -1,3 +1,78 @@
+## <small>1.10.1 (2025-12-10)</small>
+
+* chore: add docker:npm script and remove unused import ([9d2455a](https://github.com/taptap/taptap_minigame_open_mcp/commit/9d2455a))
+* chore(docker): reorganize docker files into dedicated directory ([1be0a92](https://github.com/taptap/taptap_minigame_open_mcp/commit/1be0a92))
+* fix(app): correct AppStatusResponse parsing and add enums ([158bbac](https://github.com/taptap/taptap_minigame_open_mcp/commit/158bbac))
+* docs(claude): add commit type verification reminder ([340462a](https://github.com/taptap/taptap_minigame_open_mcp/commit/340462a))
+
+
+
+## 1.10.0 (2025-12-04)
+
+* fix(ci): handle missing release assets gracefully ([8f5597e](https://github.com/taptap/taptap_minigame_open_mcp/commit/8f5597e))
+* feat(ci): implement native signer on-demand build ([3ee077a](https://github.com/taptap/taptap_minigame_open_mcp/commit/3ee077a))
+
+
+
+## <small>1.9.2 (2025-12-04)</small>
+
+* fix(ci): add explicit PATH setup for Cargo on macOS ([f67ab97](https://github.com/taptap/taptap_minigame_open_mcp/commit/f67ab97))
+* fix(ci): clean corrupted rust config before reinstalling on macos-13 ([b06dbeb](https://github.com/taptap/taptap_minigame_open_mcp/commit/b06dbeb))
+* fix(ci): reinstall Rust on macos-13 if cargo not found ([fed80d9](https://github.com/taptap/taptap_minigame_open_mcp/commit/fed80d9))
+* fix(ci): resolve macOS cargo path and Linux ARM64 cross-compilation ([5a34fdc](https://github.com/taptap/taptap_minigame_open_mcp/commit/5a34fdc))
+* fix(ci): use CARGO env var and add debug info for macOS Intel ([62f4806](https://github.com/taptap/taptap_minigame_open_mcp/commit/62f4806))
+
+
+
+## <small>1.9.1 (2025-12-04)</small>
+
+* fix(ci): add Linux ARM64 and fix macOS Intel build ([6f0d5f9](https://github.com/taptap/taptap_minigame_open_mcp/commit/6f0d5f9))
+* fix(ci): fix macOS Intel build and Linux ARM64 cross-compile ([eda6866](https://github.com/taptap/taptap_minigame_open_mcp/commit/eda6866))
+* fix(ci): temporarily disable macOS Intel build ([f7417c7](https://github.com/taptap/taptap_minigame_open_mcp/commit/f7417c7))
+* fix(ci): use CARGO_HOME/bin in PATH for macOS builds ([a0c3818](https://github.com/taptap/taptap_minigame_open_mcp/commit/a0c3818))
+* fix(path): always join projectPath with WORKSPACE_ROOT ([862413f](https://github.com/taptap/taptap_minigame_open_mcp/commit/862413f))
+
+
+
+## 1.9.0 (2025-12-04)
+
+* fix(ci): correct rust-toolchain action name ([1720188](https://github.com/taptap/taptap_minigame_open_mcp/commit/1720188))
+* fix(ci): update Rust in Docker before building native ([e3326e0](https://github.com/taptap/taptap_minigame_open_mcp/commit/e3326e0))
+* fix(ci): use correct NPM_TOKEN env var for semantic-release ([d6bcca4](https://github.com/taptap/taptap_minigame_open_mcp/commit/d6bcca4))
+* ci: add explicit permissions to workflows for security ([42bdca0](https://github.com/taptap/taptap_minigame_open_mcp/commit/42bdca0)), closes [#7](https://github.com/taptap/taptap_minigame_open_mcp/issues/7)
+* docs: add native signer documentation to CLAUDE.md ([00bec35](https://github.com/taptap/taptap_minigame_open_mcp/commit/00bec35))
+* feat: add cloud save module with API documentation ([f2ef41f](https://github.com/taptap/taptap_minigame_open_mcp/commit/f2ef41f))
+* feat: add native signer module for secure OAuth signing ([1fda862](https://github.com/taptap/taptap_minigame_open_mcp/commit/1fda862))
+* feat: integrate native signer into core modules ([4c48e5f](https://github.com/taptap/taptap_minigame_open_mcp/commit/4c48e5f))
+* feat(proxy): add configurable tool call timeout with progress reset ([6aede0a](https://github.com/taptap/taptap_minigame_open_mcp/commit/6aede0a))
+
+
+
+## 1.8.0 (2025-12-02)
+
+* feat: 增加分享参数的透传逻辑 ([f10fc32](https://github.com/taptap/taptap_minigame_open_mcp/commit/f10fc32))
+
+
+
+## 1.7.0 (2025-12-02)
+
+* feat: 增加分享模块 ([a525d56](https://github.com/taptap/taptap_minigame_open_mcp/commit/a525d56))
+* style: apply prettier formatting and prefer-const fixes ([5709172](https://github.com/taptap/taptap_minigame_open_mcp/commit/5709172))
+* ci: add lint-staged and prettier integration ([c9c0d5d](https://github.com/taptap/taptap_minigame_open_mcp/commit/c9c0d5d))
+
+
+
+## <small>1.6.1 (2025-12-01)</small>
+
+* fix(leaderboard): address code review issues from Copilot ([87af411](https://github.com/taptap/taptap_minigame_open_mcp/commit/87af411))
+* docs: update documentation and config for new features ([970eded](https://github.com/taptap/taptap_minigame_open_mcp/commit/970eded))
+* refactor(app,leaderboard): improve tool descriptions for better Agent guidance ([dbeca69](https://github.com/taptap/taptap_minigame_open_mcp/commit/dbeca69))
+* refactor(h5game): improve path resolution with structured error messages ([7b2a565](https://github.com/taptap/taptap_minigame_open_mcp/commit/7b2a565))
+* chore(ci): add husky commit-msg hook for local validation ([1c913cf](https://github.com/taptap/taptap_minigame_open_mcp/commit/1c913cf))
+* style(core): optimize imports and remove deprecated types ([dbf98dc](https://github.com/taptap/taptap_minigame_open_mcp/commit/dbf98dc))
+
+
+
 ## 1.6.0 (2025-11-24)
 
 * refactor(api): migrate all API functions to accept ResolvedContext ([3a3baa7](https://github.com/taptap/taptap_minigame_open_mcp/commit/3a3baa7))

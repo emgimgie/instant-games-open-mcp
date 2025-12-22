@@ -94,9 +94,7 @@ export class TapTapMCPProxy {
     console.error(`[Proxy] Connecting to ${this.config.server.url}...`);
 
     try {
-      const transport = new StreamableHTTPClientTransport(
-        new URL(this.config.server.url)
-      );
+      const transport = new StreamableHTTPClientTransport(new URL(this.config.server.url));
 
       await this.client.connect(transport);
       this.connected = true;
@@ -190,14 +188,14 @@ export class TapTapMCPProxy {
 
     // 检查错误码（优先，更可靠）
     const networkErrorCodes = [
-      'ECONNREFUSED',  // 连接拒绝
-      'ECONNRESET',    // 连接重置
-      'ETIMEDOUT',     // 连接超时
-      'ENOTFOUND',     // DNS 解析失败
-      'EHOSTUNREACH',  // 主机不可达
-      'ENETUNREACH',   // 网络不可达
-      'EPIPE',         // 管道破裂
-      'EAI_AGAIN',     // DNS 临时失败
+      'ECONNREFUSED', // 连接拒绝
+      'ECONNRESET', // 连接重置
+      'ETIMEDOUT', // 连接超时
+      'ENOTFOUND', // DNS 解析失败
+      'EHOSTUNREACH', // 主机不可达
+      'ENETUNREACH', // 网络不可达
+      'EPIPE', // 管道破裂
+      'EAI_AGAIN', // DNS 临时失败
     ];
 
     if (errorCode && networkErrorCodes.includes(errorCode)) {
@@ -213,11 +211,11 @@ export class TapTapMCPProxy {
       'connection reset',
       'timeout',
       'dns',
-      'server not initialized',  // MCP SDK Server 未初始化（重启后会话丢失）
-      'not connected',            // 连接断开
+      'server not initialized', // MCP SDK Server 未初始化（重启后会话丢失）
+      'not connected', // 连接断开
     ];
 
-    return networkErrorKeywords.some(keyword => errorMsg.includes(keyword));
+    return networkErrorKeywords.some((keyword) => errorMsg.includes(keyword));
   }
 
   /**
@@ -240,10 +238,17 @@ export class TapTapMCPProxy {
 
       // 执行请求
       try {
-        const result = await this.client.callTool({
-          name: req.name,
-          arguments: req.arguments,
-        });
+        const result = await this.client.callTool(
+          {
+            name: req.name,
+            arguments: req.arguments,
+          },
+          undefined, // resultSchema
+          {
+            timeout: this.config.options?.tool_call_timeout ?? 300000,
+            resetTimeoutOnProgress: this.config.options?.reset_timeout_on_progress ?? true,
+          }
+        );
         req.resolve(result);
       } catch (error) {
         req.reject(error instanceof Error ? error : new Error(String(error)));
@@ -267,16 +272,16 @@ export class TapTapMCPProxy {
           data: {
             message: '✅ Reconnected to TapTap MCP Server',
             event: 'reconnected',
-            timestamp: new Date().toISOString()
-          }
-        }
+            timestamp: new Date().toISOString(),
+          },
+        },
       });
 
       // 2. 尝试发送工具列表变化通知（支持的客户端会刷新）
       try {
         await this.server.notification({
           method: 'notifications/tools/list_changed',
-          params: {}
+          params: {},
         });
       } catch (error) {
         // 忽略不支持的通知
@@ -345,7 +350,7 @@ export class TapTapMCPProxy {
         _mac_token: macToken,
         _project_path: this.config.tenant.project_path,
         _user_id: this.config.tenant.user_id,
-        _project_id: this.config.tenant.project_id,  // ✅ 新增
+        _project_id: this.config.tenant.project_id, // ✅ 新增
       };
 
       if (this.config.options?.verbose) {
@@ -366,7 +371,7 @@ export class TapTapMCPProxy {
               arguments: enrichedArgs,
               resolve,
               reject,
-              timestamp: Date.now()
+              timestamp: Date.now(),
             });
           });
         }
@@ -380,10 +385,17 @@ export class TapTapMCPProxy {
 
       // 透传到 TapTap Server（捕获网络错误并触发重连）
       try {
-        const result = await this.client.callTool({
-          name,
-          arguments: enrichedArgs,
-        });
+        const result = await this.client.callTool(
+          {
+            name,
+            arguments: enrichedArgs,
+          },
+          undefined, // resultSchema
+          {
+            timeout: this.config.options?.tool_call_timeout ?? 300000,
+            resetTimeoutOnProgress: this.config.options?.reset_timeout_on_progress ?? true,
+          }
+        );
         return result;
       } catch (error) {
         // 检查是否是网络错误（使用增强的检测）
@@ -404,7 +416,7 @@ export class TapTapMCPProxy {
                 arguments: enrichedArgs,
                 resolve,
                 reject,
-                timestamp: Date.now()
+                timestamp: Date.now(),
               });
             });
           }

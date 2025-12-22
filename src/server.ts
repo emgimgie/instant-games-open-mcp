@@ -29,7 +29,7 @@ import {
   ReadResourceRequestSchema,
   SetLevelRequestSchema,
   McpError,
-  ErrorCode
+  ErrorCode,
 } from '@modelcontextprotocol/sdk/types.js';
 import process from 'node:process';
 import http from 'node:http';
@@ -52,12 +52,14 @@ import { leaderboardModule } from './features/leaderboard/index.js';
 import { h5GameModule } from './features/h5Game/index.js';
 import { vibrateModule } from './features/vibrate/index.js';
 import { multiplayerModule } from './features/multiplayer/index.js';
+import { shareModule } from './features/share/index.js';
+import { cloudSaveModule } from './features/cloudSave/index.js';
 import type {
   RequestContext,
   SessionContext,
   FeatureModule,
   ToolRegistration,
-  ResourceRegistration
+  ResourceRegistration,
 } from './core/types/index.js';
 import { ResolvedContext } from './core/types/context.js';
 import { EnvConfig, printDeprecationWarnings, getEnv } from './core/utils/env.js';
@@ -66,18 +68,22 @@ import { VERSION } from './version.js';
 // 导入新的认证错误处理模块
 import { createAuthError, generateOAuthGuidance, isAuthError } from './core/errors/authErrors.js';
 
+// 导入 Native Signer 状态
+import { isUsingNativeSigner, getSignerStatus } from './core/network/nativeSigner.js';
+
 // 环境变量配置 (仅用于启动时验证)
 const transportMode = EnvConfig.transport;
 const serverPort = EnvConfig.port;
 
 // 所有功能模块
 const allModules: FeatureModule[] = [
-  appModule,        // App management (developer/app selection)
-  leaderboardModule,// Leaderboard management
-  h5GameModule,     // H5 Game management (upload, publish, status)
-  vibrateModule,    // Vibrate API documentation and guides
-  multiplayerModule // Multiplayer/OnlineBattle SDK documentation
-  // Future: cloudSaveModule, shareModule, etc.
+  appModule, // App management (developer/app selection)
+  leaderboardModule, // Leaderboard management
+  h5GameModule, // H5 Game management (upload, publish, status)
+  vibrateModule, // Vibrate API documentation and guides
+  multiplayerModule, // Multiplayer/OnlineBattle SDK documentation
+  shareModule, // Share API documentation and management
+  cloudSaveModule, // Cloud Save documentation (client-side only)
 ];
 
 /**
@@ -100,8 +106,8 @@ class TapTapMinigameMCPServer {
       },
       {
         capabilities: {
-          logging: {},  // Declare logging capability
-          tools: {},    // Declare tools capability
+          logging: {}, // Declare logging capability
+          tools: {}, // Declare tools capability
           resources: {}, // Declare resources capability
         },
       }
@@ -128,11 +134,10 @@ class TapTapMinigameMCPServer {
 
         // 检测名称冲突
         if (registry.has(toolName)) {
-          const existingTool = registry.get(toolName)!;
           process.stderr.write(
             `⚠️  Warning: Tool name conflict detected!\n` +
-            `   Tool "${toolName}" is defined in multiple modules.\n` +
-            `   Later registration will override the previous one.\n`
+              `   Tool "${toolName}" is defined in multiple modules.\n` +
+              `   Later registration will override the previous one.\n`
           );
         }
 
@@ -155,11 +160,10 @@ class TapTapMinigameMCPServer {
 
         // 检测 URI 冲突
         if (registry.has(uri)) {
-          const existingResource = registry.get(uri)!;
           process.stderr.write(
             `⚠️  Warning: Resource URI conflict detected!\n` +
-            `   URI "${uri}" is defined in multiple modules.\n` +
-            `   Later registration will override the previous one.\n`
+              `   URI "${uri}" is defined in multiple modules.\n` +
+              `   Later registration will override the previous one.\n`
           );
         }
 
@@ -182,7 +186,7 @@ class TapTapMinigameMCPServer {
     args: any,
     headers: Record<string, string | string[]>
   ): any {
-    let enrichedArgs = { ...args };
+    const enrichedArgs = { ...args };
 
     // Helper: 安全获取 header 值（处理大小写和数组）
     const getHeader = (name: string): string | undefined => {
@@ -242,7 +246,7 @@ class TapTapMinigameMCPServer {
     return {
       userId: sessionContext?.userId,
       projectId: sessionContext?.projectId,
-      sessionId: sessionContext?.sessionId
+      sessionId: sessionContext?.sessionId,
     };
   }
 
@@ -252,7 +256,7 @@ class TapTapMinigameMCPServer {
   private setupHandlers(): void {
     // stdio 模式：使用默认的 sessionContext
     const defaultContext: SessionContext = {
-      userId: 'local'  // stdio 固定使用 'local'
+      userId: 'local', // stdio 固定使用 'local'
     };
     this.setupHandlersForServer(this.server, defaultContext);
   }
@@ -264,10 +268,7 @@ class TapTapMinigameMCPServer {
    * @param server - Server 实例
    * @param sessionContext - Session 上下文（通过闭包注入）
    */
-  private setupHandlersForServer(
-    server: Server,
-    sessionContext?: SessionContext
-  ): void {
+  private setupHandlersForServer(server: Server, sessionContext?: SessionContext): void {
     // 设置日志级别处理器 (MCP logging/setLevel)
     server.setRequestHandler(SetLevelRequestSchema, async (request) => {
       const { level } = request.params;
@@ -277,7 +278,7 @@ class TapTapMinigameMCPServer {
 
     // 设置工具列表处理器 - 从所有模块收集
     server.setRequestHandler(ListToolsRequestSchema, async () => ({
-      tools: allModules.flatMap(m => m.tools.map(t => t.definition))
+      tools: allModules.flatMap((m) => m.tools.map((t) => t.definition)),
     }));
 
     // 设置工具调用处理器 - 自动从模块路由
@@ -326,17 +327,17 @@ class TapTapMinigameMCPServer {
                 authError.userGuidance || authError.message
               );
             }
-            
+
             // 其他错误保持原有处理
             const errorMsg = authError instanceof Error ? authError.message : String(authError);
             throw new McpError(
               ErrorCode.InternalError,
               `🔐 需要 TapTap 授权\n\n${errorMsg}\n\n` +
-              `📋 授权步骤：\n` +
-              `1. 在浏览器中打开上面的授权链接\n` +
-              `2. 使用 TapTap App 扫码授权\n` +
-              `3. 授权成功后，调用 complete_oauth_authorization 工具完成授权\n` +
-              `4. 然后重新执行此操作`
+                `📋 授权步骤：\n` +
+                `1. 在浏览器中打开上面的授权链接\n` +
+                `2. 使用 TapTap App 扫码授权\n` +
+                `3. 授权成功后，调用 complete_oauth_authorization 工具完成授权\n` +
+                `4. 然后重新执行此操作`
             );
           }
         }
@@ -354,13 +355,17 @@ class TapTapMinigameMCPServer {
           content: [
             {
               type: 'text',
-              text: result
-            }
-          ]
+              text: result,
+            },
+          ],
         };
       } catch (error) {
         // Log tool call error
-        await logger.logToolResponse(name, error instanceof Error ? error.message : String(error), false);
+        await logger.logToolResponse(
+          name,
+          error instanceof Error ? error.message : String(error),
+          false
+        );
 
         // 如果是认证错误，保持用户友好的提示
         if (error instanceof McpError && error.code === ErrorCode.InternalError) {
@@ -377,12 +382,14 @@ class TapTapMinigameMCPServer {
 
     // 设置资源列表处理器 - 从所有模块收集
     server.setRequestHandler(ListResourcesRequestSchema, async () => ({
-      resources: allModules.flatMap(m => m.resources.map(r => ({
-        uri: r.uri,
-        name: r.name,
-        description: r.description,
-        mimeType: r.mimeType
-      })))
+      resources: allModules.flatMap((m) =>
+        m.resources.map((r) => ({
+          uri: r.uri,
+          name: r.name,
+          description: r.description,
+          mimeType: r.mimeType,
+        }))
+      ),
     }));
 
     // 设置资源读取处理器 - 自动从模块路由
@@ -409,12 +416,16 @@ class TapTapMinigameMCPServer {
             {
               uri: uri,
               mimeType: resourceReg.mimeType || 'text/markdown',
-              text: content
-            }
-          ]
+              text: content,
+            },
+          ],
         };
       } catch (error) {
-        await logger.logToolResponse(`ReadResource: ${uri}`, error instanceof Error ? error.message : String(error), false);
+        await logger.logToolResponse(
+          `ReadResource: ${uri}`,
+          error instanceof Error ? error.message : String(error),
+          false
+        );
 
         throw new McpError(
           ErrorCode.InternalError,
@@ -452,10 +463,23 @@ class TapTapMinigameMCPServer {
     process.stderr.write(`🌍 Environment: ${EnvConfig.environment}\n`);
     process.stderr.write(`🔗 API Base: ${EnvConfig.endpoints.apiBaseUrl}\n`);
 
-    // 显示认证配置
+    // 显示认证配置（区分 Native Signer 和环境变量两种模式）
     process.stderr.write('\n🔐 Authentication Configuration:\n');
-    process.stderr.write(`   Client ID: ${EnvConfig.clientId ? '✅ ' + EnvConfig.clientId : '❌ Not configured'}\n`);
-    process.stderr.write(`   Client Secret: ${EnvConfig.clientSecret ? '✅ Configured' : '❌ Not configured'}\n`);
+    if (isUsingNativeSigner()) {
+      // Native Signer 模式：凭证嵌入在二进制中
+      process.stderr.write('   Mode: Native Signer (credentials embedded in binary)\n');
+      process.stderr.write('   Client ID: ✅ Embedded\n');
+      process.stderr.write('   Client Secret: ✅ Protected\n');
+    } else {
+      // 环境变量模式
+      process.stderr.write('   Mode: Environment Variables\n');
+      process.stderr.write(
+        `   Client ID: ${EnvConfig.clientId ? '✅ ' + EnvConfig.clientId : '❌ Not configured'}\n`
+      );
+      process.stderr.write(
+        `   Client Secret: ${EnvConfig.clientSecret ? '✅ Configured' : '❌ Not configured'}\n`
+      );
+    }
 
     // 显示目录配置
     process.stderr.write('\n📂 Directory Configuration:\n');
@@ -463,7 +487,8 @@ class TapTapMinigameMCPServer {
     const workspaceRootLabel = getEnv('TAPTAP_MCP_WORKSPACE_ROOT') ? '(env)' : '(default: cwd)';
     process.stderr.write(`   📁 WORKSPACE_ROOT: ${workspaceRoot} ${workspaceRootLabel}\n`);
 
-    const cacheDir = getEnv('TAPTAP_MCP_CACHE_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
+    const cacheDir =
+      getEnv('TAPTAP_MCP_CACHE_DIR') || path.join(os.tmpdir(), 'taptap-mcp', 'cache');
     const cacheDirLabel = getEnv('TAPTAP_MCP_CACHE_DIR') ? '(env)' : '(default)';
     process.stderr.write(`   📦 TAPTAP_MCP_CACHE_DIR: ${cacheDir} ${cacheDirLabel}\n`);
 
@@ -473,10 +498,12 @@ class TapTapMinigameMCPServer {
 
     process.stderr.write('\n📖 MCP Capabilities:\n');
     process.stderr.write(`   ✅ Tools (${totalTools}) - Execute operations with side effects\n`);
-    process.stderr.write(`   ✅ Resources (${totalResources}) - Read-only documentation and data\n`);
+    process.stderr.write(
+      `   ✅ Resources (${totalResources}) - Read-only documentation and data\n`
+    );
 
     process.stderr.write('\n🎯 Loaded Modules:\n');
-    allModules.forEach(m => {
+    allModules.forEach((m) => {
       const toolCount = m.tools.length;
       const resourceCount = m.resources.length;
       process.stderr.write(`   📦 ${m.name}: ${toolCount} tools, ${resourceCount} resources\n`);
@@ -513,9 +540,9 @@ class TapTapMinigameMCPServer {
     // Initialize logger (before any connections)
     logger.initialize(this.server, 'sse');
 
-
     // Store active transport instances by session ID
-    const transports: Map<string, { server: Server, transport: StreamableHTTPServerTransport }> = new Map();
+    const transports: Map<string, { server: Server; transport: StreamableHTTPServerTransport }> =
+      new Map();
 
     const httpServer = http.createServer(async (req, res) => {
       const url = new URL(req.url || '/', `http://${req.headers.host}`);
@@ -523,7 +550,8 @@ class TapTapMinigameMCPServer {
       // CORS headers
       res.setHeader('Access-Control-Allow-Origin', '*');
       res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
-      res.setHeader('Access-Control-Allow-Headers',
+      res.setHeader(
+        'Access-Control-Allow-Headers',
         'Content-Type, Mcp-Session-Id, X-TapTap-Mac-Token, X-TapTap-User-Id, X-TapTap-Project-Id'
       );
 
@@ -536,14 +564,16 @@ class TapTapMinigameMCPServer {
       if (url.pathname === '/health' && req.method === 'GET') {
         // Health check endpoint
         res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          status: 'ok',
-          version: VERSION,
-          transport: 'streamable-http',
-          tools: totalTools,
-          resources: totalResources,
-          activeSessions: transports.size
-        }));
+        res.end(
+          JSON.stringify({
+            status: 'ok',
+            version: VERSION,
+            transport: 'streamable-http',
+            tools: totalTools,
+            resources: totalResources,
+            activeSessions: transports.size,
+          })
+        );
         return;
       }
 
@@ -570,7 +600,7 @@ class TapTapMinigameMCPServer {
       // 创建 session 专属的上下文（通过闭包捕获）
       const sessionContext: SessionContext = {
         userId,
-        projectId
+        projectId,
         // sessionId 会在 onsessioninitialized 回调中设置
       };
 
@@ -609,7 +639,7 @@ class TapTapMinigameMCPServer {
 
           await logger.logClientConnection(newSessionId, {
             userId: sessionContext.userId,
-            projectId: sessionContext.projectId
+            projectId: sessionContext.projectId,
           });
 
           // Store the session（只需存储 server 和 transport，context 在闭包中）
@@ -620,7 +650,7 @@ class TapTapMinigameMCPServer {
           await logger.logClientDisconnection(closedSessionId);
           // Remove the session
           transports.delete(closedSessionId);
-        }
+        },
       });
 
       // Connect transport to the new server
@@ -659,7 +689,6 @@ class TapTapMinigameMCPServer {
   }
 }
 
-
 /**
  * 改进的认证检查函数
  * 使用统一的错误处理
@@ -680,43 +709,43 @@ async function ensureAuthenticated(context?: ResolvedContext): Promise<void> {
 
   // 需要 OAuth 授权
   const environment = EnvConfig.environment;
-  
+
   try {
     const deviceCodeData = await requestDeviceCode(environment);
     const authUrl = generateAuthUrl(deviceCodeData.qrcode_url, environment);
-    
+
     // 保存状态，供 complete_oauth_authorization 使用
     oauthState.setPendingState({
       deviceCode: deviceCodeData.device_code,
-      environment
+      environment,
     });
-    
+
     // 使用统一的OAuth引导文案
     const guidance = generateOAuthGuidance(authUrl);
-    
+
     throw createAuthError('TOKEN_MISSING', guidance, {
       authUrl,
-      retryAvailable: true
+      retryAvailable: true,
     });
   } catch (error) {
     // 如果是我们自己抛出的认证错误，直接传递
     if (isAuthError(error)) {
       throw error;
     }
-    
+
     // 网络或其他错误，包装为认证错误
     if (error instanceof Error) {
       throw createAuthError('NETWORK_ERROR', error.message);
     }
-    
+
     throw createAuthError('CONFIG_ERROR', String(error));
   }
 }
 
 // 启动服务器
 async function main(): Promise<void> {
-  // 启动时验证配置
-  ApiConfig.getInstance();
+  // 启动时初始化签名器（native 或 env fallback）
+  await ApiConfig.initAsync();
 
   // ✅ Token 状态检查已移至 tokenResolver
   // stdio 模式会自动从 ~/.taptap-mcp/cache/local/ 加载
@@ -744,8 +773,8 @@ async function main(): Promise<void> {
     process.exit(1);
   }
 
-      // Print deprecation warnings for old environment variables
-      printDeprecationWarnings();
+  // Print deprecation warnings for old environment variables
+  printDeprecationWarnings();
 }
 
 // 启动主函数
