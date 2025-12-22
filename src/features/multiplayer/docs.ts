@@ -790,73 +790,198 @@ console.log('已离开房间');
         {
           name: "PlayerInfo",
           method: "PlayerInfo 数据结构",
-          description: `玩家信息对象，包含玩家的基本信息。
+          description: `🔴 **核心数据结构**：玩家信息对象，包含玩家的基本信息。
 
-**使用位置**：
-- RoomInfo.players 数组中的元素
-- playerEnterRoom 事件的 info.playerInfo`,
+---
+
+## 📍 获取 PlayerInfo 的方式
+
+| 来源 | 获取路径 | 说明 |
+|-----|---------|------|
+| \`matchRoom()\` 返回值 | \`result.roomInfo.players[]\` | 房间内所有玩家（包括自己） |
+| \`playerEnterRoom\` 事件 | \`info.playerInfo\` | ⚠️ 注意有 playerInfo 包装层！ |
+| \`onPlayerCustomPropertiesChange\` | \`info.playerId\` + \`info.properties\` | 只有 ID 和属性，无完整对象 |
+
+---
+
+## ⚠️ 常见错误
+
+1. **playerEnterRoom 事件的包装层**：
+   - ❌ 错误：\`info.id\` → undefined
+   - ✅ 正确：\`info.playerInfo.id\`
+
+2. **customProperties 是字符串**：
+   - ❌ 错误：\`player.customProperties.nickname\`
+   - ✅ 正确：\`JSON.parse(player.customProperties).nickname\`
+
+---
+
+## 📖 官方文档
+https://developer.taptap.cn/docs/sdk/tap-battle/guide/`,
           parameters: {
-            "id": "string - 玩家ID（服务器分配的全局唯一标识）",
-            "status": "number - 玩家状态：0=离线，1=在线",
-            "customStatus": "number (可选) - 自定义玩家状态",
-            "customProperties": "string (可选) - 自定义玩家属性（JSON字符串，最大2048字节）"
+            "id": "string - 玩家ID（服务器分配的全局唯一标识，Base64编码）",
+            "status": "number - 玩家在线状态：0=离线，1=在线",
+            "customStatus": "number (可选) - 自定义玩家状态（通过 updatePlayerCustomStatus 设置）",
+            "customProperties": "string (可选) - 自定义玩家属性（JSON字符串，最大2048字节，通过 playerCfg.customProperties 或 updatePlayerCustomProperties 设置）"
           },
-          example: `// PlayerInfo 示例
+          example: `// ========== PlayerInfo 完整示例 ==========
+
+// 1️⃣ 数据结构
 {
-  id: "player_123456",
-  status: 1,  // 在线
-  customStatus: 0,
-  customProperties: JSON.stringify({
-    nickname: "玩家1",
-    level: 10
-  })
+  id: "7xX2mTXjdxQ39bn/a+1tVQ==",  // Base64 编码的玩家ID
+  status: 1,                        // 1=在线, 0=离线
+  customStatus: 0,                  // 自定义状态（可选）
+  customProperties: "{\"nickname\":\"玩家1\",\"level\":10,\"avatar\":\"avatar_01\"}"
 }
 
-// 解析 customProperties
-const player = roomInfo.players[0];
-const props = JSON.parse(player.customProperties || '{}');
-console.log(props.nickname);  // "玩家1"`
+// 2️⃣ 从 matchRoom 获取所有玩家
+const result = await tapOnlineBattle.matchRoom({...});
+result.roomInfo.players.forEach(player => {
+  console.log('玩家ID:', player.id);
+  console.log('在线状态:', player.status === 1 ? '在线' : '离线');
+  
+  // 🔴 解析 customProperties（是字符串！）
+  const props = JSON.parse(player.customProperties || '{}');
+  console.log('昵称:', props.nickname);
+  console.log('等级:', props.level);
+});
+
+// 3️⃣ 从 playerEnterRoom 事件获取新玩家
+tapOnlineBattle.registerListener({
+  playerEnterRoom: (info) => {
+    // 🔴 注意：有 playerInfo 包装层！
+    const newPlayer = info.playerInfo;  // ← 不是 info 本身！
+    
+    console.log('新玩家加入:', newPlayer.id);
+    const props = JSON.parse(newPlayer.customProperties || '{}');
+    console.log('新玩家昵称:', props.nickname);
+  }
+});
+
+// 4️⃣ 判断是否是自己
+function isMyself(playerId) {
+  return playerId === myPlayerId;  // myPlayerId 来自 connect() 返回值
+}
+
+// 5️⃣ 获取除自己外的其他玩家
+function getOtherPlayers(roomInfo) {
+  return roomInfo.players.filter(p => p.id !== myPlayerId);
+}`
         },
         {
           name: "RoomInfo",
           method: "RoomInfo 数据结构",
-          description: `房间信息对象，包含房间的完整信息。
+          description: `🔴 **核心数据结构**：房间信息对象，包含房间的完整信息。
 
-**使用位置**：
-- matchRoom() 返回值
-- createRoom() 返回值
-- joinRoom() 返回值`,
+---
+
+## 📍 获取 RoomInfo 的方式
+
+| 来源 | 获取路径 | 说明 |
+|-----|---------|------|
+| \`matchRoom()\` 返回值 | \`result.roomInfo\` | ⚠️ 注意有 roomInfo 包装层！ |
+| \`createRoom()\` 返回值 | \`result.roomInfo\` | 创建房间时返回 |
+| \`joinRoom()\` 返回值 | \`result.roomInfo\` | 加入房间时返回 |
+| \`onRoomPropertiesChange\` 事件 | 事件参数中部分字段 | 房间属性变更时 |
+
+---
+
+## ⚠️ 常见错误
+
+1. **matchRoom 返回值的包装层**：
+   - ❌ 错误：\`result.players\` → undefined
+   - ✅ 正确：\`result.roomInfo.players\`
+
+2. **直接访问 result.id**：
+   - ❌ 错误：\`result.id\` → undefined
+   - ✅ 正确：\`result.roomInfo.id\`
+
+3. **customProperties 是字符串**：
+   - ❌ 错误：\`roomInfo.customProperties.map\`
+   - ✅ 正确：\`JSON.parse(roomInfo.customProperties).map\`
+
+---
+
+## 📖 官方文档
+https://developer.taptap.cn/docs/sdk/tap-battle/guide/`,
           parameters: {
-            "id": "string - 房间ID",
-            "name": "string - 房间名称",
-            "type": "string - 房间类型",
-            "maxPlayerCount": "number - 房间最大人数",
-            "ownerId": "string - 房主ID（房主离开后会自动更新）",
-            "players": "PlayerInfo[] - 房间内玩家列表",
-            "createTime": "string - 创建时间（时间戳）",
-            "customProperties": "string (可选) - 自定义房间属性（JSON字符串）"
+            "id": "string - 房间ID（服务器分配）",
+            "name": "string - 房间名称（创建时设置，可通过 updateRoomProperties 修改）",
+            "type": "string - 房间类型（用于匹配分组，相同 type 的玩家会被匹配到一起）",
+            "maxPlayerCount": "number - 房间最大人数（1-10）",
+            "ownerId": "string - 房主ID（房主离开后会自动转移给其他玩家，通过 onRoomPropertiesChange 事件通知）",
+            "players": "PlayerInfo[] - 房间内玩家列表（包含所有当前在房间的玩家）",
+            "createTime": "string - 创建时间（Unix时间戳，毫秒）",
+            "customProperties": "string (可选) - 自定义房间属性（JSON字符串，最大2048字节）"
           },
-          example: `// RoomInfo 示例
+          example: `// ========== RoomInfo 完整示例 ==========
+
+// 1️⃣ 数据结构
 {
-  id: "room_123456",
-  name: "测试房间",
-  type: "game_mode_1",
-  maxPlayerCount: 4,
-  ownerId: "player_001",
-  createTime: "1697875200000",
-  customProperties: JSON.stringify({ map: 'default' }),
+  id: "25",                                    // 房间ID
+  name: "测试房间",                            // 房间名称
+  type: "game_mode_1",                         // 房间类型
+  maxPlayerCount: 4,                           // 最大人数
+  ownerId: "7xX2mTXjdxQ39bn/a+1tVQ==",        // 房主ID
+  createTime: "1697875200000",                 // 创建时间戳
+  customProperties: "{\"map\":\"desert\",\"mode\":\"battle\"}",
   players: [
-    { id: "player_001", status: 1, customProperties: '{"nickname":"玩家1"}' },
-    { id: "player_002", status: 1, customProperties: '{"nickname":"玩家2"}' }
+    { id: "player_001", status: 1, customProperties: '{"nickname":"玩家1","level":10}' },
+    { id: "player_002", status: 1, customProperties: '{"nickname":"玩家2","level":8}' }
   ]
 }
 
-// 判断自己是否是房主
-const isOwner = roomInfo.ownerId === myPlayerId;
+// 2️⃣ 从 matchRoom 正确获取 RoomInfo
+const result = await tapOnlineBattle.matchRoom({
+  data: {
+    roomCfg: { maxPlayerCount: 4, type: 'default', matchParams: {} },
+    playerCfg: { customProperties: JSON.stringify({ nickname: '我' }) }
+  }
+});
 
-// 获取房间内所有玩家
+// 🔴 必须从 result.roomInfo 获取！
+const roomInfo = result.roomInfo;  // ← 不是 result 本身！
+
+console.log('房间ID:', roomInfo.id);
+console.log('房主ID:', roomInfo.ownerId);
+console.log('玩家数量:', roomInfo.players.length);
+console.log('最大人数:', roomInfo.maxPlayerCount);
+
+// 3️⃣ 解析房间自定义属性
+const roomProps = JSON.parse(roomInfo.customProperties || '{}');
+console.log('地图:', roomProps.map);
+console.log('模式:', roomProps.mode);
+
+// 4️⃣ 判断自己是否是房主
+const isOwner = roomInfo.ownerId === myPlayerId;
+console.log('我是房主:', isOwner);
+
+// 5️⃣ 遍历房间内玩家
 roomInfo.players.forEach(player => {
-  console.log('玩家:', player.id);
+  const isMe = player.id === myPlayerId;
+  const props = JSON.parse(player.customProperties || '{}');
+  
+  console.log(\`\${props.nickname || player.id.substring(0,6)} \${isMe ? '(我)' : ''}\`);
+  
+  if (!isMe) {
+    // 初始化远程玩家
+    createRemotePlayer(player.id, props);
+  }
+});
+
+// 6️⃣ 监听房主变更（房主离开时）
+tapOnlineBattle.registerListener({
+  onRoomPropertiesChange: (info) => {
+    if (info.ownerId && info.ownerId !== currentOwnerId) {
+      console.log('房主已变更为:', info.ownerId);
+      currentOwnerId = info.ownerId;
+      
+      // 检查自己是否成为新房主
+      if (info.ownerId === myPlayerId) {
+        console.log('我成为了新房主！');
+      }
+    }
+  }
 });`
         },
 
@@ -2476,44 +2601,109 @@ class MultiplayerManager {
   constructor() {
     // SDK 管理器
     this.manager = null;
-    
+
     // 状态
     this.myPlayerId = null;
     this.roomInfo = null;
-    this.isConnected = false;
-    this.isInRoom = false;
-    
+    this.isOnline = false;      // SDK 是否可用（单机降级）
+    this.isConnected = false;   // 是否已连接服务器
+    this.isInRoom = false;      // 是否在房间中
+    this.isHost = false;        // 是否为房主（房主权威）
+
+    // 内置频率限制 + 变化检测
+    this.lastSyncTime = 0;
+    this.SYNC_INTERVAL = 100;   // 100ms = 10次/秒
+    this.lastPosition = { x: 0, y: 0 };
+
+    // 远程玩家管理
+    this.remotePlayers = new Map();  // playerId → player data
+
+    // 消息类型枚举（可扩展）
+    this.MSG_TYPES = {
+      POSITION: 'position',       // 位置同步
+      STATE: 'state',             // 状态同步
+      EVENT: 'event'              // 游戏事件
+    };
+
     // 事件回调（由业务逻辑设置）
-    this.onPlayerJoined = null;      // (playerInfo: PlayerInfo) => void
-    this.onPlayerLeft = null;        // (playerId: string) => void
-    this.onPlayerOffline = null;     // (playerId: string) => void
-    this.onDataReceived = null;      // (data: any, fromPlayerId: string) => void
-    this.onPlayerPropsChanged = null; // (playerId: string, props: any) => void
-    this.onRoomPropsChanged = null;  // (props: any, newOwnerId?: string) => void
-    this.onDisconnected = null;      // (reason: string, code: number) => void
-    this.onRoomJoined = null;        // (roomInfo: RoomInfo) => void
+    this.onPlayerJoined = null;      // (playerInfo) => void
+    this.onPlayerLeft = null;        // (playerId) => void
+    this.onDataReceived = null;      // (data, fromPlayerId) => void
+    this.onRoomJoined = null;        // (roomInfo) => void
+    this.onDisconnected = null;      // () => void
   }
-  
+
+  // ====== 工具函数（通用基础设施）======
+
   /**
-   * 初始化（按顺序执行）
-   * 1. 获取管理器
-   * 2. 注册事件监听（必须在 connect 之前）
-   * 3. 连接服务器
+   * 检查 TapTap SDK 可用性（单机降级）
+   */
+  checkTapSDK() {
+    if (typeof tap === 'undefined' || !tap?.getOnlineBattleManager) {
+      console.warn('⚠️ TapTap SDK 不可用，使用单机模式');
+      this.isOnline = false;
+      return false;
+    }
+    this.isOnline = true;
+    return true;
+  }
+
+  /**
+   * 字段名兼容提取（防止 undefined）
+   */
+  extractPlayerId(info) {
+    if (info.playerInfo) return info.playerInfo.id;
+    return info.playerId || info.id || info.fromPlayerId;
+  }
+
+  extractMessage(info) {
+    return info.msg || info.message || info.content;
+  }
+
+  extractProperties(info) {
+    if (info.playerInfo) return info.playerInfo.customProperties;
+    return info.customProperties || info.properties;
+  }
+
+  /**
+   * 错误格式化（兼容多种错误格式）
+   */
+  formatError(error) {
+    if (!error) return '未知错误';
+    if (typeof error === 'string') return error;
+    return error.message || error.errMsg || error.msg || String(error);
+  }
+
+  // ====== 初始化流程 ======
+
+  /**
+   * 初始化（支持单机降级）
    */
   async init() {
-    // 1. 获取管理器
-    this.manager = tap.getOnlineBattleManager();
-    
-    // 2. 注册事件监听（必须在 connect 之前！）
-    this._registerListeners();
-    
-    // 3. 连接服务器
-    const res = await this.manager.connect();
-    this.myPlayerId = res.playerId;
-    this.isConnected = true;
-    
-    console.log('[多人联机] 初始化完成，玩家ID:', this.myPlayerId);
-    return this.myPlayerId;
+    // 单机模式降级
+    if (!this.checkTapSDK()) {
+      this.myPlayerId = 'local-' + Date.now();
+      return { success: true, offline: true, playerId: this.myPlayerId };
+    }
+
+    try {
+      // 1. 获取管理器
+      this.manager = tap.getOnlineBattleManager();
+
+      // 2. 注册事件监听（必须在 connect 之前！）
+      this._registerListeners();
+
+      // 3. 连接服务器
+      const res = await this.manager.connect();
+      this.myPlayerId = res.playerId;
+      this.isConnected = true;
+
+      console.log('[多人联机] 初始化完成，玩家ID:', this.myPlayerId);
+      return { success: true, playerId: this.myPlayerId };
+    } catch (error) {
+      console.error('[多人联机] 初始化失败:', this.formatError(error));
+      return { success: false, error: this.formatError(error) };
+    }
   }
   
   /**
@@ -2532,65 +2722,103 @@ class MultiplayerManager {
         }
       },
       
-      // 新玩家加入（其他玩家收到）
+      // 新玩家加入
       playerEnterRoom: (info) => {
-        console.log('[多人联机] 玩家加入:', info.playerInfo.id);
+        const playerId = this.extractPlayerId(info);  // ✅ 兼容提取
+        console.log('[多人联机] 玩家加入:', playerId);
+
+        // 添加到远程玩家列表
+        this.remotePlayers.set(playerId, { id: playerId });
+
         if (this.onPlayerJoined) {
-          this.onPlayerJoined(info.playerInfo);
+          this.onPlayerJoined(info.playerInfo || info);
         }
       },
-      
+
       // 玩家离开
       playerLeaveRoom: (info) => {
-        console.log('[多人联机] 玩家离开:', info.playerId);
+        const playerId = this.extractPlayerId(info);  // ✅ 兼容提取
+        console.log('[多人联机] 玩家离开:', playerId);
+
+        // 从远程玩家列表移除
+        this.remotePlayers.delete(playerId);
+
         if (this.onPlayerLeft) {
-          this.onPlayerLeft(info.playerId);
+          this.onPlayerLeft(playerId);
         }
       },
-      
+
       // 玩家掉线
       playerOffline: (info) => {
-        console.log('[多人联机] 玩家掉线:', info.playerId);
-        if (this.onPlayerOffline) {
-          this.onPlayerOffline(info.playerId);
-        } else if (this.onPlayerLeft) {
-          // 默认当作离开处理
-          this.onPlayerLeft(info.playerId);
+        const playerId = this.extractPlayerId(info);  // ✅ 兼容提取
+        console.log('[多人联机] 玩家掉线:', playerId);
+
+        // 从远程玩家列表移除
+        this.remotePlayers.delete(playerId);
+
+        if (this.onPlayerLeft) {
+          this.onPlayerLeft(playerId);
         }
       },
-      
+
       // 收到自定义消息
       onCustomMessage: (info) => {
-        if (this.onDataReceived) {
-          const data = typeof info.message === 'string'
-            ? JSON.parse(info.message)
-            : info.message;
-          this.onDataReceived(data, info.playerId);
+        const fromId = this.extractPlayerId(info);  // ✅ 兼容提取
+        const msgStr = this.extractMessage(info);   // ✅ 兼容提取
+
+        // 跳过自己的消息（防御性检查）
+        if (fromId === this.myPlayerId) return;
+
+        try {
+          const data = typeof msgStr === 'string' ? JSON.parse(msgStr) : msgStr;
+          if (this.onDataReceived) {
+            this.onDataReceived(data, fromId);
+          }
+        } catch (e) {
+          console.error('[多人联机] 消息解析失败:', e);
         }
       },
-      
+
       // 玩家属性变更
       onPlayerCustomPropertiesChange: (info) => {
-        if (this.onPlayerPropsChanged) {
-          const props = typeof info.properties === 'string'
-            ? JSON.parse(info.properties)
-            : info.properties;
-          this.onPlayerPropsChanged(info.playerId, props);
+        const playerId = this.extractPlayerId(info);  // ✅ 兼容提取
+
+        // 跳过自己（自己的变更本地已处理）
+        if (playerId === this.myPlayerId) return;
+
+        const propsStr = this.extractProperties(info);  // ✅ 兼容提取
+        try {
+          const props = typeof propsStr === 'string' ? JSON.parse(propsStr) : propsStr;
+          if (this.onPlayerPropsChanged) {
+            this.onPlayerPropsChanged(playerId, props);
+          }
+        } catch (e) {
+          console.error('[多人联机] 属性解析失败:', e);
         }
       },
-      
+
       // 房间属性变更
       onRoomPropertiesChange: (info) => {
-        // 检查是否有房主变更
+        // 检查房主是否变更
         if (info.ownerId && this.roomInfo) {
+          const oldOwnerId = this.roomInfo.ownerId;
           this.roomInfo.ownerId = info.ownerId;
+          this.isHost = (info.ownerId === this.myPlayerId);
+
+          if (oldOwnerId !== info.ownerId) {
+            console.log('[多人联机] 房主变更:', info.ownerId, '我是房主:', this.isHost);
+          }
         }
-        
-        if (this.onRoomPropsChanged) {
-          const props = typeof info.properties === 'string'
-            ? JSON.parse(info.properties)
-            : info.properties;
-          this.onRoomPropsChanged(props, info.ownerId);
+
+        // 房间属性变更
+        const propsStr = info.customProperties;
+        try {
+          const props = typeof propsStr === 'string' ? JSON.parse(propsStr) : propsStr;
+          if (this.onRoomPropsChanged) {
+            this.onRoomPropsChanged(props);
+          }
+        } catch (e) {
+          console.error('[多人联机] 房间属性解析失败:', e);
         }
       }
     });
@@ -2599,136 +2827,177 @@ class MultiplayerManager {
   }
   
   /**
-   * 匹配房间
-   * @param maxPlayers 最大玩家数
-   * @param roomType 房间类型（用于匹配分组）
-   * @param playerProps 玩家自定义属性
-   * @param matchParams 匹配参数
+   * 匹配房间（支持单机降级）
    */
-  async matchRoom(maxPlayers = 2, roomType = 'default', playerProps = {}, matchParams = {}) {
-    const res = await this.manager.matchRoom({
-      data: {
-        roomCfg: {
-          maxPlayerCount: maxPlayers,
-          type: roomType,
-          matchParams: matchParams
-        },
-        playerCfg: {
-          customProperties: JSON.stringify(playerProps)
-        }
+  async matchRoom(maxPlayers = 2, roomType = 'default', playerProps = {}) {
+    // 单机模式降级
+    if (!this.isOnline) {
+      console.log('[多人联机] 单机模式');
+      this.isInRoom = true;
+      if (this.onRoomJoined) {
+        this.onRoomJoined({ players: [{ id: this.myPlayerId }] });
       }
-    });
-    
-    this.roomInfo = res.roomInfo;
-    this.isInRoom = true;
-    
-    console.log('[多人联机] 匹配成功，房间ID:', this.roomInfo.id);
-    console.log('[多人联机] 房间内玩家数:', this.roomInfo.players.length);
-    
-    // 触发房间加入回调
-    if (this.onRoomJoined) {
-      this.onRoomJoined(this.roomInfo);
+      return { success: true, offline: true };
     }
-    
-    return this.roomInfo;
+
+    try {
+      const res = await this.manager.matchRoom({
+        data: {
+          roomCfg: {
+            maxPlayerCount: maxPlayers,
+            type: roomType
+          },
+          playerCfg: {
+            customProperties: JSON.stringify(playerProps)
+          }
+        }
+      });
+
+      this.roomInfo = res.roomInfo;
+      this.isInRoom = true;
+      this.isHost = (this.roomInfo.ownerId === this.myPlayerId);
+
+      console.log('[多人联机] 匹配成功，房间ID:', this.roomInfo.id);
+      console.log('[多人联机] 我是房主:', this.isHost);
+
+      // 初始化房间内已有的其他玩家
+      this.roomInfo.players.forEach(player => {
+        if (player.id !== this.myPlayerId) {
+          this.remotePlayers.set(player.id, { id: player.id });
+          if (this.onPlayerJoined) {
+            this.onPlayerJoined(player);
+          }
+        }
+      });
+
+      if (this.onRoomJoined) {
+        this.onRoomJoined(this.roomInfo);
+      }
+
+      return { success: true, roomInfo: this.roomInfo };
+    } catch (error) {
+      console.error('[多人联机] 匹配失败:', this.formatError(error));
+      return { success: false, error: this.formatError(error) };
+    }
   }
   
   /**
-   * 发送数据给其他玩家
+   * 发送数据给其他玩家（内置频率限制）
    * @param data 要发送的数据（会自动 JSON 序列化）
-   * 🔴 频率限制：与 updatePlayerCustomProperties、updateRoomProperties 共享 15次/秒
+   * ✅ 内置频率限制：自动控制在 10次/秒，防止超频
    */
   sendData(data) {
     if (!this.isInRoom) {
       console.warn('[多人联机] 尚未进入房间，无法发送数据');
       return;
     }
-    
-    // 🔴 频率限制：共享 15次/秒，建议使用节流控制
+
+    // ✅ 内置频率限制（防止超频）
+    const now = Date.now();
+    if (now - this.lastSyncTime < this.SYNC_INTERVAL) {
+      return;  // 跳过过于频繁的调用
+    }
+
     this.manager.sendCustomMessage({
       data: {
         msg: JSON.stringify(data),
         type: 0  // 发送给房间所有人
       }
     });
+
+    this.lastSyncTime = now;
   }
   
   /**
-   * 更新自己的玩家属性
+   * 更新自己的玩家属性（内置频率限制）
    * @param props 玩家属性对象
-   * 🔴 频率限制：与 sendCustomMessage、updateRoomProperties 共享 15次/秒
+   * ✅ 内置频率限制：自动控制在 10次/秒，防止超频
    */
   async updateMyProps(props) {
     if (!this.isInRoom) {
       console.warn('[多人联机] 尚未进入房间，无法更新属性');
       return;
     }
-    
-    // 🔴 频率限制：共享 15次/秒，建议使用节流控制
+
+    // ✅ 内置频率限制（防止超频）
+    const now = Date.now();
+    if (now - this.lastSyncTime < this.SYNC_INTERVAL) {
+      return;  // 跳过过于频繁的调用
+    }
+
     await this.manager.updatePlayerCustomProperties({
       properties: JSON.stringify(props)
     });
+
+    this.lastSyncTime = now;
   }
   
   /**
-   * 更新房间属性（仅房主可用）
-   * @param props 房间属性对象
-   * 🔴 频率限制：与 sendCustomMessage、updatePlayerCustomProperties 共享 15次/秒
+   * 同步位置（内置频率限制 + 变化检测）
+   * 最常用的同步方法，适合在游戏循环中调用
    */
-  async updateRoomProps(props) {
-    if (!this.isInRoom) {
-      console.warn('[多人联机] 尚未进入房间，无法更新房间属性');
-      return;
-    }
-    
-    if (!this.isOwner()) {
-      console.warn('[多人联机] 只有房主可以更新房间属性');
-      return;
-    }
-    
-    // 🔴 频率限制：共享 15次/秒，建议使用节流控制
-    await this.manager.updateRoomProperties({
-      data: {
-        customProperties: JSON.stringify(props)
-      }
+  syncPosition(x, y) {
+    if (!this.isInRoom) return;
+
+    const now = Date.now();
+    if (now - this.lastSyncTime < this.SYNC_INTERVAL) return;
+
+    // ✅ 变化检测（减少 50%+ API 调用）
+    const dx = Math.abs(x - this.lastPosition.x);
+    const dy = Math.abs(y - this.lastPosition.y);
+    if (dx < 1 && dy < 1) return;  // 位置几乎没变，跳过
+
+    this.lastSyncTime = now;
+    this.lastPosition = { x, y };
+
+    this.sendData({ type: this.MSG_TYPES.POSITION, x, y });
+  }
+
+  /**
+   * 发送游戏事件（扩展用）
+   * 用于同步游戏特定事件（攻击、道具、技能等）
+   */
+  sendEvent(eventType, eventData) {
+    this.sendData({
+      type: this.MSG_TYPES.EVENT,
+      eventType,
+      ...eventData
     });
   }
-  
+
   /**
-   * 离开房间
+   * 离开房间（清理资源）
    */
   async leaveRoom() {
-    if (!this.isInRoom) {
-      return;
+    if (!this.isInRoom) return;
+
+    if (this.isOnline && this.manager) {
+      await this.manager.leaveRoom();
     }
-    
-    await this.manager.leaveRoom();
+
     this.roomInfo = null;
     this.isInRoom = false;
-    
+    this.remotePlayers.clear();  // ✅ 清理远程玩家
+
     console.log('[多人联机] 已离开房间');
   }
-  
-  /**
-   * 判断自己是否是房主
-   */
+
+  // ====== 工具方法 ======
+
   isOwner() {
-    return this.roomInfo && this.roomInfo.ownerId === this.myPlayerId;
+    return this.isHost;
   }
-  
-  /**
-   * 获取房间内其他玩家列表
-   */
-  getOtherPlayers() {
-    if (!this.roomInfo) return [];
-    return this.roomInfo.players.filter(p => p.id !== this.myPlayerId);
+
+  getRemotePlayer(playerId) {
+    return this.remotePlayers.get(playerId);
   }
-  
-  /**
-   * 获取房间内所有玩家列表
-   */
-  getAllPlayers() {
-    return this.roomInfo ? this.roomInfo.players : [];
+
+  getAllRemotePlayers() {
+    return Array.from(this.remotePlayers.values());
+  }
+
+  getRemotePlayerIds() {
+    return Array.from(this.remotePlayers.keys());
   }
 }`
         },
@@ -2737,82 +3006,88 @@ class MultiplayerManager {
           method: "Usage Example",
           description: `展示如何在实际项目中使用 MultiplayerManager。`,
           parameters: {},
-          example: `// ========== 使用示例 ==========
+          example: `// ========== 完整使用示例 ==========
 
-// 1. 创建管理器实例
+// 1. 创建管理器
 const multiplayer = new MultiplayerManager();
+const remotePlayers = {};  // playerId → 玩家游戏对象
 
-// 2. 设置回调函数（根据游戏需求）
+// 2. 设置回调
 multiplayer.onPlayerJoined = (playerInfo) => {
-  console.log('新玩家加入:', playerInfo.id);
-  const props = JSON.parse(playerInfo.customProperties || '{}');
-  // 游戏逻辑：创建玩家对象
-  // createPlayerObject(playerInfo.id, props);
+  const playerId = playerInfo.id;
+  console.log('新玩家加入:', playerId);
+
+  // 创建远程玩家对象（游戏逻辑）
+  remotePlayers[playerId] = createPlayer(playerId);
 };
 
 multiplayer.onPlayerLeft = (playerId) => {
   console.log('玩家离开:', playerId);
-  // 游戏逻辑：移除玩家对象
-  // removePlayerObject(playerId);
+
+  // 移除玩家对象（游戏逻辑）
+  if (remotePlayers[playerId]) {
+    remotePlayers[playerId].destroy();
+    delete remotePlayers[playerId];
+  }
 };
 
 multiplayer.onDataReceived = (data, fromPlayerId) => {
-  console.log('收到数据:', data, '来自:', fromPlayerId);
-  // 游戏逻辑：处理收到的数据
-  // handleGameData(data, fromPlayerId);
-};
-
-multiplayer.onRoomJoined = (roomInfo) => {
-  console.log('进入房间，当前玩家数:', roomInfo.players.length);
-  
-  // 初始化房间内已有的玩家
-  roomInfo.players.forEach(player => {
-    if (player.id !== multiplayer.myPlayerId) {
-      const props = JSON.parse(player.customProperties || '{}');
-      // 游戏逻辑：创建已有玩家的对象
-      // createPlayerObject(player.id, props);
+  // 根据消息类型处理
+  if (data.type === multiplayer.MSG_TYPES.POSITION) {
+    // 更新远程玩家位置
+    if (remotePlayers[fromPlayerId]) {
+      remotePlayers[fromPlayerId].x = data.x;
+      remotePlayers[fromPlayerId].y = data.y;
     }
-  });
+  } else if (data.type === multiplayer.MSG_TYPES.EVENT) {
+    // 处理游戏事件
+    handleGameEvent(fromPlayerId, data.eventType, data);
+  }
 };
 
 // 3. 初始化并进入房间
-async function startMultiplayer() {
-  try {
-    // 初始化
-    await multiplayer.init();
-    
-    // 匹配房间（4人，类型为 'battle'，玩家属性包含昵称）
-    await multiplayer.matchRoom(4, 'battle', { nickname: '玩家名' });
-    
-    // 现在可以开始游戏了
-    console.log('联机准备完成，可以开始游戏');
-    
-  } catch (error) {
-    console.error('联机失败:', error);
+async function startGame() {
+  const result = await multiplayer.init();
+  if (!result.success) {
+    console.error('初始化失败');
+    return;
+  }
+
+  await multiplayer.matchRoom(2, 'pvp', { nickname: '玩家' });
+  console.log('准备完成，开始游戏');
+}
+
+// 4. 游戏循环中同步位置（自动节流 + 变化检测）
+function gameLoop() {
+  player.update();
+
+  // ✅ 可以在每帧调用，内部会自动控制频率
+  multiplayer.syncPosition(player.x, player.y);
+
+  // 渲染...
+  requestAnimationFrame(gameLoop);
+}
+
+// 5. 发送游戏事件（攻击、道具等）
+player.onAttack = (targetId) => {
+  multiplayer.sendEvent('attack', { targetId });
+};
+
+player.onPickupItem = (itemId) => {
+  multiplayer.sendEvent('pickup', { itemId });
+};
+
+// 6. 如果是房主，生成游戏对象（房主权威）
+function spawnEnemy() {
+  if (multiplayer.isOwner()) {
+    const enemy = createEnemy();
+    multiplayer.sendEvent('enemy_spawn', { id: enemy.id, x: enemy.x, y: enemy.y });
   }
 }
 
-// 4. 游戏中发送数据
-function sendGameAction(action, params) {
-  multiplayer.sendData({
-    type: action,
-    params: params,
-    timestamp: Date.now()
-  });
-}
-
-// 5. 更新自己的状态
-function updateMyScore(score) {
-  multiplayer.updateMyProps({
-    score: score,
-    lastUpdate: Date.now()
-  });
-}
-
-// 6. 游戏结束时离开房间
+// 7. 游戏结束
 async function endGame() {
   await multiplayer.leaveRoom();
-  console.log('游戏结束，已离开房间');
 }`
         }
       ]

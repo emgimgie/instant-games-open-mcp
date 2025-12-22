@@ -17,11 +17,11 @@ import { multiplayerDocTools } from './docTools.js';
  * Each tool combines its definition and handler in one place
  */
 export const multiplayerTools: (ToolRegistration & { requiresAuth?: boolean })[] = [
-  // ⭐ 入口工具：集成指南
+  // ⭐ 主入口工具
   {
     definition: {
-      name: 'get_multiplayer_integration_guide',
-      description: '⭐ USE THIS TOOL FIRST when user asks about multiplayer/多人联机/多人玩法/多人模式/双人游戏/双人玩法/2人游戏/实时对战/联机对战/在线对战/OnlineBattle/联网游戏/合作模式/协作游戏/PVP/PVE/组队/匹配/房间系统 functionality, wants to implement any multi-player features, wants to integrate/接入/setup/add/使用 multiplayer features, searches for multiplayer API documentation/文档/教程/示例, asks how to connect/match rooms/sync data, needs multiplayer code examples/代码示例, or asks about real-time sync/房间匹配/玩家同步. Returns complete step-by-step integration workflow with all REQUIRED core APIs (highest priority - must implement all). Call this BEFORE making any implementation plans.',
+      name: 'get_multiplayer_guide',
+      description: '⭐ CALL THIS FIRST when user wants: players to play together/一起玩/两个人玩, add online/network features/联网功能/网络功能, players can see each other/互相看到对方, sync players/同步玩家/实时互动, multiplayer/多人联机/双人游戏/PVP/合作玩法/对战模式. Returns complete code template + usage examples. Primary entry!',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -33,318 +33,11 @@ export const multiplayerTools: (ToolRegistration & { requiresAuth?: boolean })[]
     requiresAuth: false
   },
 
-  // 📚 概览工具
+  // 📦 完整代码模板
   {
     definition: {
-      name: 'get_multiplayer_overview',
-      description: 'Get complete overview of TapTap Multiplayer (OnlineBattle) APIs. Shows REQUIRED core APIs (highest priority - minimum set for multiplayer functionality) and future extended APIs (medium priority). Use when user needs to understand the overall multiplayer/multi-player/双人/多人 system architecture, available APIs, and capabilities.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getMultiplayerOverview();
-    },
-    requiresAuth: false
-  },
-
-  // 🔍 搜索工具
-  {
-    definition: {
-      name: 'search_multiplayer_docs',
-      description: 'Search multiplayer documentation by keyword. Use when user asks specific questions about multiplayer/multi-player/双人/多人/联机/PVP/合作 features. Keywords: 初始化/连接/房间/匹配/消息/同步/事件/断线/属性/退出/组队/对战',
-      inputSchema: {
-        type: 'object',
-        properties: {
-          query: {
-            type: 'string',
-            description: 'Search keyword (e.g., "connect", "matchRoom", "sendCustomMessage", "leaveRoom")'
-          }
-        },
-        required: ['query']
-      }
-    },
-    handler: async (args) => {
-      return multiplayerDocTools.searchMultiplayerDocs(args as { query: string });
-    },
-    requiresAuth: false
-  },
-
-  // ====== 阶段分类文档工具 ======
-
-  // 阶段1：初始化和连接
-  {
-    definition: {
-      name: 'get_multiplayer_step1_init_docs',
-      description: 'Get Stage 1: Initialization and Connection APIs documentation - getOnlineBattleManager(), registerListener(), connect(). Use when user asks about SDK initialization, connecting to server, or event listener setup.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getStep1Init();
-    },
-    requiresAuth: false
-  },
-
-  // 阶段2：匹配进入房间
-  {
-    definition: {
-      name: 'get_multiplayer_step2_room_docs',
-      description: 'Get Stage 2: Room Matching APIs documentation - matchRoom(). IMPORTANT: Must enter room before any multiplayer communication! Use when user asks about room matching, creating rooms, or joining rooms.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getStep2Room();
-    },
-    requiresAuth: false
-  },
-
-  // 阶段3：玩家数据更新
-  {
-    definition: {
-      name: 'get_multiplayer_step3_player_data_docs',
-      description: 'Get Stage 3: Player Data Update APIs documentation - updatePlayerCustomProperties(). Use when user asks about syncing player properties like score, level, status.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getStep3PlayerData();
-    },
-    requiresAuth: false
-  },
-
-  // 阶段4：房间数据更新
-  {
-    definition: {
-      name: 'get_multiplayer_step4_room_data_docs',
-      description: 'Get Stage 4: Room Data Update APIs documentation - updateRoomProperties(). Note: Only room owner can call this. Use when user asks about updating room properties.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getStep4RoomData();
-    },
-    requiresAuth: false
-  },
-
-  // 阶段5：数据广播转发
-  {
-    definition: {
-      name: 'get_multiplayer_step5_broadcast_docs',
-      description: 'Get Stage 5: Data Broadcast APIs documentation - sendCustomMessage(). IMPORTANT: Rate limited to 15 calls/second (shared with updatePlayerCustomProperties and updateRoomProperties). NOT suitable for high-frequency calls! Use when user asks about sending messages, real-time data sync, broadcasting game state.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getStep5Broadcast();
-    },
-    requiresAuth: false
-  },
-
-  // 阶段6：事件通知
-  {
-    definition: {
-      name: 'get_multiplayer_step6_events_docs',
-      description: 'Get Stage 6: Event Notifications documentation - onDisconnected, playerEnterRoom, playerLeaveRoom, playerOffline, onCustomMessage, onPlayerCustomPropertiesChange, onRoomPropertiesChange. Use when user asks about event callbacks.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getStep6Events();
-    },
-    requiresAuth: false
-  },
-
-  // 阶段7：退出房间
-  {
-    definition: {
-      name: 'get_multiplayer_step7_exit_docs',
-      description: 'Get Stage 7: Exit Room APIs documentation - leaveRoom(). Use when user asks about leaving room, ending game, or starting next round.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getStep7Exit();
-    },
-    requiresAuth: false
-  },
-
-  // 数据结构
-  {
-    definition: {
-      name: 'get_multiplayer_data_structures_docs',
-      description: 'Get data structures documentation: PlayerInfo, RoomInfo. Use when user asks about player data format, room information structure, or API response formats.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getDataStructures();
-    },
-    requiresAuth: false
-  },
-
-  // ====== 单个 API 文档工具 ======
-
-  {
-    definition: {
-      name: 'get_connect_api_doc',
-      description: 'Get detailed documentation for connect() API. Use when user specifically asks about connecting to multiplayer server.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getConnect();
-    },
-    requiresAuth: false
-  },
-
-  {
-    definition: {
-      name: 'get_match_room_api_doc',
-      description: 'Get detailed documentation for matchRoom() API. Use when user specifically asks about room matching or auto-matching.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getMatchRoom();
-    },
-    requiresAuth: false
-  },
-
-  {
-    definition: {
-      name: 'get_send_custom_message_api_doc',
-      description: 'Get detailed documentation for sendCustomMessage() API. CRITICAL: Rate limited to 15 calls/second (shared with updatePlayerCustomProperties and updateRoomProperties). All APIs are NOT suitable for high-frequency calls! Use when user specifically asks about sending custom messages or real-time data synchronization.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getSendCustomMessage();
-    },
-    requiresAuth: false
-  },
-
-  {
-    definition: {
-      name: 'get_update_player_properties_api_doc',
-      description: 'Get detailed documentation for updatePlayerCustomProperties() API. Use when user specifically asks about updating player properties or player data synchronization.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getUpdatePlayerCustomProperties();
-    },
-    requiresAuth: false
-  },
-
-  {
-    definition: {
-      name: 'get_update_room_properties_api_doc',
-      description: 'Get detailed documentation for updateRoomProperties() API. Note: Only room owner can call this. Use when user specifically asks about updating room properties.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getUpdateRoomProperties();
-    },
-    requiresAuth: false
-  },
-
-  {
-    definition: {
-      name: 'get_leave_room_api_doc',
-      description: 'Get detailed documentation for leaveRoom() API. Use when user specifically asks about leaving room or exiting game.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getLeaveRoom();
-    },
-    requiresAuth: false
-  },
-
-  // ====== 新增：通用模板和关系表工具 ======
-
-  {
-    definition: {
-      name: 'get_multiplayer_common_patterns',
-      description: 'Get common reusable patterns/templates for multiplayer features. Includes: 1) Player state sync (低频数据：分数/等级/血量), 2) Player movement sync (高频数据：位置同步的正确做法), 3) Custom message protocol framework (自定义消息协议), 4) Player room events handling (进出房间处理), 5) Disconnect handling (断线处理, NOTE: SDK does not support reconnect). USE THIS when implementing specific multiplayer features after understanding the integration flow.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getCommonPatterns();
-    },
-    requiresAuth: false
-  },
-
-  {
-    definition: {
-      name: 'get_api_event_relations',
-      description: 'Get the API-to-Event relationship table (API与事件关系表). Shows which events are triggered by which API calls, and who receives them. CRITICAL for understanding: 1) matchRoom vs playerEnterRoom, 2) leaveRoom vs playerLeaveRoom, 3) updatePlayerCustomProperties (全员收到) vs sendCustomMessage (发送者不收到). Use this to understand different client handling logic.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getApiEventRelations();
-    },
-    requiresAuth: false
-  },
-
-  {
-    definition: {
-      name: 'get_protocol_template',
-      description: 'Get the communication protocol template specification (通讯协议模板规范). Use this when: 1) Game has 4+ types of interactions, 2) Need to generate protocol documentation file (docs/multiplayer-protocol.md), 3) Team collaboration requires clear protocol definition. Returns a markdown template that AI should use to generate protocol docs in user project.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getProtocolTemplate();
-    },
-    requiresAuth: false
-  },
-
-  // ====== 完整联机示例工具 ======
-  {
-    definition: {
-      name: 'get_multiplayer_complete_example',
-      description: 'Get a complete, copy-paste ready multiplayer manager template (MultiplayerManager class). Use when user wants a full implementation reference, needs a reusable multiplayer class template, or asks for complete multiplayer code example. Returns a generic multiplayer manager that handles: initialization, event registration, room matching, data sending, and room exit. No game-specific logic included.',
+      name: 'get_code_template',
+      description: 'Get complete MultiplayerManager.js template with built-in rate limiting. Copy-paste ready code for: initialization, event registration, room matching, data sync, room exit. Use when user wants implementation reference or needs reusable multiplayer class.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -356,177 +49,61 @@ export const multiplayerTools: (ToolRegistration & { requiresAuth?: boolean })[]
     requiresAuth: false
   },
 
-  // ====== 扩展 API 工具（中等优先级 - 仅在明确需求时使用）======
-
-  // 房间管理增强分类工具
+  // 📊 API-事件关系表
   {
     definition: {
-      name: 'get_extended_room_management_apis',
-      description: '🟡 Get extended room management APIs (medium priority). ONLY use when user explicitly requests: room list UI, create custom room, invite friends by room ID, or kick players. These APIs are OPTIONAL and should NOT be added automatically.',
+      name: 'get_api_event_table',
+      description: 'Get API-to-Event relationship table. Shows which events are triggered by which API calls and who receives them. CRITICAL for understanding: matchRoom vs playerEnterRoom, updatePlayerCustomProperties (all receive) vs sendCustomMessage (sender does not receive). Use when implementing event handling logic.',
       inputSchema: {
         type: 'object',
         properties: {}
       }
     },
     handler: async () => {
-      return multiplayerDocTools.getExtendedRoomManagement();
+      return multiplayerDocTools.getApiEventRelations();
     },
     requiresAuth: false
   },
 
-  // 连接控制分类工具
+  // 📝 通讯协议模板
   {
     definition: {
-      name: 'get_extended_connection_apis',
-      description: '🟡 Get extended connection control API (medium priority). ONLY use when user explicitly needs to disconnect without leaving room.',
+      name: 'get_protocol_template',
+      description: 'Get communication protocol template for games with 4+ interaction types. Returns markdown template for generating protocol docs (docs/multiplayer-protocol.md) in user project. Use when team collaboration requires clear protocol definition.',
       inputSchema: {
         type: 'object',
         properties: {}
       }
     },
     handler: async () => {
-      return multiplayerDocTools.getExtendedConnection();
+      return multiplayerDocTools.getProtocolTemplate();
     },
     requiresAuth: false
   },
 
-  // 玩家状态扩展分类工具
+  // 🔧 扩展 API 速查
   {
     definition: {
-      name: 'get_extended_player_status_apis',
-      description: '🟡 Get extended player status API (medium priority). ONLY use when user explicitly needs additional status field separate from customProperties.',
+      name: 'get_extended_apis',
+      description: '🟡 Get extended APIs quick reference: createRoom, getRoomList, joinRoom, kickRoomPlayer, disconnect, updatePlayerCustomStatus. ONLY use when user explicitly requests room list UI, custom room creation, friend invitation, or player kick functionality. These are OPTIONAL.',
       inputSchema: {
         type: 'object',
         properties: {}
       }
     },
     handler: async () => {
-      return multiplayerDocTools.getExtendedPlayerStatus();
+      return multiplayerDocTools.getExtendedApis();
     },
     requiresAuth: false
   },
 
-  // 扩展事件分类工具
-  {
-    definition: {
-      name: 'get_extended_events_docs',
-      description: '🟡 Get extended event listeners documentation (medium priority). ONLY use when user explicitly needs error handling or kick event handling.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getExtendedEvents();
-    },
-    requiresAuth: false
-  },
+  // ====== 专题指南工具 ======
 
-  // ====== 单个扩展 API 工具 ======
-
-  // createRoom
-  {
-    definition: {
-      name: 'get_create_room_api_doc',
-      description: 'Get detailed documentation for createRoom() API. ONLY use when user specifically asks to create custom room with room ID for inviting friends.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getCreateRoom();
-    },
-    requiresAuth: false
-  },
-
-  // getRoomList
-  {
-    definition: {
-      name: 'get_get_room_list_api_doc',
-      description: 'Get detailed documentation for getRoomList() API. ONLY use when user specifically asks to display room list UI.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getGetRoomList();
-    },
-    requiresAuth: false
-  },
-
-  // joinRoom
-  {
-    definition: {
-      name: 'get_join_room_api_doc',
-      description: 'Get detailed documentation for joinRoom() API. ONLY use when user specifically asks to join room by room ID (invite friends scenario).',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getJoinRoom();
-    },
-    requiresAuth: false
-  },
-
-  // kickRoomPlayer
-  {
-    definition: {
-      name: 'get_kick_room_player_api_doc',
-      description: 'Get detailed documentation for kickRoomPlayer() API. ONLY use when user specifically asks for room owner kick player functionality.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getKickRoomPlayer();
-    },
-    requiresAuth: false
-  },
-
-  // disconnect
-  {
-    definition: {
-      name: 'get_disconnect_api_doc',
-      description: 'Get detailed documentation for disconnect() API. ONLY use when user specifically asks to manually disconnect without leaving room.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getDisconnect();
-    },
-    requiresAuth: false
-  },
-
-  // updatePlayerCustomStatus
-  {
-    definition: {
-      name: 'get_update_player_custom_status_api_doc',
-      description: 'Get detailed documentation for updatePlayerCustomStatus() API. ONLY use when user specifically asks for additional simple numeric status field separate from customProperties.',
-      inputSchema: {
-        type: 'object',
-        properties: {}
-      }
-    },
-    handler: async () => {
-      return multiplayerDocTools.getUpdatePlayerCustomStatus();
-    },
-    requiresAuth: false
-  },
-
-  // ====== 新增：专题指南工具 ======
-
-  // 玩家 ID 完整指南
+  // 🔑 玩家 ID 指南
   {
     definition: {
       name: 'get_player_id_guide',
-      description: '🔑 Get complete Player ID usage guide. CRITICAL for understanding: 1) How to get local player ID from connect(), 2) How to check "is this me?", 3) Field name differences across APIs/events (fromPlayerId vs playerId vs id), 4) Common errors and debugging tips. USE THIS when user has issues with player identification or "is not working for other players".',
+      description: '🔑 Get Player ID usage guide: how to get local player ID from connect(), check "is this me?", handle field name differences (fromPlayerId/playerId/id). Use when implementing player identification logic or debugging player-related issues.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -538,27 +115,27 @@ export const multiplayerTools: (ToolRegistration & { requiresAuth?: boolean })[]
     requiresAuth: false
   },
 
-  // 摇杆同步策略
+  // 🎮 同步策略指南
   {
     definition: {
-      name: 'get_joystick_sync_pattern',
-      description: '🎮 Get joystick/continuous input synchronization strategy guide. USE THIS when: 1) Game uses virtual joystick or WASD controls, 2) Player movement needs to be synced, 3) User reports "other players not moving" or "position not syncing", 4) Need to understand timer-based sync + change detection pattern. Includes throttling implementation and client-side interpolation.',
+      name: 'get_sync_strategy',
+      description: '🎮 Get synchronization strategy guide for joystick/WASD controls and click-based movement. Includes timer-based sync pattern (100ms interval) and change detection. Use when implementing position synchronization or continuous input handling.',
       inputSchema: {
         type: 'object',
         properties: {}
       }
     },
     handler: async () => {
-      return multiplayerDocTools.getJoystickSyncPattern();
+      return multiplayerDocTools.getSyncStrategy();
     },
     requiresAuth: false
   },
 
-  // 生成本地指南文档
+  // 📄 生成本地指南文档
   {
     definition: {
-      name: 'generate_local_multiplayer_guide',
-      description: '📄 Generate MULTIPLAYER_GUIDE.md content for local project. USE THIS to create a persistent reference document in user project root. The document includes: API rate limits (15/sec shared), playerId usage rules, data structure gotchas, joystick sync strategy, and AI development guidelines. IMPORTANT: Instruct AI to add comment "// 多人联机 SDK 使用规范请参阅项目中的 MULTIPLAYER_GUIDE.md" in all multiplayer code files. This enables context persistence even without MCP.',
+      name: 'generate_local_guide',
+      description: '📄 Generate MULTIPLAYER_GUIDE.md for user project root. Creates persistent reference with API rate limits, playerId rules, data structures. Enables context persistence across conversations. Use at project start.',
       inputSchema: {
         type: 'object',
         properties: {}
@@ -570,18 +147,72 @@ export const multiplayerTools: (ToolRegistration & { requiresAuth?: boolean })[]
     requiresAuth: false
   },
 
-  // 模块化代码模板
+  // 📊 API 数据结构
   {
     definition: {
-      name: 'get_modular_templates',
-      description: '📦 Get modular code templates for multiplayer features. Includes: 1) SyncThrottle.js - rate limiting module, 2) PlayerIdHelper.js - playerId extraction utilities, 3) Enhanced MultiplayerManager.js - complete manager with built-in throttling. USE THIS when user wants copy-paste ready code modules or needs to refactor existing multiplayer code.',
+      name: 'get_api_data_structures',
+      description: '📊 Get complete API return value structures and event callback data structures. Includes all core APIs (connect, matchRoom, sendCustomMessage, etc) and events (playerEnterRoom, onCustomMessage, etc). Use when implementing API calls to avoid guessing data structures.',
       inputSchema: {
         type: 'object',
         properties: {}
       }
     },
     handler: async () => {
-      return multiplayerDocTools.getModularTemplates();
+      return multiplayerDocTools.getApiDataStructures();
+    },
+    requiresAuth: false
+  },
+
+  // 🎯 一键生成工具
+  {
+    definition: {
+      name: 'generate_multiplayer_code',
+      description: '🎯 One-click solution: Generate complete multiplayer files ready to save. Creates MultiplayerManager.js + MULTIPLAYER_GUIDE.md. Use when user wants quick setup or asks "generate multiplayer code/生成多人联机代码". Returns file paths and contents.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    handler: async () => {
+      return multiplayerDocTools.generateMultiplayerCode();
+    },
+    requiresAuth: false
+  },
+
+  // 🔍 问题诊断工具
+  {
+    definition: {
+      name: 'diagnose_multiplayer_issues',
+      description: '🔍 Diagnose common multiplayer issues. Use when user reports: players not visible/看不到其他玩家, position not syncing/位置不同步, connection failed/连接失败, API errors. Returns detailed checklist and solutions. Extensible for future issue types.',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      }
+    },
+    handler: async () => {
+      return multiplayerDocTools.diagnoseIssues();
+    },
+    requiresAuth: false
+  },
+
+  // ✅ 代码检查工具
+  {
+    definition: {
+      name: 'check_multiplayer_code',
+      description: '✅ Check multiplayer code for common issues before deployment. Detects: missing rate limiting, wrong field names, missing playerId save, uninitialized players. Use before finalizing code or when debugging.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          code: {
+            type: 'string',
+            description: 'The multiplayer code to check'
+          }
+        },
+        required: ['code']
+      }
+    },
+    handler: async (args) => {
+      return multiplayerDocTools.checkCode(args as { code: string });
     },
     requiresAuth: false
   }
