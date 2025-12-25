@@ -1,9 +1,9 @@
 /**
  * Multiplayer Tools
  * Unified definitions and handlers for multiplayer functionality
- * 
+ *
  * TapTap 小游戏多人联机 SDK MCP 工具
- * 
+ *
  * 按实际使用流程组织：
  * 初始化和连接 → 匹配进入房间 → 游戏数据互通流转循环 → 退出房间
  */
@@ -39,13 +39,13 @@ Use when: User wants players to play together, sync game data, see each other's 
 Perfect for ANY creative H5 game. No game-specific logic needed.`,
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getIntegrationWorkflow();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 📦 完整代码模板
@@ -66,13 +66,13 @@ Features: Built-in rate limiting (10/sec), field compatibility, offline fallback
 Copy-paste ready. Use for ANY game type.`,
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getCompleteExample();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 📊 API-事件关系表
@@ -93,13 +93,13 @@ This relationship is hard to show in code template, so use this table when imple
 Use when: Implementing multiplayer logic, debugging "why no event triggered?"`,
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getApiEventRelations();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 📝 通讯协议模板
@@ -123,29 +123,30 @@ Use when: Starting multiplayer implementation, adding new interaction types.
 This is a MAJOR source of bugs - keep protocol consistent!`,
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getProtocolTemplate();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 🔧 扩展 API 速查
   {
     definition: {
       name: 'get_extended_apis',
-      description: '🟡 Get extended APIs quick reference: createRoom, getRoomList, joinRoom, kickRoomPlayer, disconnect, updatePlayerCustomStatus. ONLY use when user explicitly requests room list UI, custom room creation, friend invitation, or player kick functionality. These are OPTIONAL.',
+      description:
+        '🟡 Get extended APIs quick reference: createRoom, getRoomList, joinRoom, kickRoomPlayer, disconnect, updatePlayerCustomStatus. ONLY use when user explicitly requests room list UI, custom room creation, friend invitation, or player kick functionality. These are OPTIONAL.',
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getExtendedApis();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // ====== 专题指南工具 ======
@@ -154,64 +155,68 @@ This is a MAJOR source of bugs - keep protocol consistent!`,
   {
     definition: {
       name: 'get_player_id_guide',
-      description: '🔑 Get Player ID usage guide: how to get local player ID from connect(), check "is this me?", handle field name differences (fromPlayerId/playerId/id). Use when implementing player identification logic or debugging player-related issues.',
+      description:
+        '🔑 Get Player ID usage guide: how to get local player ID from connect(), check "is this me?", handle field name differences (fromPlayerId/playerId/id). Use when implementing player identification logic or debugging player-related issues.',
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getPlayerIdGuide();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 🎮 同步策略指南
   {
     definition: {
       name: 'get_sync_strategy',
-      description: '🎮 Get synchronization strategy guide for joystick/WASD controls and click-based movement. Includes timer-based sync pattern (100ms interval) and change detection. Use when implementing position synchronization or continuous input handling.',
+      description:
+        '🎮 Get synchronization strategy guide for joystick/WASD controls and click-based movement. Includes timer-based sync pattern (100ms interval) and change detection. Use when implementing position synchronization or continuous input handling.',
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getSyncStrategy();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 📄 生成本地指南文档
   {
     definition: {
       name: 'generate_local_guide',
-      description: '📄 Generate MULTIPLAYER_GUIDE.md for user project root. Creates persistent reference with API rate limits, playerId rules, data structures. Enables context persistence across conversations. Use at project start.',
+      description:
+        '📄 Generate MULTIPLAYER_GUIDE.md for user project root. Creates persistent reference with API rate limits, playerId rules, data structures. Enables context persistence across conversations. Use at project start.',
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.generateLocalMultiplayerGuide();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 📊 API 数据结构
   {
     definition: {
       name: 'get_api_data_structures',
-      description: '📊 Get complete API return value structures and event callback data structures. Includes all core APIs (connect, matchRoom, sendCustomMessage, etc) and events (playerEnterRoom, onCustomMessage, etc). Use when implementing API calls to avoid guessing data structures.',
+      description:
+        '📊 Get complete API return value structures and event callback data structures. Includes all core APIs (connect, matchRoom, sendCustomMessage, etc) and events (playerEnterRoom, onCustomMessage, etc). Use when implementing API calls to avoid guessing data structures.',
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getApiDataStructures();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 🎯 一键生成工具
@@ -229,13 +234,13 @@ Returns: File paths and contents, ready to save.
 Use when: User wants quick setup, or says "generate multiplayer code/生成多人联机代码".`,
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.generateMultiplayerCode();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 🔍 问题诊断工具
@@ -253,13 +258,13 @@ Use when user reports:
 Returns: Checklist with solutions for each issue.`,
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.diagnoseIssues();
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // ✅ 代码检查工具
@@ -281,16 +286,16 @@ Use when: Before finalizing code, or when debugging.`,
         properties: {
           code: {
             type: 'string',
-            description: 'The multiplayer code to check'
-          }
+            description: 'The multiplayer code to check',
+          },
         },
-        required: ['code']
-      }
+        required: ['code'],
+      },
     },
     handler: async (args) => {
       return multiplayerDocTools.checkCode(args as { code: string });
     },
-    requiresAuth: false
+    requiresAuth: false,
   },
 
   // 🔧 调试工具
@@ -318,12 +323,12 @@ Returns: DebugLogger setup guide + usage. AI can copy files from /Volumes/Q/Mini
 Perfect for: H5 games, mobile testing, non-technical users.`,
       inputSchema: {
         type: 'object',
-        properties: {}
-      }
+        properties: {},
+      },
     },
     handler: async () => {
       return multiplayerDocTools.getDebugLogger();
     },
-    requiresAuth: false
-  }
+    requiresAuth: false,
+  },
 ];

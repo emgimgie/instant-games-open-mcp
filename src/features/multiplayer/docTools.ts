@@ -1,14 +1,12 @@
 /**
  * TapTap Multiplayer Documentation Tools
  * 提供文档查询、搜索、生成等功能
- * 
+ *
  * 按实际使用流程组织：
  * 初始化和连接 → 匹配进入房间 → 游戏数据互通流转循环 → 退出房间
  */
 
-import {
-  generateCategoryDoc
-} from '../../core/utils/docHelpers.js';
+import { generateCategoryDoc } from '../../core/utils/docHelpers.js';
 
 import { MULTIPLAYER_DOCUMENTATION } from './docs.js';
 
@@ -210,7 +208,7 @@ async function getPlayerIdGuide(): Promise<string> {
 async function generateLocalMultiplayerGuide(): Promise<string> {
   const timestamp = new Date().toISOString().split('T')[0];
   const version = '1.0.0';
-  
+
   return `# 多人联机使用指引和规范
 
 > ⚠️ **重要**：本文档是多人联机开发的核心规范，所有联机相关代码都必须遵循。
@@ -1421,7 +1419,7 @@ async function checkCode(args: { code: string }): Promise<string> {
       issue: '未保存 connect() 返回的 playerId',
       location: 'connect() 调用处',
       fix: 'const res = await manager.connect(); this.myPlayerId = res.playerId;',
-      reference: '调用 get_player_id_guide 了解详情'
+      reference: '调用 get_player_id_guide 了解详情',
     });
   }
 
@@ -1430,7 +1428,7 @@ async function checkCode(args: { code: string }): Promise<string> {
     { pattern: /playerLeaveRoom.*info\.playerId/, correct: 'info.playerInfo.id' },
     { pattern: /playerOffline.*info\.playerId/, correct: 'info.playerInfo.id' },
     { pattern: /onCustomMessage.*info\.playerId/, correct: 'info.fromPlayerId' },
-    { pattern: /onCustomMessage.*info\.message/, correct: 'info.msg' }
+    { pattern: /onCustomMessage.*info\.message/, correct: 'info.msg' },
   ];
 
   wrongFields.forEach(({ pattern, correct }) => {
@@ -1440,20 +1438,24 @@ async function checkCode(args: { code: string }): Promise<string> {
         issue: '字段名错误',
         location: pattern.source,
         fix: `应使用 ${correct}`,
-        reference: '调用 get_api_data_structures 查看正确字段'
+        reference: '调用 get_api_data_structures 查看正确字段',
       });
     }
   });
 
   // 检测3：是否有频率限制
   if (code.includes('sendCustomMessage') && code.includes('requestAnimationFrame')) {
-    if (!code.includes('lastSyncTime') && !code.includes('SYNC_INTERVAL') && !code.includes('syncPosition')) {
+    if (
+      !code.includes('lastSyncTime') &&
+      !code.includes('SYNC_INTERVAL') &&
+      !code.includes('syncPosition')
+    ) {
       issues.push({
         severity: 'high',
         issue: '在游戏循环中调用 sendCustomMessage 但无频率限制',
         location: 'gameLoop 或 requestAnimationFrame 内部',
         fix: '使用 MultiplayerManager.syncPosition() 方法（已内置频率限制）',
-        reference: '调用 get_sync_strategy 了解同步策略'
+        reference: '调用 get_sync_strategy 了解同步策略',
       });
     }
   }
@@ -1465,7 +1467,7 @@ async function checkCode(args: { code: string }): Promise<string> {
       issue: '未初始化房间内已有的玩家',
       location: 'matchRoom 成功后',
       fix: 'roomInfo.players.forEach(p => { if (p.id !== myPlayerId) createPlayer(p); })',
-      reference: '查看 get_code_template 中的完整示例'
+      reference: '查看 get_code_template 中的完整示例',
     });
   }
 
@@ -1478,7 +1480,7 @@ async function checkCode(args: { code: string }): Promise<string> {
       issue: 'registerListener 必须在 connect 之前调用',
       location: '初始化流程',
       fix: '调整顺序：1. getOnlineBattleManager → 2. registerListener → 3. connect',
-      reference: '查看 get_code_template 中的正确顺序'
+      reference: '查看 get_code_template 中的正确顺序',
     });
   }
 
@@ -1499,7 +1501,9 @@ async function checkCode(args: { code: string }): Promise<string> {
 
 ---
 
-${issues.map((issue, index) => `
+${issues
+  .map(
+    (issue, index) => `
 ## 问题 ${index + 1}：${issue.issue}
 
 **严重程度**：${issue.severity === 'high' ? '🔴 高' : '🟡 中'}
@@ -1513,7 +1517,9 @@ ${issue.fix}
 **参考**：${issue.reference}
 
 ---
-`).join('\n')}
+`
+  )
+  .join('\n')}
 
 ## 💡 建议
 
@@ -1683,5 +1689,5 @@ export const multiplayerDocTools = {
   generateMultiplayerCode,
   diagnoseIssues,
   checkCode,
-  getDebugLogger
+  getDebugLogger,
 };

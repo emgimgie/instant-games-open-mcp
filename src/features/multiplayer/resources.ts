@@ -1,7 +1,7 @@
 /**
  * Multiplayer Resources Definitions and Handlers
  * 提供 MCP 资源访问，对应 docs.ts 中的文档分类
- * 
+ *
  * 按实际使用流程组织：
  * 初始化和连接 → 匹配进入房间 → 游戏数据互通流转循环 → 退出房间
  */
@@ -19,7 +19,9 @@ const multiplayerResourceHandlers: any[] = [];
 /**
  * Unified resource registrations
  */
-export const multiplayerResources: ResourceRegistration[] = multiplayerResourceDefinitions.map((definition, index) => ({
-  ...definition,
-  handler: multiplayerResourceHandlers[index]
-}));
+export const multiplayerResources: ResourceRegistration[] = multiplayerResourceDefinitions.map(
+  (definition, index) => ({
+    ...definition,
+    handler: multiplayerResourceHandlers[index],
+  })
+);
