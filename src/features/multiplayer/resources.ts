@@ -7,7 +7,6 @@
  */
 
 import type { ResourceRegistration } from '../../core/types/index.js';
-import { multiplayerDocTools } from './docTools.js';
 
 /**
  * Resources 已完全删除

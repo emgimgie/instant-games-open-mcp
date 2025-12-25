@@ -7,19 +7,10 @@
  */
 
 import {
-  generateAPIDoc,
-  generateCategoryDoc,
-  searchDocumentation,
-  generateOverview,
-  generateSearchSuggestions,
-  type ResourceSuggestion
+  generateCategoryDoc
 } from '../../core/utils/docHelpers.js';
 
 import { MULTIPLAYER_DOCUMENTATION } from './docs.js';
-
-interface ToolArgs {
-  query?: string;
-}
 
 // ============ 已删除的废弃函数 ============
 // 以下函数已删除，功能整合到核心工具中：

@@ -831,7 +831,7 @@ https://developer.taptap.cn/docs/sdk/tap-battle/guide/`,
   id: "7xX2mTXjdxQ39bn/a+1tVQ==",  // Base64 编码的玩家ID
   status: 1,                        // 1=在线, 0=离线
   customStatus: 0,                  // 自定义状态（可选）
-  customProperties: "{\"nickname\":\"玩家1\",\"level\":10,\"avatar\":\"avatar_01\"}"
+  customProperties: '{"nickname":"玩家1","level":10,"avatar":"avatar_01"}'
 }
 
 // 2️⃣ 从 matchRoom 获取所有玩家
@@ -924,7 +924,7 @@ https://developer.taptap.cn/docs/sdk/tap-battle/guide/`,
   maxPlayerCount: 4,                           // 最大人数
   ownerId: "7xX2mTXjdxQ39bn/a+1tVQ==",        // 房主ID
   createTime: "1697875200000",                 // 创建时间戳
-  customProperties: "{\"map\":\"desert\",\"mode\":\"battle\"}",
+  customProperties: '{"map":"desert","mode":"battle"}',
   players: [
     { id: "player_001", status: 1, customProperties: '{"nickname":"玩家1","level":10}' },
     { id: "player_002", status: 1, customProperties: '{"nickname":"玩家2","level":8}' }

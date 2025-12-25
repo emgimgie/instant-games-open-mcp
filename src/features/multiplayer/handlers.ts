@@ -7,8 +7,6 @@
  * 目前所有多人联机功能都通过客户端 API 实现，不需要服务端处理器。
  */
 
-import type { ResolvedContext } from '../../core/types/context.js';
-
 /**
  * Multiplayer handler result interface
  */
