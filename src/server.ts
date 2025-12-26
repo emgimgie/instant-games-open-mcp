@@ -53,6 +53,7 @@ import { h5GameModule } from './features/h5Game/index.js';
 import { vibrateModule } from './features/vibrate/index.js';
 import { shareModule } from './features/share/index.js';
 import { cloudSaveModule } from './features/cloudSave/index.js';
+import { adsModule } from './features/ads/index.js';
 import type {
   RequestContext,
   SessionContext,
@@ -82,6 +83,7 @@ const allModules: FeatureModule[] = [
   vibrateModule, // Vibrate API documentation and guides
   shareModule, // Share API documentation and management
   cloudSaveModule, // Cloud Save documentation (client-side only)
+  adsModule, // Ads integration guide (Rewarded Video, Interstitial, Banner)
 ];
 
 /**
