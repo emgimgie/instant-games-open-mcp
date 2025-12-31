@@ -228,10 +228,18 @@ export class LogWriter {
       for (const file of files) {
         const match = file.match(pattern);
         if (match) {
-          const fileDate = new Date(match[1]);
-          if (fileDate < cutoffDate) {
-            await fs.promises.unlink(path.join(this.config.logDir, file));
-            process.stderr.write(`[LogWriter] Deleted old log: ${file}\n`);
+          // 使用本地时间创建日期，避免时区问题
+          // new Date("YYYY-MM-DD") 会被解释为 UTC 时间，而 cutoffDate 是本地时间
+          const [yearStr, monthStr, dayStr] = match[1].split('-');
+          const year = Number(yearStr);
+          const month = Number(monthStr);
+          const day = Number(dayStr);
+          if (!Number.isNaN(year) && !Number.isNaN(month) && !Number.isNaN(day)) {
+            const fileDate = new Date(year, month - 1, day); // 本地时间
+            if (fileDate < cutoffDate) {
+              await fs.promises.unlink(path.join(this.config.logDir, file));
+              process.stderr.write(`[LogWriter] Deleted old log: ${file}\n`);
+            }
           }
         }
       }
