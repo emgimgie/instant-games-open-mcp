@@ -2,6 +2,16 @@
 
 > This file provides guidance to GitHub Copilot when working with this repository.
 
+## Language Preference
+
+**IMPORTANT: All responses, PR descriptions, commit messages body, and comments MUST be written in Chinese (Simplified).**
+
+所有回复、PR 描述、提交信息正文和评论必须使用中文（简体）。
+
+> Note: Commit message type and scope should remain in English (e.g., `feat(proxy):`, `fix(auth):`), only the subject and body can be in Chinese.
+
+---
+
 ## Commit Message Convention
 
 This repository uses [Conventional Commits](https://www.conventionalcommits.org/) specification.
