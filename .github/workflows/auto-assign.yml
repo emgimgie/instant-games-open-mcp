@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   assign:
-    name: Auto Assign & Request Review
+    name: Auto Assign
     runs-on: ubuntu-latest
 
     steps:
@@ -26,25 +26,3 @@ jobs:
               assignees: ['MikotoZero']
             });
             console.log(`✅ Assigned MikotoZero to PR #${context.payload.pull_request.number}`);
-
-      # 请求 Copilot 进行代码审查
-      # 注意：需要 PR 创建者有 Copilot Pro 订阅才能生效
-      - name: Request Copilot Code Review
-        uses: actions/github-script@v7
-        continue-on-error: true
-        with:
-          script: |
-            try {
-              // 使用 GitHub API 请求 Copilot review
-              // 这个 API 是 GitHub Copilot code review 的公开接口
-              await github.request('POST /repos/{owner}/{repo}/pulls/{pull_number}/requested_reviewers', {
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                pull_number: context.payload.pull_request.number,
-                reviewers: ['copilot-pull-request-reviewer[bot]']
-              });
-              console.log(`✅ Requested Copilot review for PR #${context.payload.pull_request.number}`);
-            } catch (error) {
-              console.log(`⚠️ Could not request Copilot review: ${error.message}`);
-              console.log('This may require the PR author to have Copilot Pro subscription.');
-            }
