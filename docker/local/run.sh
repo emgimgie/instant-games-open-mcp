@@ -69,6 +69,24 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+# 尝试从项目根目录 .env 文件读取环境变量
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    # 读取 CLIENT_ID 如果未设置
+    if [ -z "$TAPTAP_MCP_CLIENT_ID" ]; then
+        TAPTAP_MCP_CLIENT_ID=$(grep -E "^TAPTAP_MCP_CLIENT_ID=" "$PROJECT_ROOT/.env" | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+        if [ ! -z "$TAPTAP_MCP_CLIENT_ID" ]; then
+            echo "ℹ️  Loaded TAPTAP_MCP_CLIENT_ID from .env"
+        fi
+    fi
+    # 读取 CLIENT_SECRET 如果未设置
+    if [ -z "$TAPTAP_MCP_CLIENT_SECRET" ]; then
+        TAPTAP_MCP_CLIENT_SECRET=$(grep -E "^TAPTAP_MCP_CLIENT_SECRET=" "$PROJECT_ROOT/.env" | cut -d '=' -f2- | tr -d '"' | tr -d "'")
+        if [ ! -z "$TAPTAP_MCP_CLIENT_SECRET" ]; then
+            echo "ℹ️  Loaded TAPTAP_MCP_CLIENT_SECRET from .env"
+        fi
+    fi
+fi
+
 # 默认容器名
 CONTAINER_NAME="${CONTAINER_NAME:-taptap-mcp-${ENV}}"
 
@@ -125,12 +143,17 @@ echo "Starting container..."
 
 if [ "$USE_SIGNER" = true ]; then
     # Production: 使用 Native Signer
+    # 同时传递环境变量作为 Fallback (例如在 Mac 上构建但在 Linux 容器运行)
     docker run -d \
         --name "$CONTAINER_NAME" \
         -p "$PORT:3000" \
         -e TAPTAP_MCP_VERBOSE=true \
+        -e TAPTAP_MCP_LOG_FILE=true \
         -e TAPTAP_MCP_ENV="$ENV" \
+        -e TAPTAP_MCP_CLIENT_ID="$TAPTAP_MCP_CLIENT_ID" \
+        -e TAPTAP_MCP_CLIENT_SECRET="$TAPTAP_MCP_CLIENT_SECRET" \
         -v taptap-mcp-cache:/var/lib/taptap-mcp/cache \
+        -v taptap-mcp-logs:/tmp/taptap-mcp/logs \
         --restart unless-stopped \
         "$IMAGE_NAME:$VERSION"
 else
@@ -139,10 +162,12 @@ else
         --name "$CONTAINER_NAME" \
         -p "$PORT:3000" \
         -e TAPTAP_MCP_VERBOSE=true \
+        -e TAPTAP_MCP_LOG_FILE=true \
         -e TAPTAP_MCP_ENV="$ENV" \
         -e TAPTAP_MCP_CLIENT_ID="$TAPTAP_MCP_CLIENT_ID" \
         -e TAPTAP_MCP_CLIENT_SECRET="$TAPTAP_MCP_CLIENT_SECRET" \
         -v taptap-mcp-cache:/var/lib/taptap-mcp/cache \
+        -v taptap-mcp-logs:/tmp/taptap-mcp/logs \
         --restart unless-stopped \
         "$IMAGE_NAME:$VERSION"
 fi
