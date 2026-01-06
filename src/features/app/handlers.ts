@@ -4,6 +4,8 @@
  */
 
 import type { ResolvedContext } from '../../core/types/context.js';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
 import {
   getAllDevelopersAndApps,
   selectApp as selectAppApi,
@@ -11,9 +13,11 @@ import {
   createAppForDeveloper,
   editAppInfo as editAppInfoApi,
   getAppStatus as getAppStatusApi,
+  uploadImage as uploadImageApi,
   AppStatus,
   ReviewStatus,
 } from './api.js';
+import { resolvePathSafe } from '../../core/utils/pathResolver.js';
 import { clearAppCache } from '../../core/utils/cache.js';
 import { clearToken, saveToken } from '../../core/auth/tokenStorage.js';
 import { EnvConfig } from '../../core/utils/env.js';
@@ -525,6 +529,10 @@ export async function updateAppInfo(
     chattingLabel?: string;
     chattingNumber?: string;
     screenOrientation?: number;
+    icon?: string;
+    banner?: string;
+    screenshots?: string[];
+    trialNote?: string;
   },
   ctx: ResolvedContext
 ): Promise<string> {
@@ -543,6 +551,10 @@ export async function updateAppInfo(
       args.chattingLabel,
       args.chattingNumber,
       args.screenOrientation,
+      args.icon,
+      args.banner,
+      args.screenshots,
+      args.trialNote,
       ctx
     );
 
@@ -612,4 +624,97 @@ export async function getAppStatus(
     `   - ${ReviewStatus.Published}: 已上线\n\n` +
     `⏱️ 数据来源：实时获取`
   );
+}
+
+/**
+ * Upload image to TapTap server
+ * Accepts either a local file path or base64 encoded image data
+ */
+export async function uploadImage(
+  args: {
+    filePath?: string;
+    base64Data?: string;
+    filename?: string;
+  },
+  ctx: ResolvedContext
+): Promise<string> {
+  let imageBuffer: Buffer;
+  let filename: string;
+
+  if (args.filePath) {
+    // Handle local file path
+    const pathResult = resolvePathSafe(args.filePath, ctx, {
+      allowEmpty: false,
+      checkExists: true,
+    });
+
+    if (!pathResult.success) {
+      throw new Error(pathResult.error!.userMessage);
+    }
+
+    const resolvedPath = pathResult.resolvedPath!;
+
+    // Check if file exists and is a file (not directory)
+    const stat = fs.statSync(resolvedPath);
+    if (!stat.isFile()) {
+      throw new Error(`路径 "${args.filePath}" 不是一个文件`);
+    }
+
+    // Read file
+    imageBuffer = fs.readFileSync(resolvedPath);
+    filename = args.filename || path.basename(resolvedPath);
+  } else if (args.base64Data) {
+    // Handle base64 data
+    // Remove data URL prefix if present (e.g., "data:image/png;base64,")
+    let base64String = args.base64Data;
+    const dataUrlMatch = base64String.match(/^data:image\/(\w+);base64,(.+)$/);
+
+    if (dataUrlMatch) {
+      const ext = dataUrlMatch[1];
+      base64String = dataUrlMatch[2];
+      filename = args.filename || `image.${ext}`;
+    } else {
+      filename = args.filename || 'image.png';
+    }
+
+    // Decode base64
+    imageBuffer = Buffer.from(base64String, 'base64');
+  } else {
+    throw new Error('必须提供 filePath（本地文件路径）或 base64Data（Base64 编码数据）');
+  }
+
+  // Validate file size (max 4MB for most images)
+  const maxSize = 4 * 1024 * 1024;
+  if (imageBuffer.length > maxSize) {
+    throw new Error(
+      `图片文件过大（${(imageBuffer.length / 1024 / 1024).toFixed(2)}MB），最大支持 4MB`
+    );
+  }
+
+  // Upload
+  try {
+    const url = await uploadImageApi(imageBuffer, filename, ctx);
+
+    return `# 图片上传成功
+
+## 📷 上传结果
+
+- **文件名**: ${filename}
+- **文件大小**: ${(imageBuffer.length / 1024).toFixed(2)} KB
+- **URL**: ${url}
+
+## 💡 使用说明
+
+此 URL 可用于以下场景：
+- \`update_app_info\` 的 \`icon\`、\`banner\`、\`screenshots\` 参数
+- 其他需要图片 URL 的 API 调用
+
+**注意**: 请在上传后尽快使用此 URL，链接可能有时效性。
+`;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`上传图片失败: ${error.message}`);
+    }
+    throw new Error(`上传图片失败: ${String(error)}`);
+  }
 }

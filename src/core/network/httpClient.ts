@@ -452,4 +452,252 @@ export class HttpClient {
     }
     return result;
   }
+
+  /**
+   * Multipart form field definition
+   */
+  private buildMultipartBody(
+    fields: Array<{
+      name: string;
+      value: Buffer | string;
+      filename?: string;
+      contentType?: string;
+    }>
+  ): { boundary: string; buffer: Buffer } {
+    const boundary = '----TapTapMCP' + this.generateRandomString(16);
+    const bodyParts: Buffer[] = [];
+
+    for (const field of fields) {
+      // Add boundary
+      bodyParts.push(Buffer.from(`--${boundary}\r\n`));
+
+      // Add Content-Disposition header
+      if (field.filename) {
+        bodyParts.push(
+          Buffer.from(
+            `Content-Disposition: form-data; name="${field.name}"; filename="${field.filename}"\r\n`
+          )
+        );
+        // Add Content-Type for file
+        const contentType = field.contentType || 'application/octet-stream';
+        bodyParts.push(Buffer.from(`Content-Type: ${contentType}\r\n`));
+      } else {
+        bodyParts.push(Buffer.from(`Content-Disposition: form-data; name="${field.name}"\r\n`));
+      }
+
+      // Empty line before content
+      bodyParts.push(Buffer.from('\r\n'));
+
+      // Add field value
+      if (Buffer.isBuffer(field.value)) {
+        bodyParts.push(field.value);
+      } else {
+        bodyParts.push(Buffer.from(field.value));
+      }
+
+      // End of field
+      bodyParts.push(Buffer.from('\r\n'));
+    }
+
+    // Add closing boundary
+    bodyParts.push(Buffer.from(`--${boundary}--\r\n`));
+
+    return {
+      boundary,
+      buffer: Buffer.concat(bodyParts),
+    };
+  }
+
+  /**
+   * POST with multipart/form-data (for file uploads)
+   * Manually constructs the multipart body to enable proper signature calculation
+   * @param path - API endpoint path
+   * @param fields - Array of form fields with name, value, filename, and contentType
+   * @param options - Request options
+   * @returns Response data
+   */
+  async postMultipart<T>(
+    path: string,
+    fields: Array<{
+      name: string;
+      value: Buffer | string;
+      filename?: string;
+      contentType?: string;
+    }>,
+    options: Omit<RequestOptions, 'body' | 'headers'> = {}
+  ): Promise<T> {
+    const method = 'POST';
+    const baseUrl = EnvConfig.endpoints.apiBaseUrl;
+    let fullUrl = `${baseUrl}${path}`;
+    let signUrl = path;
+
+    // Get client_id from signer
+    const clientId = getClientIdSync();
+
+    // Add client_id to query params
+    const queryParams = new URLSearchParams();
+    queryParams.append('client_id', clientId);
+
+    if (options.params) {
+      Object.entries(options.params).forEach(([key, value]) => {
+        queryParams.append(key, value);
+      });
+    }
+
+    fullUrl += '?' + queryParams.toString();
+    signUrl += '?' + queryParams.toString();
+
+    // Build multipart body
+    const { boundary, buffer: bodyBuffer } = this.buildMultipartBody(fields);
+    const bodyString = bodyBuffer.toString('binary');
+
+    // Set headers
+    const headers: Record<string, string> = {
+      'Content-Type': `multipart/form-data; boundary=${boundary}`,
+      'Content-Length': bodyBuffer.length.toString(),
+    };
+
+    // Get MAC token
+    const effectiveMacToken = this.ctx?.resolveToken() || null;
+
+    // Generate MAC Authorization header
+    const authorization = this.generateMacAuthorization(fullUrl, method, effectiveMacToken);
+    headers['Authorization'] = authorization;
+
+    // Add timestamp and nonce headers
+    const timestamp = Math.floor(Date.now() / 1000).toString();
+    const nonce = this.generateRandomString(8);
+    headers['X-Tap-Ts'] = timestamp;
+    headers['X-Tap-Nonce'] = nonce;
+
+    // Calculate signature with actual body content
+    const headersPart = this.getHeadersPart(headers);
+    const signature = computeTapSignSync(method, signUrl, headersPart, bodyString);
+    headers['X-Tap-Sign'] = signature;
+
+    // Log request
+    await logger.logRequest(
+      method,
+      fullUrl,
+      headers,
+      `[multipart/form-data, ${fields.length} field(s), ${bodyBuffer.length} bytes]`
+    );
+
+    // Set up timeout
+    const controller = new AbortController();
+    const timeout = options.timeout || 60000; // Longer timeout for uploads
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      const response = await fetch(fullUrl, {
+        method,
+        headers,
+        body: bodyBuffer,
+        signal: controller.signal,
+      });
+
+      clearTimeout(timeoutId);
+
+      // Extract response headers
+      const responseHeaders: Record<string, string> = {};
+      response.headers.forEach((value, key) => {
+        responseHeaders[key] = value;
+      });
+
+      // Handle non-OK responses
+      if (!response.ok) {
+        const contentType = response.headers.get('content-type');
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let errorBody: any = null;
+
+        if (contentType?.includes('application/json')) {
+          const errorData = (await response.json()) as any;
+          errorBody = errorData;
+          errorMessage += ` - ${errorData.message || errorData.error || JSON.stringify(errorData)}`;
+
+          const authError = extractAuthErrorFromResponse(response, errorData);
+          if (authError) {
+            await logger.logResponse(
+              method,
+              fullUrl,
+              response.status,
+              response.statusText,
+              errorBody,
+              false,
+              responseHeaders
+            );
+            throw authError;
+          }
+        } else {
+          const errorText = await response.text();
+          errorBody = errorText;
+          errorMessage += ` - ${errorText}`;
+        }
+
+        await logger.logResponse(
+          method,
+          fullUrl,
+          response.status,
+          response.statusText,
+          errorBody,
+          false,
+          responseHeaders
+        );
+
+        throw new Error(errorMessage);
+      }
+
+      // Parse response
+      const contentType = response.headers.get('content-type');
+
+      if (contentType?.includes('application/json')) {
+        const jsonData = (await response.json()) as ApiResponse<T>;
+
+        await logger.logResponse(
+          method,
+          fullUrl,
+          response.status,
+          response.statusText,
+          jsonData,
+          true,
+          responseHeaders
+        );
+
+        if (jsonData.success === false) {
+          throw new Error(jsonData.message || jsonData.error || 'API request failed');
+        }
+
+        return (jsonData.data !== undefined ? jsonData.data : jsonData) as T;
+      }
+
+      const text = await response.text();
+      await logger.logResponse(
+        method,
+        fullUrl,
+        response.status,
+        response.statusText,
+        text,
+        true,
+        responseHeaders
+      );
+
+      return text as T;
+    } catch (error) {
+      clearTimeout(timeoutId);
+
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          const timeoutError = new Error(`Request timeout after ${timeout}ms`);
+          await logger.error(`HTTP Request timeout: ${method} ${fullUrl}`, timeoutError);
+          throw timeoutError;
+        }
+        await logger.error(`HTTP Request failed: ${method} ${fullUrl}`, error);
+        throw error;
+      }
+
+      const genericError = new Error(`Request failed: ${String(error)}`);
+      await logger.error(`HTTP Request failed: ${method} ${fullUrl}`, genericError);
+      throw genericError;
+    }
+  }
 }

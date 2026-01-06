@@ -459,6 +459,10 @@ export async function handleUploadGame(
       undefined, // chatting_label
       undefined, // chatting_number
       undefined, // screen_orientation
+      undefined, // icon
+      undefined, // banner
+      undefined, // screenshots
+      undefined, // trial_note
       ctx // ctx
     );
 

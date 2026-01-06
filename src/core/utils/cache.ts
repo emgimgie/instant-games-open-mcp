@@ -42,6 +42,10 @@ export interface CachedLevelInfo {
       description?: string;
       category?: string;
       screen_orientation?: number;
+      icon?: string;
+      banner?: string;
+      screenshots?: string[];
+      trial_note?: string;
     };
   };
 
@@ -51,6 +55,10 @@ export interface CachedLevelInfo {
     description?: string;
     category?: string;
     screen_orientation?: number;
+    icon?: string;
+    banner?: string;
+    screenshots?: string[];
+    trial_note?: string;
   };
 }
 

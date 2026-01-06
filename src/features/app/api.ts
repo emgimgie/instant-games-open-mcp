@@ -137,6 +137,10 @@ export async function editAppInfo(
   chatting_label?: string,
   chatting_number?: string,
   screen_orientation?: number,
+  icon?: string,
+  banner?: string,
+  screenshots?: string[],
+  trial_note?: string,
   ctx?: ResolvedContext
 ): Promise<EditAppResponse> {
   const client = new HttpClient(ctx);
@@ -151,6 +155,10 @@ export async function editAppInfo(
       chatting_label,
       chatting_number,
       screen_orientation,
+      icon,
+      banner,
+      screenshots,
+      trial_note,
     },
   });
 }
@@ -225,6 +233,10 @@ export interface AppDetailAPIResponse {
       description?: string;
       category?: string;
       screen_orientation?: number;
+      icon?: string;
+      banner?: string;
+      screenshots?: string[];
+      trial_note?: string;
     };
   };
   upload_level?: {
@@ -242,6 +254,10 @@ export interface AppDetailAPIResponse {
         description?: string;
         category?: string;
         screen_orientation?: number;
+        icon?: string;
+        banner?: string;
+        screenshots?: string[];
+        trial_note?: string;
       };
     };
   };
@@ -462,5 +478,55 @@ export async function selectApp(
       throw new Error(`Failed to select app: ${error.message}`);
     }
     throw new Error(`Failed to select app: ${String(error)}`);
+  }
+}
+
+/**
+ * Upload Image Response
+ */
+export interface UploadImageResponse {
+  url: string;
+}
+
+/**
+ * Upload image to TapTap server
+ * @param imageData - Image data as Buffer
+ * @param filename - Original filename (used for MIME type detection)
+ * @param ctx - Optional resolved context
+ * @returns Uploaded image URL
+ */
+export async function uploadImage(
+  imageData: Buffer,
+  filename: string,
+  ctx?: ResolvedContext
+): Promise<string> {
+  const client = new HttpClient(ctx);
+
+  // Determine MIME type from filename
+  const ext = filename.toLowerCase().split('.').pop();
+  const mimeTypes: Record<string, string> = {
+    jpg: 'image/jpeg',
+    jpeg: 'image/jpeg',
+    png: 'image/png',
+    gif: 'image/gif',
+    webp: 'image/webp',
+  };
+  const mimeType = mimeTypes[ext || ''] || 'application/octet-stream';
+
+  try {
+    const response = await client.postMultipart<UploadImageResponse>('/v1/upload-image', [
+      {
+        name: 'image',
+        value: imageData,
+        filename: filename,
+        contentType: mimeType,
+      },
+    ]);
+    return response.url;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to upload image: ${error.message}`);
+    }
+    throw new Error(`Failed to upload image: ${String(error)}`);
   }
 }
