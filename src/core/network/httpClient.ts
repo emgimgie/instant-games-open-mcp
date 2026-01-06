@@ -152,26 +152,35 @@ export class HttpClient {
     signUrl += '?' + queryParams.toString();
 
     // Prepare request body
-    let bodyString = method === 'POST' ? '{}' : '';
+    let bodyString = '';
     const headers: Record<string, string> = {
       'Content-Type': 'application/json',
       ...(options.headers || {}),
     };
 
-    if (options.body) {
+    if (options.body !== undefined) {
       if (headers['Content-Type'] === 'application/x-www-form-urlencoded') {
         // Form-encoded body
         const formData = new URLSearchParams();
-        Object.entries(options.body as Record<string, unknown>).forEach(([key, value]) => {
-          if (value !== undefined && value !== null) {
-            formData.append(key, String(value));
-          }
-        });
+        // Handle null/undefined in form data safely
+        if (options.body && typeof options.body === 'object') {
+          Object.entries(options.body as Record<string, unknown>).forEach(([key, value]) => {
+            if (value !== undefined && value !== null) {
+              formData.append(key, String(value));
+            }
+          });
+        }
         bodyString = formData.toString();
       } else {
         // JSON body
+        // Use JSON.stringify for all values except undefined (which is handled by outer if)
         bodyString = JSON.stringify(options.body);
       }
+    } else if (method === 'POST' || method === 'PUT') {
+      // 修复: 某些服务端框架（如 Gin）在处理 JSON Binding 时
+      // 如果 Content-Type 是 application/json 但 body 为空，会抛出 EOF 错误
+      // 所以对于 POST/PUT 请求，如果没有 body，应该发送空对象 '{}'
+      bodyString = '{}';
     }
 
     // ✅ 直接使用 ResolvedContext 解析 token
