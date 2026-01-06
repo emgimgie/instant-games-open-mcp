@@ -20,11 +20,17 @@ export const appTools: ToolRegistration[] = [
         '[General] Get currently selected app/game information including developer_id, app_id, miniapp_id, and app name. **CRITICAL: Call this tool FIRST before executing any leaderboard operations (create_leaderboard, list_leaderboards, etc.) to verify that an app has been selected. If no app is selected, guide the user through the selection process using list_developers_and_apps and select_app.** Use this for: 1) Checking current selection before leaderboard operations, 2) Building preview links, 3) Verifying cached app. Not for H5 upload workflow.',
       inputSchema: {
         type: 'object',
-        properties: {},
+        properties: {
+          ignore_cache: {
+            type: 'boolean',
+            description:
+              'If true, force refresh data from server regardless of cache TTL. Default false.',
+          },
+        },
       },
     },
     handler: async (args, context) => {
-      return appHandlers.getCurrentAppInfo(context);
+      return appHandlers.getCurrentAppInfo(context, args.ignore_cache);
     },
   },
 
@@ -242,12 +248,17 @@ export const appTools: ToolRegistration[] = [
             type: 'number',
             description: 'App ID to check status for',
           },
+          ignore_cache: {
+            type: 'boolean',
+            description:
+              'If true, force refresh data from server regardless of cache TTL. Default false.',
+          },
         },
         required: ['app_id'],
       },
     },
-    handler: async (args: { app_id: number }, context) => {
-      return appHandlers.getAppStatus(args.app_id, context);
+    handler: async (args: { app_id: number; ignore_cache?: boolean }, context) => {
+      return appHandlers.getAppStatus(args.app_id, context, args.ignore_cache);
     },
     requiresAuth: true,
   },

@@ -136,44 +136,96 @@ export async function selectApp(
 /**
  * Get current app information from cache
  */
-export async function getCurrentAppInfo(ctx: ResolvedContext): Promise<string> {
+export async function getCurrentAppInfo(
+  ctx: ResolvedContext,
+  ignoreCache: boolean = false
+): Promise<string> {
   try {
-    const { readAppCache, getCachePath } = await import('../../core/utils/cache.js');
-    const cache = readAppCache(ctx.projectPath);
+    const { getCachePath } = await import('../../core/utils/cache.js');
+    const { ensureAppInfo } = await import('./api.js');
 
-    if (!cache || !cache.developer_id || !cache.app_id) {
+    // ensureAppInfo handles TTL check and refresh
+    // Returns null if no app selected, or cached/refreshed data
+    const cache = await ensureAppInfo(ctx.projectPath, ctx, ignoreCache);
+
+    // No app selected - guide user to select one
+    if (!cache) {
       return `# 当前应用信息
 
 ⚠️ **尚未选择应用**
 
-请先选择一个应用，使用以下工具：
-1. \`list_developers_and_apps\` - 列出所有可用的开发者和应用
-2. \`select_app\` - 选择要使用的特定应用
+请按以下步骤选择应用：
+1. 调用 \`list_developers_and_apps\` 查看可用的开发者和应用
+2. 调用 \`select_app\` 选择要使用的应用
 
-选择后，应用信息将被缓存并在此显示。
+选择后再次调用此工具查看应用信息。
 `;
     }
 
     const cachePath = getCachePath(ctx.projectPath);
+    const updatedAt = cache.updated_at ? new Date(cache.updated_at).toLocaleString() : '未知';
+    const isStale = !!cache.is_stale;
+
+    // Format Level Info (Online version)
+    let levelInfo = '';
+    if (cache.level) {
+      const levelData = cache.level.data;
+      levelInfo = `
+### 🟢 线上版本
+- **版本号**: ${cache.level.version || '未知'}
+- **状态**: ${cache.level.status}
+- **显示名称**: ${levelData?.title || cache.level.app_title || '未知'}
+- **描述**: ${levelData?.description || '无'}
+- **分类**: ${levelData?.category || '未设置'}`;
+    } else {
+      levelInfo = `
+### 🟢 线上版本
+_暂无线上版本_`;
+    }
+
+    // Format Upload Level Info (Draft/Audit version)
+    let uploadInfo = '';
+    if (cache.upload_level) {
+      const formInfo = cache.upload_level.form_data?.info;
+      uploadInfo = `
+### 🟡 草稿/审核版本
+- **版本号**: ${cache.upload_level.version || '未知'}
+- **状态**: ${cache.upload_level.status}
+- **显示名称**: ${formInfo?.title || cache.upload_level.app_title || '未知'}
+- **描述**: ${formInfo?.description || '无'}
+- **分类**: ${formInfo?.category || '未设置'}`;
+    } else {
+      uploadInfo = `
+### 🟡 草稿/审核版本
+_暂无草稿版本_`;
+    }
 
     const info = `# 当前应用信息
 
 ## 📱 已选择的应用
 
 - **开发者 ID**: \`${cache.developer_id}\`
+- **开发者名称**: ${cache.developer_name || '_未知_'}
 - **应用 ID**: \`${cache.app_id}\`
+- **应用名称**: ${cache.app_title || '_未知_'}
 - **小程序 ID**: \`${cache.miniapp_id || '不可用'}\`
-- **应用名称**: ${cache.app_title || cache.developer_name || '_不可用_'}
 
-## 📂 缓存位置
+## 📦 版本信息
+${levelInfo}
+${uploadInfo}
 
-\`${cachePath}\`
+## 💾 缓存状态
+
+- **最后更新**: ${updatedAt}
+- **数据来源**: ${ignoreCache ? '实时服务器 (强制刷新)' : '本地缓存'}${isStale ? ' ⚠️ (数据已陈旧 - 刷新失败)' : ''}
+- **缓存位置**: \`${cachePath}\`
 
 ## 💡 下一步操作
 
-- 查看排行榜：使用 \`list_leaderboards\` 工具
-- 创建排行榜：使用 \`create_leaderboard\` 工具
-- 切换应用：使用 \`select_app\` 工具并指定不同的 developer_id/app_id
+- 查看排行榜：\`list_leaderboards\`
+- 创建排行榜：\`create_leaderboard\`
+- 查看应用状态：\`get_app_status\`
+- 切换应用：\`select_app\`
 `;
 
     return info;
@@ -480,35 +532,65 @@ export async function updateAppInfo(
     return MESSAGES.EDIT_GAME_INFO_CONFIRMATION;
   }
 
-  await editAppInfoApi(
-    args.appId,
-    args.developerId,
-    undefined, // package_id
-    args.appName,
-    args.genre,
-    args.description,
-    args.chattingLabel,
-    args.chattingNumber,
-    args.screenOrientation,
-    ctx
-  );
+  try {
+    const result = await editAppInfoApi(
+      args.appId,
+      args.developerId,
+      undefined, // package_id
+      args.appName,
+      args.genre,
+      args.description,
+      args.chattingLabel,
+      args.chattingNumber,
+      args.screenOrientation,
+      ctx
+    );
 
-  return MESSAGES.EDIT_GAME_INFO_SUCCESS;
+    // Refresh App Cache immediately after successful update
+    try {
+      await selectAppApi(args.developerId, args.appId, ctx.projectPath, ctx);
+    } catch (refreshError) {
+      console.warn('Failed to refresh app cache after update:', refreshError);
+    }
+
+    return `# 应用信息更新成功
+
+## 📱 更新后信息
+
+- **显示名称**: ${result.display_app_title || args.appName || '未修改'}
+- **应用标题**: ${result.app_title || '未修改'}
+
+## 🔗 下一步
+
+您可以使用 \`get_current_app_info\` 查看最新的应用详情。
+`;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to update app info: ${error.message}`);
+    }
+    throw new Error(`Failed to update app info: ${String(error)}`);
+  }
 }
 
 /**
  * Get app status (app_status and review_status)
+ * Always fetches fresh data from API for real-time accuracy.
  * @see https://agent.api.xdrnd.cn/_docs#/level/get_level_v1_status
  */
-export async function getAppStatus(appId: number, ctx: ResolvedContext): Promise<string> {
-  const result = await getAppStatusApi(appId, ctx);
+export async function getAppStatus(
+  appId: number,
+  ctx: ResolvedContext,
+  _ignoreCache: boolean = false // Kept for API compatibility, but always fetches fresh
+): Promise<string> {
+  // Always fetch fresh status data for real-time accuracy
+  const resultData = await getAppStatusApi(appId, ctx);
 
   // 使用枚举映射状态文本
   const appStatusMap: Record<number, string> = {
     [AppStatus.Offline]: '未上线',
     [AppStatus.Online]: '已上线',
   };
-  const appStatusText = appStatusMap[result.app_status] ?? '未知状态';
+  const appStatusText = appStatusMap[resultData.app_status] ?? '未知状态';
 
   const reviewStatusMap: Record<number, string> = {
     [ReviewStatus.Unpublished]: '未发布',
@@ -516,17 +598,18 @@ export async function getAppStatus(appId: number, ctx: ResolvedContext): Promise
     [ReviewStatus.Rejected]: '审核失败',
     [ReviewStatus.Published]: '已上线',
   };
-  const reviewStatusText = reviewStatusMap[result.review_status] ?? '未知状态';
+  const reviewStatusText = reviewStatusMap[resultData.review_status] ?? '未知状态';
 
   return (
     `📋 应用状态查询结果\n\n` +
-    `🎮 关卡游戏状态：${appStatusText} (${result.app_status})\n` +
+    `🎮 关卡游戏状态：${appStatusText} (${resultData.app_status})\n` +
     `   - ${AppStatus.Offline}: 未上线\n` +
     `   - ${AppStatus.Online}: 已上线\n\n` +
-    `📝 审核状态：${reviewStatusText} (${result.review_status})\n` +
+    `📝 审核状态：${reviewStatusText} (${resultData.review_status})\n` +
     `   - ${ReviewStatus.Unpublished}: 未发布\n` +
     `   - ${ReviewStatus.UnderReview}: 审核中\n` +
     `   - ${ReviewStatus.Rejected}: 审核失败\n` +
-    `   - ${ReviewStatus.Published}: 已上线`
+    `   - ${ReviewStatus.Published}: 已上线\n\n` +
+    `⏱️ 数据来源：实时获取`
   );
 }

@@ -4,7 +4,12 @@
  */
 
 import { HttpClient } from '../../core/network/httpClient.js';
-import { readAppCache, saveAppCache, AppCacheInfo } from '../../core/utils/cache.js';
+import {
+  readAppCache,
+  saveAppCache,
+  AppCacheInfo,
+  CachedLevelInfo,
+} from '../../core/utils/cache.js';
 import type { ResolvedContext } from '../../core/types/context.js';
 
 /**
@@ -45,167 +50,6 @@ export class SelectionRequiredError extends Error {
   ) {
     super(message);
     this.name = 'SelectionRequiredError';
-  }
-}
-
-/**
- * Get app/level list information for current user
- * Returns all developers and their apps/games
- * @param projectPath - Optional project path for cache lookup
- * @param autoSelect - If true, automatically selects first option. If false, throws SelectionRequiredError when multiple options exist
- * @returns App information including developer_id and app_id
- * @throws SelectionRequiredError when multiple developers/apps exist and autoSelect is false
- */
-export async function getAppInfo(
-  projectPath?: string,
-  autoSelect: boolean = true,
-  ctx?: ResolvedContext
-): Promise<AppCacheInfo> {
-  const client = new HttpClient(ctx);
-
-  try {
-    const response = await client.get<LevelListResponse>('/level/v1/list');
-
-    // Get first developer and first app by default
-    if (!response.list || response.list.length === 0) {
-      throw new Error('No developers or apps found for current user');
-    }
-
-    // Count total developers and apps
-    const totalDevelopers = response.list.length;
-    const totalApps = response.list.reduce(
-      (sum, dev) => sum + (dev.levels?.length || dev.crafts?.length || 0),
-      0
-    );
-
-    // If multiple options exist and autoSelect is false, throw error for AI to decide
-    if (!autoSelect && (totalDevelopers > 1 || totalApps > 1)) {
-      let errorMsg = `Multiple options found:\n`;
-      errorMsg += `- ${totalDevelopers} developer(s)\n`;
-      errorMsg += `- ${totalApps} app(s) in total\n\n`;
-      errorMsg += `Please use 'list_developers_and_apps' tool to see all options and 'select_app' to make a selection.`;
-      throw new SelectionRequiredError(errorMsg, response.list);
-    }
-
-    const firstDeveloper = response.list[0];
-
-    // Support both 'levels' (actual API response) and 'crafts' (backward compatibility)
-    const apps = firstDeveloper.levels || firstDeveloper.crafts || [];
-
-    if (apps.length === 0) {
-      throw new Error(`Developer ${firstDeveloper.developer_name} has no apps/games`);
-    }
-
-    const firstApp = apps[0];
-
-    const appInfo: AppCacheInfo = {
-      developer_id: firstDeveloper.developer_id,
-      developer_name: firstDeveloper.developer_name,
-      app_id: firstApp.app_id,
-      app_title: firstApp.app_title,
-      miniapp_id: firstApp.miniapp_id,
-    };
-
-    // Save to cache
-    saveAppCache(appInfo, projectPath);
-
-    return appInfo;
-  } catch (error) {
-    // Re-throw SelectionRequiredError
-    if (error instanceof SelectionRequiredError) {
-      throw error;
-    }
-
-    // If API fails, try to use cached data
-    const cached = readAppCache(projectPath);
-    if (cached?.developer_id && cached?.app_id) {
-      return cached;
-    }
-
-    if (error instanceof Error) {
-      throw new Error(`Failed to get app info: ${error.message}`);
-    }
-    throw new Error(`Failed to get app info: ${String(error)}`);
-  }
-}
-
-/**
- * Get or fetch app information with automatic caching
- * @param projectPath - Optional project path
- * @param autoSelect - If true, automatically selects first option. If false, throws SelectionRequiredError when multiple options exist
- * @param ctx - Optional resolved context (for macToken)
- * @returns App information from cache or API
- * @throws SelectionRequiredError when multiple developers/apps exist and autoSelect is false
- */
-export async function ensureAppInfo(
-  projectPath?: string,
-  autoSelect: boolean = true,
-  ctx?: ResolvedContext
-): Promise<AppCacheInfo> {
-  // Check cache first
-  const cached = readAppCache(projectPath);
-
-  if (cached?.developer_id && cached?.app_id) {
-    return cached;
-  }
-
-  // No cache, fetch from API
-  return await getAppInfo(projectPath, autoSelect, ctx);
-}
-
-/**
- * Select and cache a specific developer and app
- * @param developerId - Developer ID to select
- * @param appId - App ID to select
- * @param projectPath - Optional project path for cache storage
- * @returns Selected app information
- */
-export async function selectApp(
-  developerId: number,
-  appId: number,
-  projectPath?: string,
-  ctx?: ResolvedContext
-): Promise<AppCacheInfo> {
-  const client = new HttpClient(ctx);
-
-  try {
-    // Fetch full list to validate selection
-    const response = await client.get<LevelListResponse>('/level/v1/list');
-
-    if (!response.list || response.list.length === 0) {
-      throw new Error('No developers or apps found for current user');
-    }
-
-    // Find the selected developer and app
-    const developer = response.list.find((dev) => dev.developer_id === developerId);
-    if (!developer) {
-      throw new Error(`Developer with ID ${developerId} not found`);
-    }
-
-    // Support both 'levels' (actual API response) and 'crafts' (backward compatibility)
-    const apps = developer.levels || developer.crafts || [];
-    const app = apps.find((craft) => craft.app_id === appId);
-    if (!app) {
-      throw new Error(`App with ID ${appId} not found for developer ${developer.developer_name}`);
-    }
-
-    const appInfo: AppCacheInfo = {
-      developer_id: developer.developer_id,
-      developer_name: developer.developer_name,
-      app_id: app.app_id,
-      app_title: app.app_title,
-      miniapp_id: app.miniapp_id,
-    };
-
-    // Save to cache
-    saveAppCache(appInfo, projectPath);
-
-    return appInfo;
-  } catch (error) {
-    if (error instanceof Error) {
-      throw new Error(`Failed to select app: ${error.message}`);
-    }
-    throw new Error(`Failed to select app: ${String(error)}`);
   }
 }
 
@@ -364,26 +208,47 @@ export async function getAppStatus(
 }
 
 /**
- * App Detail API Response
+ * App Detail API Response (from /level/v1/latest)
  */
 export interface AppDetailAPIResponse {
   level?: {
-    display_app_title?: string;
-    developer_id?: number;
-    developer_name?: string;
+    id?: number;
+    app_id: number;
+    app_title: string;
+    developer_id: number;
+    developer_name: string;
+    miniapp_id?: string;
+    version?: string;
+    status: number;
+    data: {
+      title: string;
+      description?: string;
+      category?: string;
+      screen_orientation?: number;
+    };
   };
   upload_level?: {
+    id?: number;
     app_id: number;
+    app_title?: string;
+    developer_id?: number;
+    developer_name?: string;
+    miniapp_id?: string;
+    version?: string;
+    status: number;
     form_data: {
       info: {
         title: string;
+        description?: string;
+        category?: string;
+        screen_orientation?: number;
       };
     };
   };
 }
 
 /**
- * App Detail
+ * App Detail (parsed from API response)
  */
 export interface AppDetail {
   appId: number;
@@ -391,12 +256,19 @@ export interface AppDetail {
   displayAppTitle: string;
   developerId: number;
   developerName: string;
+  miniappId?: string;
+  // Raw data for cache
+  level?: CachedLevelInfo;
+  uploadLevel?: CachedLevelInfo;
 }
 
 /**
- * Get app detail information
+ * Fetch app detail information from API
+ * @param appId - App ID to fetch
+ * @param ctx - Optional resolved context
+ * @returns App detail or undefined if not found
  */
-export async function getAppDetail(
+export async function fetchAppDetail(
   appId: number,
   ctx?: ResolvedContext
 ): Promise<AppDetail | undefined> {
@@ -409,18 +281,186 @@ export async function getAppDetail(
       },
     });
 
-    if (response.level && response.upload_level) {
+    // Convert API response to CachedLevelInfo format
+    const convertToCachedLevel = (
+      apiLevel: NonNullable<AppDetailAPIResponse['level']>
+    ): CachedLevelInfo => ({
+      id: apiLevel.id,
+      app_id: apiLevel.app_id,
+      app_title: apiLevel.app_title,
+      developer_id: apiLevel.developer_id,
+      developer_name: apiLevel.developer_name,
+      miniapp_id: apiLevel.miniapp_id,
+      version: apiLevel.version,
+      status: apiLevel.status,
+      data: apiLevel.data,
+    });
+
+    const convertUploadToCachedLevel = (
+      apiUpload: NonNullable<AppDetailAPIResponse['upload_level']>
+    ): CachedLevelInfo => ({
+      id: apiUpload.id,
+      app_id: apiUpload.app_id,
+      app_title: apiUpload.app_title || apiUpload.form_data.info.title,
+      developer_id: apiUpload.developer_id,
+      developer_name: apiUpload.developer_name,
+      miniapp_id: apiUpload.miniapp_id,
+      version: apiUpload.version,
+      status: apiUpload.status,
+      form_data: apiUpload.form_data,
+    });
+
+    // 优先使用已上线的 level 信息，如果不存在则回退到 upload_level
+    if (response.level) {
+      return {
+        appId: response.level.app_id,
+        appTitle: response.level.app_title, // System name
+        displayAppTitle: response.level.data.title, // Display name
+        developerId: response.level.developer_id,
+        developerName: response.level.developer_name,
+        miniappId: response.level.miniapp_id,
+        level: convertToCachedLevel(response.level),
+        uploadLevel: response.upload_level
+          ? convertUploadToCachedLevel(response.upload_level)
+          : undefined,
+      };
+    }
+
+    if (response.upload_level) {
       return {
         appId: response.upload_level.app_id,
-        appTitle: response.upload_level.form_data.info.title,
-        displayAppTitle: response.level.display_app_title || '',
-        developerId: response.level.developer_id || 0,
-        developerName: response.level.developer_name || '',
+        appTitle: response.upload_level.app_title || response.upload_level.form_data.info.title,
+        displayAppTitle: response.upload_level.form_data.info.title,
+        developerId: response.upload_level.developer_id || 0,
+        developerName: response.upload_level.developer_name || '',
+        miniappId: response.upload_level.miniapp_id,
+        level: undefined,
+        uploadLevel: convertUploadToCachedLevel(response.upload_level),
       };
     }
 
     return undefined;
   } catch (error) {
     return undefined;
+  }
+}
+
+/**
+ * Refresh application cache immediately
+ * @param projectPath - Optional project path
+ * @param ctx - Resolved context
+ * @returns Updated app information
+ */
+export async function refreshAppCache(
+  projectPath?: string,
+  ctx?: ResolvedContext
+): Promise<AppCacheInfo> {
+  const cached = readAppCache(projectPath);
+  if (!cached?.app_id || !cached?.developer_id) {
+    throw new Error('No app selected to refresh');
+  }
+
+  // Reuse selectApp to fetch fresh data and update cache
+  // But allow developerId mismatch if it was 0 (from initial upload_level only cache)
+  return await selectApp(cached.developer_id, cached.app_id, projectPath, ctx);
+}
+
+// TTL Constants
+const INFO_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours for basic info
+
+/**
+ * Get cached app information with automatic TTL check and refresh
+ *
+ * @param projectPath - Optional project path for cache lookup
+ * @param ctx - Optional resolved context for API calls
+ * @param forceRefresh - If true, ignores cache TTL and fetches fresh data
+ * @returns Cached app information, or null if no app has been selected
+ *
+ * @description
+ * This function does NOT auto-select an app. If no app has been selected,
+ * it returns null. The caller should guide the user to:
+ * 1. Call list_developers_and_apps to see available options
+ * 2. Call select_app to choose an app
+ */
+export async function ensureAppInfo(
+  projectPath?: string,
+  ctx?: ResolvedContext,
+  forceRefresh: boolean = false
+): Promise<AppCacheInfo | null> {
+  // Check cache first
+  const cached = readAppCache(projectPath);
+
+  // No cache - return null (do not auto-select)
+  if (!cached?.developer_id || !cached?.app_id) {
+    return null;
+  }
+
+  // Check if refresh is needed
+  const now = Date.now();
+  const isExpired = !cached.updated_at || now - cached.updated_at > INFO_TTL_MS;
+
+  if (forceRefresh || isExpired) {
+    try {
+      // Try to refresh
+      return await refreshAppCache(projectPath, ctx);
+    } catch {
+      // Refresh failed, return stale cache with warning flag
+      return { ...cached, is_stale: true };
+    }
+  }
+
+  return cached;
+}
+
+/**
+ * Select and cache a specific developer and app
+ * @param developerId - Developer ID to select
+ * @param appId - App ID to select
+ * @param projectPath - Optional project path for cache storage
+ * @returns Selected app information
+ */
+export async function selectApp(
+  developerId: number,
+  appId: number,
+  projectPath?: string,
+  ctx?: ResolvedContext
+): Promise<AppCacheInfo> {
+  try {
+    const appDetail = await fetchAppDetail(appId, ctx);
+
+    if (!appDetail) {
+      throw new Error(`App with ID ${appId} not found`);
+    }
+
+    // Allow developerId mismatch if cached developerId is 0 (from upload_level only)
+    if (developerId !== 0 && appDetail.developerId !== 0 && appDetail.developerId !== developerId) {
+      throw new Error(
+        `App ${appId} belongs to developer ${appDetail.developerId}, not ${developerId}`
+      );
+    }
+
+    // Preserve existing developer_name from cache if API returns empty
+    const existingCache = readAppCache(projectPath);
+    const appInfo: AppCacheInfo = {
+      developer_id: appDetail.developerId || developerId, // Use passed ID if detail has 0
+      developer_name: appDetail.developerName || existingCache?.developer_name,
+      app_id: appDetail.appId,
+      app_title: appDetail.appTitle,
+      miniapp_id: appDetail.miniappId,
+      level: appDetail.level,
+      upload_level: appDetail.uploadLevel,
+      updated_at: Date.now(),
+      status_updated_at: Date.now(),
+    };
+
+    // Save to cache
+    saveAppCache(appInfo, projectPath);
+
+    return appInfo;
+  } catch (error) {
+    if (error instanceof Error) {
+      throw new Error(`Failed to select app: ${error.message}`);
+    }
+    throw new Error(`Failed to select app: ${String(error)}`);
   }
 }
