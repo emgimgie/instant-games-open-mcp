@@ -19,15 +19,72 @@ import { EnvConfig } from './env.js';
 const CACHE_ROOT = EnvConfig.cacheDir;
 
 /**
+ * 版本信息（线上版本或审核版本）
+ * 对应 /level/v1/latest 接口返回的 level 或 upload_level 字段
+ */
+export interface CachedLevelInfo {
+  // 基础标识
+  id?: number; // 版本 ID
+  app_id: number;
+  app_title: string;
+  developer_id?: number;
+  developer_name?: string;
+  miniapp_id?: string;
+
+  // 版本信息
+  version?: string;
+  status: number; // 版本状态
+
+  // 表单数据（upload_level 特有）
+  form_data?: {
+    info: {
+      title: string;
+      description?: string;
+      category?: string;
+      screen_orientation?: number;
+      icon?: string;
+      banner?: string;
+      screenshots?: string[];
+      trial_note?: string;
+    };
+  };
+
+  // 展示数据（level 特有）
+  data?: {
+    title: string;
+    description?: string;
+    category?: string;
+    screen_orientation?: number;
+    icon?: string;
+    banner?: string;
+    screenshots?: string[];
+    trial_note?: string;
+  };
+}
+
+/**
  * Cached application information
  */
 export interface AppCacheInfo {
+  // 基础标识信息 (Backward Compatibility)
   developer_id?: number;
   developer_name?: string;
   app_id?: number;
   app_title?: string;
-  miniapp_id?: string; // Minigame/H5 预览 ID，用于构建预览链接
-  cached_at?: number;
+  miniapp_id?: string;
+
+  // 详细版本信息
+  level?: CachedLevelInfo; // 线上版本完整详情
+  upload_level?: CachedLevelInfo; // 审核版本完整详情
+
+  // 缓存时效控制
+  updated_at?: number; // 基础信息更新时间戳
+  status_updated_at?: number; // 状态/审核进度更新时间戳
+
+  // 缓存状态标记
+  is_stale?: boolean; // 刷新失败时标记数据已陈旧
+
+  cached_at?: number; // Legacy timestamp
 }
 
 /**

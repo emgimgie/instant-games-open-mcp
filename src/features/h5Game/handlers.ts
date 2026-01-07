@@ -15,7 +15,8 @@ import {
   createDeveloper,
   createAppForDeveloper,
   editAppInfo,
-  getAppDetail,
+  fetchAppDetail,
+  refreshAppCache,
 } from '../app/api.js';
 import { readAppCache, saveAppCache, type AppCacheInfo } from '../../core/utils/cache.js';
 import { logger } from '../../core/utils/logger.js';
@@ -352,7 +353,7 @@ export async function handleGatherGameInfo(
 
   // 获取游戏详情
   if (confirmResult.appId) {
-    const appDetail = await getAppDetail(confirmResult.appId);
+    const appDetail = await fetchAppDetail(confirmResult.appId);
     if (appDetail) {
       cacheInfo.developer_name = appDetail.developerName;
       cacheInfo.app_title = appDetail.appTitle;
@@ -458,8 +459,19 @@ export async function handleUploadGame(
       undefined, // chatting_label
       undefined, // chatting_number
       undefined, // screen_orientation
+      undefined, // icon
+      undefined, // banner
+      undefined, // screenshots
+      undefined, // trial_note
       ctx // ctx
     );
+
+    // 5. Refresh App Cache immediately after successful upload
+    try {
+      await refreshAppCache(gamePath, ctx);
+    } catch (refreshError) {
+      console.warn('Failed to refresh app cache after upload:', refreshError);
+    }
 
     let msg = MESSAGES.GAME_PUBLISH_SUCCESS(results.app_title, cacheInfo.app_id);
     msg += '\n' + MESSAGES.GAME_TYPE_INFO(results.display_app_title) + '\n';
