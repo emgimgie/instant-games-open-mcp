@@ -634,9 +634,10 @@ class TapTapMinigameMCPServer {
       const headerMacToken = getHeader('X-TapTap-Mac-Token');
 
       // 合并：Headers 优先（Proxy 使用 Headers，SSE 直连使用 URL 参数）
-      const userId = headerUserId || urlUserId;
-      const projectId = headerProjectId || urlProjectId;
-      const projectPath = headerProjectPath || urlProjectPath;
+      // 使用 ?? undefined 将 null 转换为 undefined（SessionContext 不接受 null）
+      const userId = headerUserId || (urlUserId ?? undefined);
+      const projectId = headerProjectId || (urlProjectId ?? undefined);
+      const projectPath = headerProjectPath || (urlProjectPath ?? undefined);
 
       // 解析 MAC Token（JSON 序列化）
       let macToken: MacToken | undefined;
