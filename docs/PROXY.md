@@ -1138,7 +1138,18 @@ cat config.json | node proxy.js
   "options": {
     "verbose": false,
     "reconnect_interval": 5000,
-    "request_timeout": 30000
+    "request_timeout": 30000,
+    "tool_call_timeout": 300000,
+    "reset_timeout_on_progress": true,
+    "health_check_interval": 30000,
+    "enable_cookie_sticky": true,
+    "inject_params_per_call": true,
+    "log": {
+      "root": "/tmp/taptap-mcp/logs",
+      "enabled": false,
+      "level": "info",
+      "max_days": 7
+    }
   }
 }
 ```
@@ -1166,7 +1177,17 @@ node proxy.js
 - `tenant.project_id` - 项目标识符（可选，仅用于日志）
 - `options.verbose` - 详细日志模式（默认 `false`）
 - `options.reconnect_interval` - 重连间隔（毫秒，默认 `5000`）
-- `options.request_timeout` - 请求超时（毫秒，默认 `30000`）
+- `options.request_timeout` - 请求队列超时（毫秒，默认 `30000`）
+- `options.tool_call_timeout` - 工具调用超时（毫秒，默认 `300000`，即 5 分钟）
+- `options.reset_timeout_on_progress` - 收到 progress 通知时重置超时计时器（默认 `true`）
+- `options.health_check_interval` - 健康检查间隔（毫秒，默认 `30000`）- 定期验证 Server 会话是否有效
+- `options.enable_cookie_sticky` - 启用 Cookie 会话粘性（默认 `true`）- 用于 K8s 多副本部署时的会话粘性
+- `options.inject_params_per_call` - 每次工具调用时注入私有参数（默认 `true`）- 为兼容不同 MCP Server 实现，默认每次调用都注入；如果目标 Server 支持从 Session 获取参数，可设为 `false` 以减少数据传输
+- `options.log` - 日志配置对象（可选）
+  - `options.log.root` - 日志根目录（默认 `/tmp/taptap-mcp/logs`）
+  - `options.log.enabled` - 是否启用文件日志（默认 `false`）
+  - `options.log.level` - 日志级别（默认 `info`）- 支持：emergency, alert, critical, error, warning, notice, info, debug
+  - `options.log.max_days` - 日志保留天数（默认 `7`）
 
 ### 6.5 部署场景
 
@@ -1384,6 +1405,15 @@ interface ProxyConfig {
     request_timeout?: number; // 请求队列超时（默认 30000ms）
     tool_call_timeout?: number; // Tool 调用超时（默认 300000ms，即 5 分钟）
     reset_timeout_on_progress?: boolean; // 收到 progress 通知时重置超时（默认 true）
+    health_check_interval?: number; // 健康检查间隔（默认 30000ms）
+    enable_cookie_sticky?: boolean; // 启用 Cookie 会话粘性（默认 true）
+    inject_params_per_call?: boolean; // 每次工具调用时注入私有参数（默认 true）
+    log?: {
+      root?: string; // 日志根目录（默认 /tmp/taptap-mcp/logs）
+      enabled?: boolean; // 是否启用文件日志（默认 false）
+      level?: string; // 日志级别（默认 info）
+      max_days?: number; // 日志保留天数（默认 7）
+    };
   };
 }
 ```
@@ -1419,6 +1449,15 @@ function generateProxyConfig(user: User, project: Project, macToken: MacToken): 
       verbose: true, // 推荐开启详细日志
       tool_call_timeout: 300000, // Tool 调用超时 5 分钟
       reset_timeout_on_progress: true, // 收到 progress 通知时重置超时
+      health_check_interval: 30000, // 健康检查间隔 30 秒
+      enable_cookie_sticky: true, // 启用 Cookie 会话粘性
+      inject_params_per_call: true, // 每次调用都注入私有参数（推荐）
+      log: {
+        root: '/var/log/taptap-mcp', // TapCode 环境的日志目录
+        enabled: true, // 推荐开启文件日志
+        level: 'info',
+        max_days: 7,
+      },
     },
   };
 
