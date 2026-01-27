@@ -2,6 +2,11 @@
  * MCP Proxy 类型定义
  */
 
+import type { LogLevel } from '../core/types/log.js';
+
+// 重新导出 LogLevel 供外部使用
+export type { LogLevel } from '../core/types/log.js';
+
 /**
  * MAC Token 结构
  */
@@ -10,6 +15,42 @@ export interface MacToken {
   mac_key: string;
   token_type: 'mac';
   mac_algorithm: 'hmac-sha-1';
+}
+
+/**
+ * 日志配置
+ */
+export interface LogConfig {
+  /**
+   * 日志根目录
+   * 默认: /tmp/taptap-mcp/logs
+   *
+   * 实际日志路径: {root}/proxy/{user_id}/{project_id}/ 或 {root}/proxy/{kid_hash}/
+   */
+  root?: string;
+
+  /**
+   * 是否启用文件日志
+   * 默认: false
+   */
+  enabled?: boolean;
+
+  /**
+   * 日志级别（RFC 5424 标准）
+   * 默认: info
+   *
+   * 支持的级别（按严重程度递减）：
+   * emergency, alert, critical, error, warning, notice, info, debug
+   *
+   * 注意: 当 verbose=true 时，日志级别自动变为 debug
+   */
+  level?: LogLevel;
+
+  /**
+   * 日志保留天数
+   * 默认: 7
+   */
+  max_days?: number;
 }
 
 /**
@@ -49,6 +90,27 @@ export interface ProxyConfig {
     tool_call_timeout?: number;
     /** 收到 progress 通知时重置超时计时器（默认 true） */
     reset_timeout_on_progress?: boolean;
+    /** 健康检查间隔（毫秒，默认 30000）- 定期验证 Server 会话是否有效 */
+    health_check_interval?: number;
+    /**
+     * 启用 Cookie 会话粘性（默认 true）
+     * 用于 K8s 多副本部署时，通过 Ingress Cookie 实现会话粘性
+     * 确保同一 Proxy 的所有请求被路由到同一个 MCP Server Pod
+     */
+    enable_cookie_sticky?: boolean;
+    /**
+     * 每次工具调用时也注入私有参数（默认 true）
+     *
+     * 私有参数（_mac_token, _user_id, _project_id, _project_path）会在两个时机传递：
+     * 1. 初始化连接时：始终通过 HTTP Headers 传递（不受此配置影响）
+     * 2. 每次工具调用时：通过工具参数注入（由此配置控制）
+     *
+     * 为兼容不同的 MCP Server 实现，默认每次调用都注入。
+     * 如果目标 Server 支持从 Session 获取这些参数，可设置为 false 以减少数据传输量。
+     */
+    inject_params_per_call?: boolean;
+    /** 日志配置 */
+    log?: LogConfig;
   };
 }
 

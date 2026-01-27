@@ -20,11 +20,17 @@ export const appTools: ToolRegistration[] = [
         '[General] Get currently selected app/game information including developer_id, app_id, miniapp_id, and app name. **CRITICAL: Call this tool FIRST before executing any leaderboard operations (create_leaderboard, list_leaderboards, etc.) to verify that an app has been selected. If no app is selected, guide the user through the selection process using list_developers_and_apps and select_app.** Use this for: 1) Checking current selection before leaderboard operations, 2) Building preview links, 3) Verifying cached app. Not for H5 upload workflow.',
       inputSchema: {
         type: 'object',
-        properties: {},
+        properties: {
+          ignore_cache: {
+            type: 'boolean',
+            description:
+              'If true, force refresh data from server regardless of cache TTL. Default false.',
+          },
+        },
       },
     },
     handler: async (args, context) => {
-      return appHandlers.getCurrentAppInfo(context);
+      return appHandlers.getCurrentAppInfo(context, args.ignore_cache);
     },
   },
 
@@ -81,7 +87,7 @@ export const appTools: ToolRegistration[] = [
     definition: {
       name: 'list_developers_and_apps',
       description:
-        '[General App Management] List all developers and their apps/games for the current user. **CRITICAL: ALWAYS show the full list to the user and explicitly ASK them to choose which app to use - DO NOT automatically select an app without user confirmation, even if there is only one option.** Use this for: 1) Initial exploration of available apps, 2) Switching between apps, 3) General app management (not H5 upload workflow). For H5 game upload, use h5_game_info_gatherer instead.',
+        '[General App Management] List all developers and their apps/games for the current user. **CRITICAL: ALWAYS show the full list to the user and explicitly ASK them to choose which app to use - DO NOT automatically select an app without user confirmation, even if there is only one option.** Use this for: 1) Initial exploration of available apps, 2) Switching between apps, 3) General app management (not H5 upload workflow). For H5 game upload, use prepare_h5_upload instead.',
       inputSchema: {
         type: 'object',
         properties: {},
@@ -99,7 +105,7 @@ export const appTools: ToolRegistration[] = [
     definition: {
       name: 'select_app',
       description:
-        '[General] Select a specific developer and app to use for subsequent operations. This will cache the selection for all modules (leaderboard, H5, etc.). **IMPORTANT: Only call this tool AFTER the user has explicitly confirmed which app they want to use. DO NOT call this tool automatically without user confirmation.** Use this for: 1) General app selection, 2) Switching accounts, 3) After listing with list_developers_and_apps and receiving user confirmation. For H5 upload, you can also pass developerId/appId to h5_game_info_gatherer directly.',
+        '[General] Select a specific developer and app to use for subsequent operations. This will cache the selection for all modules (leaderboard, H5, etc.). **IMPORTANT: Only call this tool AFTER the user has explicitly confirmed which app they want to use. DO NOT call this tool automatically without user confirmation.** Use this for: 1) General app selection, 2) Switching accounts, 3) After listing with list_developers_and_apps and receiving user confirmation. For H5 upload, you can also pass developerId/appId to prepare_h5_upload directly.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -152,7 +158,7 @@ export const appTools: ToolRegistration[] = [
     definition: {
       name: 'create_app',
       description:
-        'Create a new app/game on TapTap platform. Use this when user wants to create a new app.',
+        'Create a new app/game on TapTap platform. **The newly created app will be automatically selected** - no need to call select_app afterwards. Use this when user wants to create a new app.',
       inputSchema: {
         type: 'object',
         properties: {
@@ -183,7 +189,7 @@ export const appTools: ToolRegistration[] = [
     definition: {
       name: 'update_app_info',
       description:
-        "Update the app's name, genre, description, chatting_label, chatting_number, screen_orientation on TapTap platform",
+        "Update the app's information on TapTap platform including name, genre, description, icon, banner, screenshots, and more.",
       inputSchema: {
         type: 'object',
         properties: {
@@ -217,7 +223,25 @@ export const appTools: ToolRegistration[] = [
           },
           screenOrientation: {
             type: 'number',
-            description: 'The screen orientation of the app, 1: vertical, 2: horizontal',
+            description: 'The screen orientation of the app, 1: portrait, 2: landscape',
+          },
+          icon: {
+            type: 'string',
+            description: 'Icon URL (JPG/PNG, minimum 512x512 pixels)',
+          },
+          banner: {
+            type: 'string',
+            description: 'Banner image URL (JPG/PNG, max 4MB, minimum 1920x1080 pixels)',
+          },
+          screenshots: {
+            type: 'array',
+            items: { type: 'string' },
+            description:
+              'Screenshot URLs (up to 4 images). Requirements: 1) Landscape: aspect ratio 8:3 to 8:5, min 1280x720px; 2) Portrait: aspect ratio 3:8 to 5:8, min 720x1280px; 3) All images must have the same aspect ratio as the first one.',
+          },
+          trialNote: {
+            type: 'string',
+            description: 'Developer notes for review (trial_note)',
           },
         },
         required: ['developerId', 'appId'],
@@ -242,12 +266,53 @@ export const appTools: ToolRegistration[] = [
             type: 'number',
             description: 'App ID to check status for',
           },
+          ignore_cache: {
+            type: 'boolean',
+            description:
+              'If true, force refresh data from server regardless of cache TTL. Default false.',
+          },
         },
         required: ['app_id'],
       },
     },
-    handler: async (args: { app_id: number }, context) => {
-      return appHandlers.getAppStatus(args.app_id, context);
+    handler: async (args: { app_id: number; ignore_cache?: boolean }, context) => {
+      return appHandlers.getAppStatus(args.app_id, context, args.ignore_cache);
+    },
+    requiresAuth: true,
+  },
+
+  // 📷 Upload Image
+  {
+    definition: {
+      name: 'upload_image',
+      description:
+        'Upload an image to TapTap server and get a URL. Use this to upload icon, banner, or screenshots before calling update_app_info. Accepts either a local file path or base64 encoded image data.',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          filePath: {
+            type: 'string',
+            description:
+              'Local file path to the image (relative to workspace or absolute). Supports JPG, PNG, GIF, WebP.',
+          },
+          base64Data: {
+            type: 'string',
+            description:
+              'Base64 encoded image data. Can include data URL prefix (e.g., "data:image/png;base64,...") or be raw base64 string.',
+          },
+          filename: {
+            type: 'string',
+            description:
+              'Optional filename for the uploaded image. If not provided, will be derived from filePath or default to "image.png".',
+          },
+        },
+      },
+    },
+    handler: async (
+      args: { filePath?: string; base64Data?: string; filename?: string },
+      context
+    ) => {
+      return appHandlers.uploadImage(args, context);
     },
     requiresAuth: true,
   },

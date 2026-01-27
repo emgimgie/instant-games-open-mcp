@@ -19,6 +19,8 @@
 
 ## 🚀 快速开始
 
+> 🐣 **新手请看这里**：[TapTap MCP 配置指南 (小白版)](docs/USER_GUIDE.md) - 手把手教你配置 Cursor、Claude Code 和 VS Code。
+
 ### 安装
 
 ```bash
@@ -42,7 +44,7 @@ npx @mikoto_zero/minigame-open-mcp
       "command": "npx",
       "args": ["-y", "@mikoto_zero/minigame-open-mcp"],
       "env": {
-        "WORKSPACE_ROOT": "${workspaceFolder}"
+        "TAPTAP_MCP_WORKSPACE_ROOT": "${workspaceFolder}"
       }
     }
   }
@@ -52,9 +54,9 @@ npx @mikoto_zero/minigame-open-mcp
 **重要说明**：
 
 - **零配置 OAuth**：首次使用会提示扫码授权，token 自动保存！
-- **路径处理**：设置 `WORKSPACE_ROOT` 环境变量可以正确解析相对路径（推荐）
+- **路径处理**：设置 `TAPTAP_MCP_WORKSPACE_ROOT` 环境变量可以正确解析相对路径（推荐）
   - 如果不设置，相对路径会基于用户 HOME 目录（可能不符合预期）
-  - 建议使用绝对路径，或配置 `WORKSPACE_ROOT`
+  - 建议使用绝对路径，或配置 `TAPTAP_MCP_WORKSPACE_ROOT`
 
 #### OpenHands（推荐 SSE 模式）
 
@@ -234,6 +236,15 @@ npm test
 - `TAPTAP_MCP_CACHE_DIR` - 缓存目录（默认 `/tmp/taptap-mcp/cache`）
 - `TAPTAP_MCP_TEMP_DIR` - 临时文件目录（默认 `/tmp/taptap-mcp/temp`）
 
+**日志配置**:
+
+- `TAPTAP_MCP_LOG_ROOT` - 日志根目录（默认 `/tmp/taptap-mcp/logs`）
+- `TAPTAP_MCP_LOG_FILE` - 启用文件日志：`true` 或 `false`（默认 `false`）
+- `TAPTAP_MCP_LOG_LEVEL` - 日志级别（RFC 5424）：`debug`、`info`、`notice`、`warning`、`error`、`critical`、`alert`、`emergency`（默认 `info`）
+- `TAPTAP_MCP_LOG_MAX_DAYS` - 日志保留天数（默认 7）
+
+详细说明请参考 [docs/LOG_SYSTEM.md](docs/LOG_SYSTEM.md)
+
 ### 添加新功能
 
 ```bash
@@ -311,6 +322,7 @@ graph LR
 
 ### 用户文档
 
+- **[docs/USER_GUIDE.md](docs/USER_GUIDE.md)** - 🐣 新手配置指南（Cursor/VS Code/Claude Code）
 - **[CONTRIBUTING.md](CONTRIBUTING.md)** - 贡献指南
 - **[CHANGELOG.md](CHANGELOG.md)** - 版本变更历史
 

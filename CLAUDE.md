@@ -88,6 +88,16 @@ Closes #123
 - ✅ Body 和 Footer 前必须有空行
 - ❌ 错误示例：`Feat(API): Added feature.`（Type 大写、Scope 大写、Subject 以句号结尾）
 
+### Copilot/AI 提交规范
+
+> 📄 详细规范请参考 `.github/copilot-instructions.md`
+
+**Copilot 和其他 AI 工具必须遵循 Conventional Commits 规范。**
+
+- ❌ **禁止的提交消息**：`Initial plan`、`WIP`、`temp`、`test` 等无类型前缀的消息
+- ✅ **正确格式**：`feat(proxy): add new feature`、`chore(planning): initial investigation`
+- ⚙️ **Commitlint 已配置忽略规则**：自动忽略 `Initial plan`、`WIP` 等模式的提交
+
 ### 分支工作流
 
 - ❌ **不要直接 commit 到 main 分支**（已配置分支保护）
@@ -333,17 +343,22 @@ npm run format
 
 ### 环境变量（常用）
 
-| 变量名                 | 说明                       | 默认值                |
-| ---------------------- | -------------------------- | --------------------- |
-| `TAPTAP_MCP_TRANSPORT` | 传输协议（stdio/sse/http） | stdio                 |
-| `TAPTAP_MCP_PORT`      | HTTP/SSE 模式端口          | 3000                  |
-| `TAPTAP_MCP_VERBOSE`   | 详细日志模式               | false                 |
-| `TAPTAP_MCP_ENV`       | 环境选择（production/rnd） | production            |
-| `TAPTAP_MCP_CACHE_DIR` | 缓存根目录                 | /tmp/taptap-mcp/cache |
-| `TAPTAP_MCP_TEMP_DIR`  | 临时文件根目录             | /tmp/taptap-mcp/temp  |
-| `WORKSPACE_ROOT`       | 工作空间根路径（推荐设置） | process.cwd()         |
+| 变量名                    | 说明                       | 默认值                |
+| ------------------------- | -------------------------- | --------------------- |
+| `TAPTAP_MCP_TRANSPORT`    | 传输协议（stdio/sse/http） | stdio                 |
+| `TAPTAP_MCP_PORT`         | HTTP/SSE 模式端口          | 3000                  |
+| `TAPTAP_MCP_VERBOSE`      | 详细日志模式               | false                 |
+| `TAPTAP_MCP_ENV`          | 环境选择（production/rnd） | production            |
+| `TAPTAP_MCP_CACHE_DIR`    | 缓存根目录                 | /tmp/taptap-mcp/cache |
+| `TAPTAP_MCP_TEMP_DIR`     | 临时文件根目录             | /tmp/taptap-mcp/temp  |
+| `WORKSPACE_ROOT`          | 工作空间根路径（推荐设置） | process.cwd()         |
+| `TAPTAP_MCP_LOG_ROOT`     | 日志根目录                 | /tmp/taptap-mcp/logs  |
+| `TAPTAP_MCP_LOG_FILE`     | 是否启用文件日志           | false                 |
+| `TAPTAP_MCP_LOG_LEVEL`    | 文件日志级别               | info                  |
+| `TAPTAP_MCP_LOG_MAX_DAYS` | 日志保留天数               | 7                     |
 
 **完整环境变量说明：** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
+**日志系统说明：** [docs/LOG_SYSTEM.md](docs/LOG_SYSTEM.md)
 
 ## 开发规范
 
@@ -535,12 +550,12 @@ const allModules = [..., yourFeatureModule];
 - `get_user_leaderboard_scores` - 获取用户分数数据
 - `get_app_status` - 获取应用审核状态
 
-**H5 游戏管理（4个）**
+**H5 游戏管理（2个）**
 
-- `h5_game_info_gatherer` - 收集 H5 游戏信息（上传前）
-- `h5_game_uploader` - 上传 H5 游戏包
-- `h5_create_app` - 创建新 H5 游戏应用
-- `h5_edit_app` - 编辑 H5 游戏信息
+- `prepare_h5_upload` - 收集 H5 游戏信息（上传前）
+- `upload_h5_game` - 上传 H5 游戏包
+
+> 注：创建/编辑应用请使用 `create_app` 和 `update_app_info` 工具（在应用管理分类中）
 
 **振动 API 文档（1个）**
 

@@ -1,3 +1,119 @@
+## <small>1.14.1 (2026-01-23)</small>
+
+* docs: update plan to add missing proxy config documentation ([7b29004](https://github.com/taptap/taptap_minigame_open_mcp/commit/7b29004))
+* docs(proxy): add missing configuration options documentation ([05f4f8a](https://github.com/taptap/taptap_minigame_open_mcp/commit/05f4f8a))
+* fix(proxy): inject private params on every tool call for MCP Server compatibility ([b4718c9](https://github.com/taptap/taptap_minigame_open_mcp/commit/b4718c9))
+
+
+
+## 1.14.0 (2026-01-16)
+
+* chore(release): disable BREAKING CHANGE detection in commit footer ([48ae5fb](https://github.com/taptap/taptap_minigame_open_mcp/commit/48ae5fb))
+* fix(lint): resolve all ESLint unused variable warnings ([b4f68dd](https://github.com/taptap/taptap_minigame_open_mcp/commit/b4f68dd))
+* fix(server): normalize projectPath and improve token parsing error logging ([9a0b8ea](https://github.com/taptap/taptap_minigame_open_mcp/commit/9a0b8ea))
+* docs: update documentation for session context architecture ([be062f0](https://github.com/taptap/taptap_minigame_open_mcp/commit/be062f0))
+* docs(architecture): update cache system documentation ([723e464](https://github.com/taptap/taptap_minigame_open_mcp/commit/723e464))
+* docs(copilot): add dependency management guidelines ([c7de570](https://github.com/taptap/taptap_minigame_open_mcp/commit/c7de570))
+* refactor(app): update app management handlers and tool descriptions ([d7debf4](https://github.com/taptap/taptap_minigame_open_mcp/commit/d7debf4))
+* refactor(context): remove developer_id and app_id from private params ([2197ca2](https://github.com/taptap/taptap_minigame_open_mcp/commit/2197ca2))
+* refactor(h5game): simplify upload handlers and improve error messages ([73a0d96](https://github.com/taptap/taptap_minigame_open_mcp/commit/73a0d96))
+* feat(cache): use SHA256 hash for tenant isolation key ([2f680e0](https://github.com/taptap/taptap_minigame_open_mcp/commit/2f680e0))
+* feat(logger): enhance client connection logging with session context ([37100ea](https://github.com/taptap/taptap_minigame_open_mcp/commit/37100ea))
+* feat(proxy): add session headers injection for authentication ([eef6800](https://github.com/taptap/taptap_minigame_open_mcp/commit/eef6800))
+
+
+### BREAKING CHANGE
+
+* _developer_id and _app_id private parameters are removed
+
+- Remove _developer_id and _app_id from PrivateToolParams interface
+- Remove developerId and appId from ResolvedData and ResolvedContext
+- Update resolveApp() to only read from cache (no fallback to private params)
+- Update leaderboard/api.ts and share/api.ts to use ctx.resolveApp()
+- Update error messages to guide users to use select_app tool
+
+These fields should only be obtained via select_app tool which saves
+to cache. This simplifies the architecture and makes the data flow clearer.
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>
+
+
+## 1.13.0 (2026-01-07)
+
+* fix(http): send empty JSON object for POST/PUT requests without body ([4133565](https://github.com/taptap/taptap_minigame_open_mcp/commit/4133565))
+* fix(upload): correct binary signature calculation for multipart uploads ([3f78133](https://github.com/taptap/taptap_minigame_open_mcp/commit/3f78133))
+* feat(app): add upload_image tool and sync API field extensions ([459c691](https://github.com/taptap/taptap_minigame_open_mcp/commit/459c691))
+* chore(deps): move @types/qrcode to devDependencies ([c3ec278](https://github.com/taptap/taptap_minigame_open_mcp/commit/c3ec278))
+* chore(docker): improve local dev script and remove docker-compose ([f122555](https://github.com/taptap/taptap_minigame_open_mcp/commit/f122555))
+* refactor(cache): implement TTL-based cache with version info display ([2a069a4](https://github.com/taptap/taptap_minigame_open_mcp/commit/2a069a4))
+
+
+
+## <small>1.12.1 (2026-01-04)</small>
+
+* fix: 授权流程返回二维码 ([eb3e7b1](https://github.com/taptap/taptap_minigame_open_mcp/commit/eb3e7b1))
+
+
+
+## 1.12.0 (2025-12-31)
+
+* docs(copilot): rewrite instructions in English with unified workflow ([387a19c](https://github.com/taptap/taptap_minigame_open_mcp/commit/387a19c))
+* ci: add auto-assign workflow for PR to main branch ([f546426](https://github.com/taptap/taptap_minigame_open_mcp/commit/f546426))
+* ci(release): filter noise commits from release notes and changelog ([619dda3](https://github.com/taptap/taptap_minigame_open_mcp/commit/619dda3))
+* fix(log): use local time for log cleanup date comparison ([1c22863](https://github.com/taptap/taptap_minigame_open_mcp/commit/1c22863))
+* feat(log): add file logging support for Server and Proxy ([35db772](https://github.com/taptap/taptap_minigame_open_mcp/commit/35db772))
+
+
+
+## <small>1.11.5 (2025-12-31)</small>
+
+* docs(copilot): add Chinese language preference ([f5e7aeb](https://github.com/taptap/taptap_minigame_open_mcp/commit/f5e7aeb))
+* ci(release): use annotated tag with release notes ([80d3fc3](https://github.com/taptap/taptap_minigame_open_mcp/commit/80d3fc3))
+* fix(docs): correct markdown formatting and improve commitlint regex ([56d8e2a](https://github.com/taptap/taptap_minigame_open_mcp/commit/56d8e2a))
+* chore: add copilot instructions and update commitlint config ([a0ead79](https://github.com/taptap/taptap_minigame_open_mcp/commit/a0ead79))
+
+
+
+## <small>1.11.4 (2025-12-30)</small>
+
+* refactor(proxy): improve code consistency and cookie parsing ([5884575](https://github.com/taptap/taptap_minigame_open_mcp/commit/5884575))
+* fix(proxy): add cookie sticky session support for K8s multi-replica ([7d7cc4f](https://github.com/taptap/taptap_minigame_open_mcp/commit/7d7cc4f))
+* fix(proxy): improve cookie sticky session implementation ([cf0db5d](https://github.com/taptap/taptap_minigame_open_mcp/commit/cf0db5d))
+
+
+
+## <small>1.11.3 (2025-12-29)</small>
+
+* refactor(proxy): simplify formatError based on actual error structures ([54c4ff2](https://github.com/taptap/taptap_minigame_open_mcp/commit/54c4ff2))
+* fix(proxy): add detailed error logging for connection failures ([0709c2d](https://github.com/taptap/taptap_minigame_open_mcp/commit/0709c2d))
+* fix(proxy): enhance error logging to capture HTTP status codes ([964fa17](https://github.com/taptap/taptap_minigame_open_mcp/commit/964fa17))
+
+
+
+## <small>1.11.2 (2025-12-26)</small>
+
+* fix(proxy): add session validation for multi-replica deployment ([1075a6f](https://github.com/taptap/taptap_minigame_open_mcp/commit/1075a6f))
+* docs: add user guide and update configuration docs ([cf39cd0](https://github.com/taptap/taptap_minigame_open_mcp/commit/cf39cd0))
+
+
+
+## <small>1.11.1 (2025-12-25)</small>
+
+* fix(multiplayer): fix PR review issues and embed DebugLogger code ([7b80111](https://github.com/taptap/taptap_minigame_open_mcp/commit/7b80111))
+
+
+
+## 1.11.0 (2025-12-25)
+
+* style(multiplayer): format code with prettier ([9573099](https://github.com/taptap/taptap_minigame_open_mcp/commit/9573099))
+* fix(multiplayer): fix critical double rate-limit bug and enhance template ([281c14f](https://github.com/taptap/taptap_minigame_open_mcp/commit/281c14f))
+* fix(multiplayer): fix eslint errors and remove unused imports ([ff6750c](https://github.com/taptap/taptap_minigame_open_mcp/commit/ff6750c))
+* refactor(multiplayer): consolidate documentation tools structure ([fc0e4c1](https://github.com/taptap/taptap_minigame_open_mcp/commit/fc0e4c1))
+* docs(multiplayer):  多人对战，第二版 ([bdcadaf](https://github.com/taptap/taptap_minigame_open_mcp/commit/bdcadaf))
+* feat: 多人联机mcp第一版 ([c34838e](https://github.com/taptap/taptap_minigame_open_mcp/commit/c34838e))
+
+
+
 ## <small>1.10.1 (2025-12-10)</small>
 
 * chore: add docker:npm script and remove unused import ([9d2455a](https://github.com/taptap/taptap_minigame_open_mcp/commit/9d2455a))

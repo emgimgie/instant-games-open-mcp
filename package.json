@@ -1,6 +1,6 @@
 {
   "name": "@mikoto_zero/minigame-open-mcp",
-  "version": "1.10.1",
+  "version": "1.14.1",
   "type": "module",
   "description": "TapTap Open API MCP Server - Documentation and Management APIs for TapTap Minigame and H5 Games (Leaderboard, and more features coming)",
   "main": "dist/server.js",
@@ -51,7 +51,8 @@
     "@modelcontextprotocol/sdk": "1.20.2",
     "archiver": "7.0.1",
     "crypto-js": "^4.2.0",
-    "dotenv": "17.2.3"
+    "dotenv": "17.2.3",
+    "qrcode": "1.5.4"
   },
   "devDependencies": {
     "@commitlint/cli": "^18.4.3",
@@ -66,6 +67,7 @@
     "@types/crypto-js": "^4.2.0",
     "@types/jest": "^29.0.0",
     "@types/node": "^20.0.0",
+    "@types/qrcode": "1.5.6",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
     "@typescript-eslint/parser": "^6.0.0",
     "conventional-changelog-cli": "5.0.0",
