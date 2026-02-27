@@ -64,7 +64,7 @@ jobs:
           set -o pipefail
           npx semantic-release --dry-run --no-ci 2>&1 | tee release-output.txt
 
-          NEW_VERSION=$(grep "The next release version is" release-output.txt | sed 's/.*is //' || echo "")
+          NEW_VERSION=$(grep "\[semantic-release\] .* The next release version is" release-output.txt | sed 's/.*is //' || echo "")
 
           if [ -z "$NEW_VERSION" ]; then
             echo "should_release=false" >> $GITHUB_OUTPUT
