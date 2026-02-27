@@ -55,7 +55,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
         run: |
+          set -o pipefail
           npx semantic-release --dry-run --no-ci 2>&1 | tee release-output.txt
+
+          # 检查是否有关键错误（npm token、GitHub token 等认证问题）
+          if grep -qE "EINVALIDNPMTOKEN|EINVALIDGHTOKEN|ENOGHTOKEN|ENONPMTOKEN" release-output.txt; then
+            echo "::error::semantic-release failed due to authentication error, check secrets configuration"
+            cat release-output.txt
+            exit 1
+          fi
 
           NEW_VERSION=$(grep "The next release version is" release-output.txt | sed 's/.*is //' || echo "")
 
