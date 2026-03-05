@@ -175,6 +175,7 @@ export class TapTapMCPProxy {
    * - X-TapTap-Project-Id: 项目标识
    * - X-TapTap-Project-Path: 项目路径
    * - X-TapTap-Mac-Token: MAC 认证令牌（JSON）
+   * - X-TapTap-Custom-Fields: 业务自定义字段（JSON）
    */
   private buildSessionHeaders(): Record<string, string> {
     const headers: Record<string, string> = {};
@@ -193,6 +194,14 @@ export class TapTapMCPProxy {
     // 认证令牌（JSON 序列化）
     headers['X-TapTap-Mac-Token'] = JSON.stringify(this.config.auth);
 
+    // 业务自定义字段（JSON 序列化）
+    if (
+      this.config.tenant.custom_fields &&
+      Object.keys(this.config.tenant.custom_fields).length > 0
+    ) {
+      headers['X-TapTap-Custom-Fields'] = JSON.stringify(this.config.tenant.custom_fields);
+    }
+
     return headers;
   }
 
@@ -207,6 +216,7 @@ export class TapTapMCPProxy {
    * - _user_id: 用户标识（可选）
    * - _project_id: 项目标识（可选）
    * - _project_path: 项目路径（可选）
+   * - _custom_fields: 业务自定义字段（可选）
    */
   private injectPrivateParams(args: Record<string, unknown> | undefined): Record<string, unknown> {
     const injected: Record<string, unknown> = { ...(args || {}) };
@@ -223,6 +233,14 @@ export class TapTapMCPProxy {
     }
     if (this.config.tenant.project_path) {
       injected._project_path = this.config.tenant.project_path;
+    }
+
+    // 注入业务自定义字段
+    if (
+      this.config.tenant.custom_fields &&
+      Object.keys(this.config.tenant.custom_fields).length > 0
+    ) {
+      injected._custom_fields = this.config.tenant.custom_fields;
     }
 
     return injected;
