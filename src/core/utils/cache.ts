@@ -96,9 +96,10 @@ export interface AppCacheInfo {
 
   // 广告配置信息（v1.x.x+）
   ad_config?: {
-    status: number; // 广告状态：0=未开通, 1=审核中, 2=已生效, 3=已封禁
-    space_id: string; // 广告位ID
-    url?: string; // 引导URL（仅状态0、1、3时有）
+    status: number; // 广告状态：0=未开通, 1=已生效, 2=已封禁
+    landscape_space_id?: string; // 横屏广告位ID（type=1）
+    portrait_space_id?: string; // 竖屏广告位ID（type=2）
+    url?: string; // 引导URL（仅状态非"已生效"时有）
     updated_at: number; // 更新时间戳
   };
 

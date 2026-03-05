@@ -12,12 +12,21 @@ import type { ResolvedContext } from '../../core/types/context.js';
 export enum AdsStatus {
   /** 未开通 */
   NotActivated = 0,
-  /** 资料审核中 */
-  UnderReview = 1,
   /** 已生效 */
-  Activated = 2,
+  Activated = 1,
   /** 账号已被封禁 */
-  Banned = 3,
+  Banned = 2,
+}
+
+/**
+ * 广告位信息
+ * type=1: 横屏广告位；type=2: 竖屏广告位
+ */
+export interface AdSpace {
+  /** 广告位ID */
+  id: string;
+  /** 广告类型：1=横屏，2=竖屏 */
+  type: 1 | 2;
 }
 
 /**
@@ -25,12 +34,12 @@ export enum AdsStatus {
  * 对应 GET /ad/v1/config 接口
  */
 export interface AdConfigResponse {
-  /** 广告位ID */
-  space_id: string;
   /** 业务状态 */
   status: number;
-  /** 引导办理地址 */
-  url: string;
+  /** 广告位列表（横屏和竖屏各一个） */
+  ad_spaces?: AdSpace[];
+  /** 引导办理地址（状态非"已生效"时有值） */
+  url?: string;
 }
 
 /**
@@ -38,7 +47,6 @@ export interface AdConfigResponse {
  */
 export const STATUS_DESCRIPTIONS = {
   [AdsStatus.NotActivated]: '未开通',
-  [AdsStatus.UnderReview]: '资料审核中',
   [AdsStatus.Activated]: '已生效',
   [AdsStatus.Banned]: '账号已被封禁',
 };
