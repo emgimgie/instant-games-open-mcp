@@ -197,7 +197,7 @@ AI 调用: create_leaderboard
 
 ### 环境要求
 
-- Node.js 16+
+- Node.js 18.14.1+
 - npm 或 pnpm
 
 ### 本地开发

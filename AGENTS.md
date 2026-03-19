@@ -1,15 +1,15 @@
-# CLAUDE.md
+# AGENTS.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+This file provides guidance to Codex (Codex.ai/code) when working with code in this repository.
 
 ## 全局工作指引
 
-**重要：Claude Code 在此项目中的工作规范**
+**重要：Codex 在此项目中的工作规范**
 
 ### 文档更新规则
 
 - **主动更新文档**：当有重要代码改动时（新特性、架构变更、API 修改），必须同时更新相关文档：
-  - `CLAUDE.md` - 开发指南和技术文档
+  - `AGENTS.md` - 开发指南和技术文档
   - `README.md` - 用户文档和使用说明
   - `docs/` - 相关技术文档
   - **不需要每次都问用户是否更新文档，主动更新即可**
@@ -393,7 +393,7 @@ npm run format
 - 新增工具需要在 `src/server.ts` 中注册工具定义和处理函数
 - 工具定义需要包含完整的 JSON Schema 输入验证
 - 工具描述使用英文，包含使用场景说明
-- 服务器使用 stdio 通信模式，适配 Claude Desktop 等 MCP 客户端
+- 服务器使用 stdio 通信模式，适配 Codex Desktop 等 MCP 客户端
 
 ### 网络请求开发
 

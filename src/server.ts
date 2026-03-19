@@ -59,6 +59,7 @@ import type {
   SessionContext,
   FeatureModule,
   ToolRegistration,
+  ToolCallExtra,
   ResourceRegistration,
 } from './core/types/index.js';
 import { ResolvedContext } from './core/types/context.js';
@@ -367,8 +368,29 @@ class TapTapMinigameMCPServer {
         // 从 args 中移除私有参数（业务层完全不感知）
         const businessArgs = stripPrivateParams(enrichedArgs);
 
-        // ✅ Call handler（传递 ResolvedContext）
-        const result = await toolReg.handler(businessArgs, ctx);
+        // 构建 ToolCallExtra（封装 progress 通知能力）
+        const toolExtra: ToolCallExtra = {};
+        const progressToken = request.params._meta?.progressToken;
+        if (progressToken !== undefined) {
+          toolExtra.sendProgress = async (progress, total, message) => {
+            try {
+              await extra.sendNotification({
+                method: 'notifications/progress',
+                params: {
+                  progressToken,
+                  progress,
+                  ...(total !== undefined ? { total } : {}),
+                  ...(message !== undefined ? { message } : {}),
+                },
+              });
+            } catch {
+              // Progress 通知失败不应影响工具执行，静默忽略
+            }
+          };
+        }
+
+        // ✅ Call handler（传递 ResolvedContext 和 ToolCallExtra）
+        const result = await toolReg.handler(businessArgs, ctx, toolExtra);
 
         // Log tool call output
         await logger.logToolResponse(name, result, true);
