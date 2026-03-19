@@ -1082,7 +1082,7 @@ HTTP 403 - Authorization failed
 - ✅ 无依赖（所有依赖已内联）
 - ✅ 单文件（约 520KB）
 - ✅ 直接运行：`node proxy.js`
-- ✅ 跨平台（Node.js 18+）
+- ✅ 跨平台（Node.js 18.14.1+）
 
 ### 6.2 获取文件
 
@@ -1233,7 +1233,7 @@ node proxy.js
 #### 场景 2：Docker 容器
 
 ```dockerfile
-FROM node:18-alpine
+FROM node:18.14-alpine
 
 # 只需复制单文件
 COPY proxy.js /app/proxy.js
@@ -1248,7 +1248,7 @@ CMD ["node", "/app/proxy.js"]
 version: '3'
 services:
   mcp-proxy:
-    image: node:18-alpine
+    image: node:18.14-alpine
     volumes:
       - ./proxy.js:/app/proxy.js
       - ./config.json:/app/config.json

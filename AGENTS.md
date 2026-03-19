@@ -297,8 +297,11 @@ graph TD
 ### 开发环境设置
 
 ```bash
-# 安装依赖
-npm install
+# 安装依赖（推荐，可复现安装）
+npm ci
+
+# 新增/更新依赖时使用
+# npm install <package>
 
 # 全局安装（可选）
 npm install -g @mikoto_zero/minigame-open-mcp
