@@ -38,6 +38,15 @@ export { LOG_LEVEL_PRIORITY } from './log.js';
 import type { ResolvedContext as RC } from './context.js';
 
 /**
+ * Extra capabilities passed to tool handlers
+ * Separated from ResolvedContext to keep business context clean from transport-layer concerns
+ */
+export interface ToolCallExtra {
+  /** Send progress notification (only effective when client requested a progressToken) */
+  sendProgress?: (progress: number, total?: number, message?: string) => Promise<void>;
+}
+
+/**
  * Tool Registration Interface
  * Combines tool definition and handler in a single object
  */
@@ -45,8 +54,8 @@ export interface ToolRegistration<T = any> {
   /** MCP Tool definition (JSON Schema) */
   definition: Tool;
 
-  /** Tool handler function - 接受 ResolvedContext */
-  handler: (args: T, context: RC) => Promise<string>;
+  /** Tool handler function - 接受 ResolvedContext 和可选的 ToolCallExtra */
+  handler: (args: T, context: RC, extra?: ToolCallExtra) => Promise<string>;
 
   /** Whether this tool requires authentication */
   requiresAuth?: boolean;

@@ -29,6 +29,7 @@ User Space 容器内：
 - **前端**：通过 stdio 暴露给 AI Agent
 - **后端**：通过 HTTP/SSE 连接 TapTap MCP Server
 - **转发**：tools/list, resources/list, resources/read, tools/call
+- **进度透传**：当客户端携带 `progressToken` 时，自动转发 `notifications/progress`
 
 ### 2. 私有参数注入
 

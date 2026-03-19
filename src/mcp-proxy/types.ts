@@ -129,4 +129,6 @@ export interface PendingRequest {
   resolve: (result: any) => void;
   reject: (error: Error) => void;
   timestamp: number;
+  /** Progress 回调（可选，用于重连后重放时转发 progress 通知） */
+  onprogress?: (progress: { progress: number; total?: number; message?: string }) => void;
 }

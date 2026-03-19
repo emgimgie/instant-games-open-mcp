@@ -581,7 +581,7 @@ export class TapTapMCPProxy {
         continue;
       }
 
-      // 执行请求
+      // 执行请求（保留 progress 转发能力）
       try {
         const result = await this.client.callTool(
           {
@@ -592,6 +592,7 @@ export class TapTapMCPProxy {
           {
             timeout: this.config.options?.tool_call_timeout ?? 300000,
             resetTimeoutOnProgress: this.config.options?.reset_timeout_on_progress ?? true,
+            onprogress: req.onprogress,
           }
         );
         req.resolve(result);
@@ -681,8 +682,8 @@ export class TapTapMCPProxy {
       return result;
     });
 
-    // 拦截 tools/call - 注入私有参数后转发
-    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+    // 拦截 tools/call - 注入私有参数后转发，支持 Progress 通知转发
+    this.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
       const { name, arguments: args } = request.params;
 
       // 根据配置决定是否在每次调用时注入私有参数（默认注入，兼容不同 MCP Server）
@@ -691,6 +692,31 @@ export class TapTapMCPProxy {
 
       if (this.config.options?.verbose) {
         this.log('debug', `Tool call: ${name} (inject_params_per_call: ${shouldInjectParams})`);
+      }
+
+      // 捕获 progressToken，用于转发 progress 通知
+      const progressToken = request.params._meta?.progressToken;
+
+      // 构建 callTool 选项（含 progress 转发）
+      const callToolOptions: {
+        timeout: number;
+        resetTimeoutOnProgress: boolean;
+        onprogress?: (progress: { progress: number; total?: number; message?: string }) => void;
+      } = {
+        timeout: this.config.options?.tool_call_timeout ?? 300000,
+        resetTimeoutOnProgress: this.config.options?.reset_timeout_on_progress ?? true,
+      };
+
+      // 如果客户端请求了 progress，设置 onprogress 回调转发通知
+      if (progressToken !== undefined) {
+        callToolOptions.onprogress = (progress) => {
+          extra
+            .sendNotification({
+              method: 'notifications/progress',
+              params: { progressToken, ...progress },
+            })
+            .catch(() => {}); // fire-and-forget，不阻塞工具调用
+        };
       }
 
       // 检查连接状态
@@ -706,6 +732,7 @@ export class TapTapMCPProxy {
               resolve,
               reject,
               timestamp: Date.now(),
+              onprogress: callToolOptions.onprogress,
             });
           });
         }
@@ -725,10 +752,7 @@ export class TapTapMCPProxy {
             arguments: finalArgs,
           },
           undefined, // resultSchema
-          {
-            timeout: this.config.options?.tool_call_timeout ?? 300000,
-            resetTimeoutOnProgress: this.config.options?.reset_timeout_on_progress ?? true,
-          }
+          callToolOptions
         );
         return result;
       } catch (error) {
@@ -751,6 +775,7 @@ export class TapTapMCPProxy {
                 resolve,
                 reject,
                 timestamp: Date.now(),
+                onprogress: callToolOptions.onprogress,
               });
             });
           }
