@@ -8,6 +8,7 @@
 - [接入指南](#接入指南)
 - [功能模块详解](#功能模块详解)
   - [应用管理 (App)](#应用管理-app)
+  - [当前游戏 DC 能力 (Current App DC)](#当前游戏-dc-能力-current-app-dc)
   - [排行榜 (Leaderboard)](#排行榜-leaderboard)
   - [H5 游戏 (H5 Game)](#h5-游戏-h5-game)
   - [多人联机 (Multiplayer)](#多人联机-multiplayer)
@@ -51,11 +52,12 @@ TapTap Minigame MCP Server 是一个基于 [Model Context Protocol (MCP)](https:
 
 **1. 基础配置**
 
-| 变量名                      | 描述                                                                | 默认值          |
-| :-------------------------- | :------------------------------------------------------------------ | :-------------- |
-| `TAPTAP_MCP_ENV`            | 环境选择，`production` (生产环境) 或 `rnd` (测试环境)               | `production`    |
-| `TAPTAP_MCP_VERBOSE`        | 是否启用详细调试日志，`true` 或 `false`                             | `false`         |
-| `TAPTAP_MCP_WORKSPACE_ROOT` | 项目工作区根目录，用于解析相对路径。推荐设置为 `${workspaceFolder}` | `process.cwd()` |
+| 变量名                               | 描述                                                                   | 默认值          |
+| :----------------------------------- | :--------------------------------------------------------------------- | :-------------- |
+| `TAPTAP_MCP_ENV`                     | 环境选择，`production` (生产环境) 或 `rnd` (测试环境)                  | `production`    |
+| `TAPTAP_MCP_DC_CURRENT_APP_BASE_URL` | 当前游戏 DC 接口 host 覆盖（可选，路径仍为 `/mcp/v1/current-app/...`） | 未设置          |
+| `TAPTAP_MCP_VERBOSE`                 | 是否启用详细调试日志，`true` 或 `false`                                | `false`         |
+| `TAPTAP_MCP_WORKSPACE_ROOT`          | 项目工作区根目录，用于解析相对路径。推荐设置为 `${workspaceFolder}`    | `process.cwd()` |
 
 **2. 认证配置 (可选)**
 
@@ -219,14 +221,37 @@ console.log(result);
 - `check_environment`: 检查环境变量配置和认证状态。
 - `start_oauth_authorization`: 开始 OAuth 2.0 授权流程（获取二维码）。
 - `complete_oauth_authorization`: 完成 OAuth 授权（用户扫码后调用）。
-- `list_developers_and_apps`: 列出当前账号下的所有开发者和应用。
-- `select_app`: 选择要操作的应用。**必须由用户明确确认后调用。**
+- `list_developers_and_apps`: 列出当前账号下的所有开发者和应用，包含关卡游戏和非关卡游戏。
+- `select_app`: 选择要操作的应用，支持关卡游戏和非关卡游戏。**必须由用户明确确认后调用。**
 - `create_developer`: 创建新的开发者身份。
 - `create_app`: 创建新应用。
 - `update_app_info`: 更新应用信息（名称、简介、图标、截图等）。
 - `get_app_status`: 查询应用审核状态。
 - `upload_image`: 上传图片资源（用于更新应用信息）。
 - `clear_auth_data`: 清除认证数据和缓存。
+
+---
+
+### 当前游戏 DC 能力 (Current App DC)
+
+面向当前已选择游戏的 DC 只读/低风险动作能力集合，适合让 AI 助手基于“当前游戏”上下文查看商店、评价、社区统计概览，以及论坛内容和评价，并执行点赞或官方回复。
+
+**Tools (工具):**
+
+- `get_current_app_store_overview`: 获取当前游戏商店统计概览，包括页面访问量、下载量、预约量、下载请求量和趋势数据，支持可选日期范围。
+- `get_current_app_review_overview`: 获取当前游戏评价统计概览，包括评分摘要、评分、好中差评数量和评分趋势，支持可选日期范围。
+- `get_current_app_community_overview`: 获取当前游戏社区统计概览，包括帖子数、关注数、页面浏览量、Feed 数和趋势数据，支持可选日期范围。
+- `get_current_app_store_snapshot`: 获取当前游戏商店结果型快照，包括 app 卡片、结果统计、评分摘要、近 30 天评分趋势、版本状态等。
+- `get_current_app_forum_contents`: 获取当前游戏论坛内容流，支持类型、排序、分页和子版块筛选。
+- `get_current_app_reviews`: 获取当前游戏评价列表，支持排序、分页、折叠评价和平台筛选。
+- `like_current_app_review`: 给当前游戏的指定评价点赞。建议先通过评价列表确认 `review_id`。
+- `reply_current_app_review`: 以官方身份回复当前游戏评价。服务端会返回风险分级，`MEDIUM/HIGH` 默认只返回草稿，需明确确认后再发送。
+
+**使用约束:**
+
+- 所有工具都依赖当前已选择应用，调用前应先确认 `get_current_app_info` 已能返回有效 app。
+- 能力范围严格限制在“当前游戏”，不支持跨游戏读取或批量动作。
+- 官方回复评价存在风险分级，只有明确确认后才应使用 `confirm_high_risk=true` 直发。
 
 ---
 

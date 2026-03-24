@@ -1,6 +1,10 @@
 /**
  * Token 持久化管理
  * 职责：Token 的读取、保存、清除
+ *
+ * 说明：
+ * - MCP 运行时只强依赖 MAC 鉴权字段（kid/mac_key/token_type/mac_algorithm）
+ * - 但 OAuth 响应中的其他字段也会原样持久化，供特定 agent/DC 能力复用
  */
 
 import * as path from 'node:path';

@@ -1,8 +1,8 @@
 # TapTap Open API MCP 服务器
 
-> 基于 Model Context Protocol (MCP) 的 **TapTap 小游戏和 H5 游戏**服务器 - 提供排行榜文档和管理 API，支持 **OAuth 2.0 零配置认证**。
+> 基于 Model Context Protocol (MCP) 的 **TapTap 小游戏和 H5 游戏**服务器，提供排行榜、分享、多人联机、云存档，以及当前游戏 DC 数据查询、统计概览与评价操作能力，并支持 **OAuth 2.0 零配置认证**。
 
-🔐 **零配置 OAuth** | 📚 **完整文档** | 🎯 **19 Tools + 11 Resources** | 🌍 **小游戏 & H5** | 📦 **单文件 Bundle**
+🔐 **零配置 OAuth** | 📚 **完整文档** | 🎯 **丰富 Tools & Resources** | 🌍 **小游戏 & H5** | 📦 **单文件 Bundle**
 
 ## ✨ 核心特性
 
@@ -10,6 +10,7 @@
 - **📖 完整 API 文档** - 6 个排行榜 API + 详细代码示例
 - **⚙️ 服务端管理** - 创建/管理排行榜，自动处理 ID
 - **🎮 H5 游戏支持** - 上传、发布、状态查询
+- **🧭 当前游戏 DC 能力** - 商店/评价/社区统计概览、商店快照、论坛内容、评价列表、评价点赞、官方回复
 - **🚀 三种传输模式** - stdio（本地）、SSE（远程/实时）、HTTP（兼容）
 - **🔌 多客户端并发** - 独立会话管理，无限并发
 - **📦 单文件 Bundle** - 零依赖，包体积减少 96%（567 KB）
@@ -101,7 +102,7 @@ curl http://localhost:5002/health  # RND
 
 ## 📖 功能列表
 
-### 20 个 Tools
+### 核心 Tools（含当前游戏 DC 能力）
 
 #### 流程指引 (1)
 
@@ -120,9 +121,20 @@ curl http://localhost:5002/health  # RND
 
 #### 应用管理 (3)
 
-- `list_developers_and_apps` - 列出所有应用
-- `select_app` - 选择当前应用
+- `list_developers_and_apps` - 列出所有开发者和应用（含关卡与非关卡）
+- `select_app` - 选择当前应用（支持关卡与非关卡）
 - `create_developer` - 创建新开发者
+
+#### 当前游戏 DC 能力 (8)
+
+- `get_current_app_store_overview` - 获取当前游戏商店统计概览（曝光、下载、预约、下载请求趋势）
+- `get_current_app_review_overview` - 获取当前游戏评价统计概览（评分、好中差评、评分趋势）
+- `get_current_app_community_overview` - 获取当前游戏社区统计概览（帖子、关注、浏览、趋势）
+- `get_current_app_store_snapshot` - 获取当前游戏商店结果型快照
+- `get_current_app_forum_contents` - 获取当前游戏论坛内容
+- `get_current_app_reviews` - 获取当前游戏评价列表
+- `like_current_app_review` - 给当前游戏指定评价点赞
+- `reply_current_app_review` - 以官方身份回复当前游戏评价
 
 #### 排行榜管理 (5)
 
@@ -231,6 +243,7 @@ npm test
 **其他**:
 
 - `TAPTAP_MCP_ENV` - 环境：`production`（默认）或 `rnd`
+- `TAPTAP_MCP_DC_CURRENT_APP_BASE_URL` - 当前游戏 DC 接口 host 覆盖（可选，路径仍为 `/mcp/v1/current-app/...`）
 - `TAPTAP_MCP_TRANSPORT` - 传输模式：`stdio`（默认）、`sse`、`http`
 - `TAPTAP_MCP_PORT` - 端口（默认 3000）
 - `TAPTAP_MCP_VERBOSE` - 详细日志：`true` 或 `false`

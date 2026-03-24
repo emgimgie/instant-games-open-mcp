@@ -11,6 +11,7 @@ export type AuthErrorCode =
   | 'TOKEN_MISSING' // 缺少Token
   | 'TOKEN_INVALID' // Token格式无效
   | 'TOKEN_REVOKED' // Token被撤销
+  | 'CLIENT_ID_MISMATCH' // client_id 与项目/令牌不匹配
   | 'UNAUTHORIZED' // 未授权访问
   | 'AUTH_IN_PROGRESS' // 授权进行中
   | 'NETWORK_ERROR' // 网络错误
@@ -101,6 +102,17 @@ ${generateOAuthGuidance(authUrl)}`;
 2. 检查开发者账号权限设置
 3. 联系TapTap支持确认账号状态`;
 
+    case 'CLIENT_ID_MISMATCH':
+      return `⚙️ client_id 与当前项目鉴权不匹配
+
+当前请求已经通过了基础格式校验，但服务端拒绝了当前 client_id 与项目/令牌的绑定关系。
+
+📋 解决方案：
+1. 确认 TAPTAP_MCP_CLIENT_ID 使用的是这批 agent/current-app 接口允许的 client_id
+2. 确认 TAPTAP_MCP_CLIENT_SECRET 与该 client_id 是同一组
+3. 如刚更换过 client_id，请重新执行 OAuth 授权，确保令牌与当前 client_id 对齐
+4. 如后端有 project name / openclient 绑定要求，请确认已为该 client_id 正确配置`;
+
     case 'UNAUTHORIZED':
       return `🔐 权限不足
 
@@ -176,6 +188,24 @@ export function extractAuthErrorFromResponse(
   responseData?: any,
   responseText?: string
 ): AuthError | null {
+  const errorCode = responseData?.data?.error || responseData?.error;
+  const errorMsg =
+    responseData?.data?.msg ||
+    responseData?.data?.error_description ||
+    responseData?.message ||
+    responseText ||
+    '';
+
+  if (typeof errorMsg === 'string' && errorMsg.includes('not match client_id')) {
+    return createAuthError('CLIENT_ID_MISMATCH');
+  }
+
+  if (errorCode === 'access_denied') {
+    // Some agent APIs use access_denied for project/client binding failures and
+    // other authorization problems. We already special-case client_id mismatch above.
+    return createAuthError('UNAUTHORIZED');
+  }
+
   // 检查 text/plain 格式的 RBAC 错误
   if ((response.status === 403 || response.status === 401) && responseText) {
     if (responseText.includes('access denied') || responseText.includes('RBAC')) {
@@ -189,10 +219,6 @@ export function extractAuthErrorFromResponse(
 
   if (response.status === 403) {
     return createAuthError('UNAUTHORIZED');
-  }
-
-  if (responseData?.data?.error === 'access_denied' || responseData?.error === 'access_denied') {
-    return createAuthError('TOKEN_REVOKED');
   }
 
   return null;
