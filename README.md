@@ -18,6 +18,24 @@
 
 **NPM**: [@mikoto_zero/minigame-open-mcp](https://www.npmjs.com/package/@mikoto_zero/minigame-open-mcp)
 
+## 🧩 Codex Skills（运营简报）
+
+本仓库内置一个面向运营/工作室的 Codex Skill：`taptap-dc-ops-brief`，用于把“当前游戏 DC 数据”整理成 30 秒可读的结论简报，并在你确认后执行评价点赞/官方回复等动作。
+
+### 安装到 Codex
+
+在已安装 Codex 的机器上运行：
+
+```bash
+python3 ~/.codex/skills/.system/skill-installer/scripts/install-skill-from-github.py \
+  --repo taptap/taptap_minigame_open_mcp \
+  --path skills/taptap-dc-ops-brief
+```
+
+安装完成后重启 Codex，即可在对话中使用：
+
+> 使用 `$taptap-dc-ops-brief` 生成当前游戏的 7 日运营简报，并给出是否建议点赞/回复评价（先出草稿，等我确认再发）。
+
 ## 🚀 快速开始
 
 > 🐣 **完全不懂技术？** [快速开始（零基础版）](docs/QUICK_START.md) - 3 分钟搞定 Cursor 配置，复制粘贴就能用。
