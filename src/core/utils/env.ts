@@ -97,6 +97,15 @@ export class EnvConfig {
   }
 
   /**
+   * 当前游戏 DC 接口基础 URL（可选）
+   *
+   * 仅覆盖当前游戏 DC 能力的 host，路径仍保持 `/mcp/v1/current-app/...`。
+   */
+  static get dcCurrentAppBaseUrl(): string | undefined {
+    return getEnv('TAPTAP_MCP_DC_CURRENT_APP_BASE_URL');
+  }
+
+  /**
    * 环境端点配置（API 和 OAuth 端点）
    *
    * @example

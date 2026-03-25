@@ -88,6 +88,7 @@ export interface RequestOptions {
   body?: unknown;
   params?: Record<string, string>;
   timeout?: number;
+  baseUrl?: string;
 }
 
 /**
@@ -132,7 +133,7 @@ export class HttpClient {
    */
   private async request<T>(method: string, path: string, options: RequestOptions = {}): Promise<T> {
     // 从 nativeSigner 获取 clientId（native 或 env fallback）
-    const apiBaseUrl = EnvConfig.endpoints.apiBaseUrl;
+    const apiBaseUrl = options.baseUrl || EnvConfig.endpoints.apiBaseUrl;
     const clientId = getClientIdSync();
 
     // Build full URL with query parameters

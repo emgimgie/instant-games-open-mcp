@@ -1,0 +1,7 @@
+interface:
+  display_name: 'TapTap DC 运营简报'
+  short_description: '基于 TapTap DC 数据生成简明结论报告与行动建议'
+  default_prompt: '使用 $taptap-dc-ops-brief 生成当前游戏的 7 日运营简报，并给出是否建议点赞/回复评价。'
+
+policy:
+  allow_implicit_invocation: true

@@ -48,6 +48,7 @@ import { oauthState } from './core/auth/oauthState.js';
 
 // 导入功能模块
 import { appModule } from './features/app/index.js';
+import { dcCurrentAppModule } from './features/dcCurrentApp/index.js';
 import { leaderboardModule } from './features/leaderboard/index.js';
 import { h5GameModule } from './features/h5Game/index.js';
 import { vibrateModule } from './features/vibrate/index.js';
@@ -79,6 +80,7 @@ const serverPort = EnvConfig.port;
 // 所有功能模块
 const allModules: FeatureModule[] = [
   appModule, // App management (developer/app selection)
+  dcCurrentAppModule, // DC current-app store/forum/review capabilities
   leaderboardModule, // Leaderboard management
   h5GameModule, // H5 Game management (upload, publish, status)
   vibrateModule, // Vibrate API documentation and guides

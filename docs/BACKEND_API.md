@@ -42,9 +42,9 @@
 
 ## 📱 应用管理 (App Management)
 
-### 1. 获取开发者和应用列表
+### 1. 获取关卡游戏开发者和应用列表
 
-获取当前用户关联的所有开发者账号及其下的应用列表。
+获取当前用户关联的所有开发者账号及其下的关卡游戏列表。
 
 - **Endpoint**: `/level/v1/list`
 - **Method**: `GET`
@@ -62,7 +62,27 @@
   }
   ```
 
-### 2. 获取应用详细信息
+### 2. 获取非关卡游戏开发者和应用列表
+
+获取当前用户关联的所有开发者账号及其下的非关卡游戏列表。
+
+- **Endpoint**: `/level/v1/non-level-list`
+- **Method**: `GET`
+- **Params**: 无
+- **Response**:
+  ```json
+  {
+    "list": [
+      {
+        "developer_id": 12345,
+        "developer_name": "My Studio",
+        "apps": [{ "app_id": 2001, "app_title": "Game B", "is_published": false }]
+      }
+    ]
+  }
+  ```
+
+### 3. 获取应用详细信息
 
 获取指定应用的详细配置信息（包括已发布和未发布的草稿）。
 
@@ -72,7 +92,7 @@
   - `app_id`: 应用 ID
 - **Response**: 包含 `level` (线上版) 和 `upload_level` (草稿版) 的详细信息。
 
-### 3. 获取应用状态
+### 4. 获取应用状态
 
 查询应用的审核状态。
 
@@ -88,7 +108,7 @@
   }
   ```
 
-### 4. 创建应用
+### 5. 创建应用
 
 为指定开发者创建新应用。
 
@@ -103,7 +123,7 @@
   }
   ```
 
-### 5. 更新应用信息
+### 6. 更新应用信息
 
 更新应用的基本信息（名称、简介、素材等）。
 
@@ -137,6 +157,89 @@
 - **Method**: `POST`
 - **Content-Type**: `multipart/form-data`
 - **Body**: `image` (File)
+
+---
+
+## 🧭 当前游戏 DC (Current App DC)
+
+### 1. 获取当前游戏商店统计概览
+
+- **Endpoint**: `/mcp/v1/current-app/store-overview`
+- **Method**: `GET`
+- **Params**:
+  - `app_id`: 应用 ID
+  - `start_date`: 开始日期（可选，`YYYY-MM-DD`）
+  - `end_date`: 结束日期（可选，`YYYY-MM-DD`）
+
+### 2. 获取当前游戏评价统计概览
+
+- **Endpoint**: `/mcp/v1/current-app/review-overview`
+- **Method**: `GET`
+- **Params**:
+  - `app_id`: 应用 ID
+  - `start_date`: 开始日期（可选，`YYYY-MM-DD`）
+  - `end_date`: 结束日期（可选，`YYYY-MM-DD`）
+
+### 3. 获取当前游戏社区统计概览
+
+- **Endpoint**: `/mcp/v1/current-app/community-overview`
+- **Method**: `GET`
+- **Params**:
+  - `app_id`: 应用 ID
+  - `start_date`: 开始日期（可选，`YYYY-MM-DD`）
+  - `end_date`: 结束日期（可选，`YYYY-MM-DD`）
+
+### 4. 获取当前游戏商店结果型快照
+
+- **Endpoint**: `/mcp/v1/current-app/store-snapshot`
+- **Method**: `GET`
+- **Params**:
+  - `app_id`: 应用 ID
+
+### 5. 获取当前游戏论坛内容
+
+- **Endpoint**: `/mcp/v1/current-app/forum-contents`
+- **Method**: `GET`
+- **Params**:
+  - `app_id`: 应用 ID
+  - `type`: 内容流类型（可选）
+  - `sort`: 排序方式（可选）
+  - `from`: 分页起点（可选）
+  - `limit`: 分页大小（可选）
+  - `group_label_id`: 子版块 ID（可选）
+
+### 6. 获取当前游戏评价列表
+
+- **Endpoint**: `/mcp/v1/current-app/reviews`
+- **Method**: `GET`
+- **Params**:
+  - `app_id`: 应用 ID
+  - `sort`: 排序方式（可选）
+  - `from`: 分页起点（可选）
+  - `limit`: 分页大小（可选）
+  - `is_collapsed`: 是否查看折叠评价（可选）
+  - `filter_platform`: 平台筛选（可选）
+
+### 7. 给当前游戏评价点赞
+
+- **Endpoint**: `/mcp/v1/current-app/reviews/like`
+- **Method**: `POST`
+- **Content-Type**: `application/x-www-form-urlencoded`
+- **Body**:
+  - `app_id`: 应用 ID
+  - `review_id`: 评价 ID
+
+### 8. 以官方身份回复当前游戏评价
+
+- **Endpoint**: `/mcp/v1/current-app/reviews/reply`
+- **Method**: `POST`
+- **Content-Type**: `application/x-www-form-urlencoded`
+- **Body**:
+  - `app_id`: 应用 ID
+  - `review_id`: 评价 ID
+  - `contents`: 回复内容
+  - `reply_comment_id`: 被回复评论 ID（可选）
+  - `confirm_high_risk`: 是否确认发送高风险草稿（可选）
 
 ---
 

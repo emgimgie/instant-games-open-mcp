@@ -194,8 +194,11 @@ export async function pollForToken(
       const json = (await response.json()) as any;
 
       // 成功获取 token
+      // Preserve the full payload because some downstream agent/DC capabilities
+      // may rely on extra fields returned during OAuth, not just the MAC fields.
       if (json.success === true && json.data) {
         return {
+          ...json.data,
           kid: json.data.kid,
           mac_key: json.data.mac_key,
           token_type: json.data.token_type || 'mac',

@@ -174,17 +174,24 @@ export TAPTAP_MCP_MAC_TOKEN='{"kid":"your_kid","token_type":"mac","mac_key":"you
 
 #### 环境和传输（可选）
 
-| 变量                   | 说明          | 默认值       |
-| ---------------------- | ------------- | ------------ |
-| `TAPTAP_MCP_ENV`       | 环境选择      | `production` |
-| `TAPTAP_MCP_TRANSPORT` | 传输协议      | `stdio`      |
-| `TAPTAP_MCP_PORT`      | HTTP/SSE 端口 | `3000`       |
-| `TAPTAP_MCP_VERBOSE`   | 详细日志模式  | `false`      |
+| 变量                                 | 说明                               | 默认值       |
+| ------------------------------------ | ---------------------------------- | ------------ |
+| `TAPTAP_MCP_ENV`                     | 环境选择                           | `production` |
+| `TAPTAP_MCP_DC_CURRENT_APP_BASE_URL` | 当前游戏 DC 接口 host 覆盖（可选） | -            |
+| `TAPTAP_MCP_TRANSPORT`               | 传输协议                           | `stdio`      |
+| `TAPTAP_MCP_PORT`                    | HTTP/SSE 端口                      | `3000`       |
+| `TAPTAP_MCP_VERBOSE`                 | 详细日志模式                       | `false`      |
 
 **环境选项**：
 
 - `production`：https://agent.tapapis.cn
 - `rnd`：https://agent.api.xdrnd.cn（测试环境）
+
+**当前游戏 DC 接口覆盖**：
+
+- 当 `/mcp/v1/current-app/...` 在特定环境经由独立可访问域名暴露时，可设置
+  `TAPTAP_MCP_DC_CURRENT_APP_BASE_URL`
+- 该变量只覆盖当前游戏 DC 能力的 host，不影响其他 agent 接口
 
 #### 缓存和临时文件（可选）
 
@@ -289,12 +296,13 @@ npx -y @mikoto_zero/minigame-open-mcp
 
 ### 2.3 环境变量
 
-| 变量                       | 说明          | Production    | RND    |
-| -------------------------- | ------------- | ------------- | ------ |
-| `TAPTAP_MCP_ENV`           | 环境          | production    | rnd    |
-| `TAPTAP_MCP_CLIENT_ID`     | Client ID     | 内置 (Signer) | 需配置 |
-| `TAPTAP_MCP_CLIENT_SECRET` | Client Secret | 内置 (Signer) | 需配置 |
-| `TAPTAP_MCP_VERBOSE`       | 详细日志      | true          | true   |
+| 变量                                 | 说明                  | Production    | RND    |
+| ------------------------------------ | --------------------- | ------------- | ------ |
+| `TAPTAP_MCP_ENV`                     | 环境                  | production    | rnd    |
+| `TAPTAP_MCP_CLIENT_ID`               | Client ID             | 内置 (Signer) | 需配置 |
+| `TAPTAP_MCP_CLIENT_SECRET`           | Client Secret         | 内置 (Signer) | 需配置 |
+| `TAPTAP_MCP_DC_CURRENT_APP_BASE_URL` | 当前游戏 DC host 覆盖 | -             | -      |
+| `TAPTAP_MCP_VERBOSE`                 | 详细日志              | true          | true   |
 
 ### 2.4 使用方式
 

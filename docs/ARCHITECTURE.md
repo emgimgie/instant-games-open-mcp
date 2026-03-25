@@ -31,6 +31,12 @@ src/
 │   │   ├── handlers.ts   # 业务逻辑
 │   │   └── api.ts        # API 调用
 │   │
+│   ├── dcCurrentApp/     # 当前游戏 DC 能力模块
+│   │   ├── index.ts      # 模块定义和注册
+│   │   ├── tools.ts      # Tools 定义 + 处理器（统一格式）
+│   │   ├── handlers.ts   # 业务逻辑
+│   │   └── api.ts        # API 调用
+│   │
 │   ├── leaderboard/      # 排行榜模块
 │   │   ├── index.ts      # 模块定义和注册
 │   │   ├── tools.ts      # Tools 定义 + 处理器（统一格式）
@@ -86,6 +92,12 @@ bin/
   - 排行榜 API 文档 Resources
   - 用户分数查询
 
+- **dcCurrentApp 模块** - 当前游戏 DC 服务端能力
+  - 商店结果型快照查询
+  - 当前游戏论坛内容查询
+  - 当前游戏评价列表、点赞、官方回复
+  - 强制绑定当前已选择应用，不开放跨游戏读取
+
 - **h5Game 模块** - H5 游戏管理
   - H5 游戏信息收集
   - 游戏包上传和发布
@@ -105,7 +117,7 @@ bin/
 - **auth/** - 认证机制
   - OAuth 2.0 Device Code Flow
   - 懒加载授权（首次使用时自动触发）
-  - Token 持久化
+  - Token 持久化（保留完整 OAuth payload，MAC 字段用于标准鉴权）
 
 - **network/** - 网络通信
   - HttpClient 类（统一 HTTP 请求接口）
@@ -170,10 +182,12 @@ bin/
 ```typescript
 // server.ts
 import { appModule } from './features/app/index.js';
+import { dcCurrentAppModule } from './features/dcCurrentApp/index.js';
 import { leaderboardModule } from './features/leaderboard/index.js';
 
 const allModules = [
   appModule,
+  dcCurrentAppModule,
   leaderboardModule,
   // 新增模块只需在这里添加
 ];

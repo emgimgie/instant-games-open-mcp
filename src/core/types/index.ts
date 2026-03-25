@@ -20,6 +20,14 @@ export interface MacToken {
 
   /** mac algorithm name, such as "hmac-sha-1" */
   mac_algorithm: string;
+
+  /**
+   * Preserve the full OAuth token payload from TapTap.
+   *
+   * Current MCP logic only requires the MAC fields above, but some agent/DC
+   * capabilities may also rely on extra token fields returned during OAuth.
+   */
+  [key: string]: unknown;
 }
 
 // ============================================================================

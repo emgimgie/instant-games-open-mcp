@@ -21,6 +21,8 @@ export interface CraftItem {
   miniapp_id?: string; // Minigame/H5 预览 ID
   category?: string;
   is_published?: boolean;
+  is_level?: boolean;
+  app_kind?: 'level' | 'non_level';
 }
 
 /**
@@ -29,6 +31,7 @@ export interface CraftItem {
 export interface DeveloperCraftList {
   developer_id: number;
   developer_name: string;
+  apps: CraftItem[];
   levels: CraftItem[]; // API returns 'levels' not 'crafts'
   crafts?: CraftItem[]; // Keep for backward compatibility
 }
@@ -38,6 +41,32 @@ export interface DeveloperCraftList {
  */
 export interface LevelListResponse {
   list: DeveloperCraftList[];
+}
+
+/**
+ * Non-level app item returned by /level/v1/non-level-list
+ */
+export interface NonLevelItem {
+  app_id: number;
+  app_title: string;
+  category?: string;
+  is_published?: boolean;
+}
+
+/**
+ * Developer with non-level apps list
+ */
+export interface DeveloperNonLevelList {
+  developer_id: number;
+  developer_name: string;
+  apps: NonLevelItem[];
+}
+
+/**
+ * Non-level list response
+ */
+export interface NonLevelListResponse {
+  list: DeveloperNonLevelList[];
 }
 
 /**
@@ -53,6 +82,85 @@ export class SelectionRequiredError extends Error {
   }
 }
 
+function normalizeLevelApp(item: CraftItem): CraftItem {
+  return {
+    ...item,
+    is_level: true,
+    app_kind: 'level',
+  };
+}
+
+function normalizeNonLevelApp(item: NonLevelItem): CraftItem {
+  return {
+    ...item,
+    is_level: false,
+    app_kind: 'non_level',
+  };
+}
+
+function buildDeveloperEntry(developer_id: number, developer_name: string): DeveloperCraftList {
+  return {
+    developer_id,
+    developer_name,
+    apps: [],
+    levels: [],
+    crafts: [],
+  };
+}
+
+function appendApp(target: DeveloperCraftList, app: CraftItem): void {
+  if (target.apps.some((existing) => existing.app_id === app.app_id)) {
+    return;
+  }
+
+  target.apps.push(app);
+  if (app.is_level !== false) {
+    target.levels.push(app);
+  }
+  target.crafts = target.levels;
+}
+
+function mergeDeveloperLists(
+  levelResponse: LevelListResponse,
+  nonLevelResponse: NonLevelListResponse
+): LevelListResponse {
+  const developerMap = new Map<number, DeveloperCraftList>();
+  const orderedDeveloperIds: number[] = [];
+
+  const ensureDeveloper = (developer_id: number, developer_name: string): DeveloperCraftList => {
+    const existing = developerMap.get(developer_id);
+    if (existing) {
+      if (!existing.developer_name && developer_name) {
+        existing.developer_name = developer_name;
+      }
+      return existing;
+    }
+
+    const created = buildDeveloperEntry(developer_id, developer_name);
+    developerMap.set(developer_id, created);
+    orderedDeveloperIds.push(developer_id);
+    return created;
+  };
+
+  for (const developer of levelResponse.list || []) {
+    const entry = ensureDeveloper(developer.developer_id, developer.developer_name);
+    for (const app of developer.levels || developer.apps || developer.crafts || []) {
+      appendApp(entry, normalizeLevelApp(app));
+    }
+  }
+
+  for (const developer of nonLevelResponse.list || []) {
+    const entry = ensureDeveloper(developer.developer_id, developer.developer_name);
+    for (const app of developer.apps || []) {
+      appendApp(entry, normalizeNonLevelApp(app));
+    }
+  }
+
+  return {
+    list: orderedDeveloperIds.map((developerId) => developerMap.get(developerId)!),
+  };
+}
+
 /**
  * Get all developers and apps for selection
  * @param ctx - Optional resolved context
@@ -62,8 +170,11 @@ export async function getAllDevelopersAndApps(ctx?: ResolvedContext): Promise<Le
   const client = new HttpClient(ctx);
 
   try {
-    const response = await client.get<LevelListResponse>('/level/v1/list');
-    return response;
+    const [levelResponse, nonLevelResponse] = await Promise.all([
+      client.get<LevelListResponse>('/level/v1/list'),
+      client.get<NonLevelListResponse>('/level/v1/non-level-list'),
+    ]);
+    return mergeDeveloperLists(levelResponse, nonLevelResponse);
   } catch (error) {
     if (error instanceof Error) {
       throw new Error(`Failed to get developers and apps list: ${error.message}`);

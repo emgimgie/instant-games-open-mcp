@@ -137,14 +137,15 @@ feature 分支开发 → git commit (规范格式) → git push → 创建 PR
 
 ## 项目概述
 
-基于 Model Context Protocol (MCP) 的 TapTap Open API MCP 服务器，为 **TapTap Minigame 和 H5 游戏**提供完整的排行榜 API 文档和服务端管理功能。
+基于 Model Context Protocol (MCP) 的 TapTap Open API MCP 服务器，为 **TapTap Minigame 和 H5 游戏**提供排行榜、分享、多人联机、云存档，以及当前游戏 DC 数据查询、统计概览与评价操作能力。
 
 **核心特性：**
 
 - 🏆 排行榜系统 - 完整的 API 文档和服务端管理
 - 🎮 H5 游戏管理 - 上传、发布、状态查询
+- 🧭 当前游戏 DC 能力 - 商店/评价/社区统计概览、商店快照、论坛内容、评价列表、点赞、官方回复
 - 🔐 OAuth 2.0 Device Code Flow - 零配置认证（扫码即用）
-- 🎯 完整功能集 - 17 Tools + 7 Resources
+- 🎯 完整功能集 - 多类 Tools + Resources，覆盖文档查询与服务端动作
 - 🚀 MCP 2025 标准 - Streamable HTTP + RFC 5424 Logging
 - 📡 三种传输协议 - stdio（本地）+ SSE（远程/实时）+ HTTP JSON（兼容）
 - 🔌 多客户端并发 - 独立会话管理，无限并发
@@ -161,6 +162,7 @@ feature 分支开发 → git commit (规范格式) → git push → 创建 PR
 ```
 功能模块层 (src/features/)
   ├── app/         - 应用管理模块（基础功能）
+  ├── dcCurrentApp/ - 当前游戏 DC 能力模块
   ├── leaderboard/ - 排行榜模块
   ├── h5game/      - H5 游戏模块
   └── [未来]       - cloudSave/, share/ 等
@@ -346,19 +348,20 @@ npm run format
 
 ### 环境变量（常用）
 
-| 变量名                    | 说明                       | 默认值                |
-| ------------------------- | -------------------------- | --------------------- |
-| `TAPTAP_MCP_TRANSPORT`    | 传输协议（stdio/sse/http） | stdio                 |
-| `TAPTAP_MCP_PORT`         | HTTP/SSE 模式端口          | 3000                  |
-| `TAPTAP_MCP_VERBOSE`      | 详细日志模式               | false                 |
-| `TAPTAP_MCP_ENV`          | 环境选择（production/rnd） | production            |
-| `TAPTAP_MCP_CACHE_DIR`    | 缓存根目录                 | /tmp/taptap-mcp/cache |
-| `TAPTAP_MCP_TEMP_DIR`     | 临时文件根目录             | /tmp/taptap-mcp/temp  |
-| `WORKSPACE_ROOT`          | 工作空间根路径（推荐设置） | process.cwd()         |
-| `TAPTAP_MCP_LOG_ROOT`     | 日志根目录                 | /tmp/taptap-mcp/logs  |
-| `TAPTAP_MCP_LOG_FILE`     | 是否启用文件日志           | false                 |
-| `TAPTAP_MCP_LOG_LEVEL`    | 文件日志级别               | info                  |
-| `TAPTAP_MCP_LOG_MAX_DAYS` | 日志保留天数               | 7                     |
+| 变量名                               | 说明                               | 默认值                |
+| ------------------------------------ | ---------------------------------- | --------------------- |
+| `TAPTAP_MCP_TRANSPORT`               | 传输协议（stdio/sse/http）         | stdio                 |
+| `TAPTAP_MCP_PORT`                    | HTTP/SSE 模式端口                  | 3000                  |
+| `TAPTAP_MCP_VERBOSE`                 | 详细日志模式                       | false                 |
+| `TAPTAP_MCP_ENV`                     | 环境选择（production/rnd）         | production            |
+| `TAPTAP_MCP_DC_CURRENT_APP_BASE_URL` | 当前游戏 DC 接口 host 覆盖（可选） | 空                    |
+| `TAPTAP_MCP_CACHE_DIR`               | 缓存根目录                         | /tmp/taptap-mcp/cache |
+| `TAPTAP_MCP_TEMP_DIR`                | 临时文件根目录                     | /tmp/taptap-mcp/temp  |
+| `WORKSPACE_ROOT`                     | 工作空间根路径（推荐设置）         | process.cwd()         |
+| `TAPTAP_MCP_LOG_ROOT`                | 日志根目录                         | /tmp/taptap-mcp/logs  |
+| `TAPTAP_MCP_LOG_FILE`                | 是否启用文件日志                   | false                 |
+| `TAPTAP_MCP_LOG_LEVEL`               | 文件日志级别                       | info                  |
+| `TAPTAP_MCP_LOG_MAX_DAYS`            | 日志保留天数                       | 7                     |
 
 **完整环境变量说明：** [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md)
 **日志系统说明：** [docs/LOG_SYSTEM.md](docs/LOG_SYSTEM.md)
@@ -525,7 +528,7 @@ const allModules = [..., yourFeatureModule];
 
 ## 工具和资源概览
 
-### 20 个 MCP Tools
+### 核心 MCP Tools
 
 **流程指引（1个）**
 
@@ -544,9 +547,20 @@ const allModules = [..., yourFeatureModule];
 
 **应用管理（3个）**
 
-- `list_developers_and_apps` - 列出所有开发者和应用
-- `select_app` - 选择要使用的应用
+- `list_developers_and_apps` - 列出所有开发者和应用（含关卡与非关卡）
+- `select_app` - 选择要使用的应用（支持关卡与非关卡）
 - `create_developer` - 创建新开发者
+
+**当前游戏 DC 能力（8个）**
+
+- `get_current_app_store_overview` - 获取当前游戏商店统计概览
+- `get_current_app_review_overview` - 获取当前游戏评价统计概览
+- `get_current_app_community_overview` - 获取当前游戏社区统计概览
+- `get_current_app_store_snapshot` - 获取当前游戏商店结果型快照
+- `get_current_app_forum_contents` - 获取当前游戏论坛内容
+- `get_current_app_reviews` - 获取当前游戏评价列表
+- `like_current_app_review` - 给当前游戏指定评价点赞
+- `reply_current_app_review` - 以官方身份回复当前游戏评价
 
 **排行榜管理（5个）**
 
@@ -568,7 +582,7 @@ const allModules = [..., yourFeatureModule];
 
 - `get_vibrate_integration_guide` - 振动 API 完整文档和接入指引
 
-### 7 个 MCP Resources
+### MCP Resources（示例）
 
 **API 详细文档（6个）**
 
