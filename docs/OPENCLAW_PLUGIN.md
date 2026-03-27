@@ -32,6 +32,12 @@ packages/openclaw-dc-plugin/
 3. plugin 调用仓库里新增的 `*_raw` tools
 4. skill 基于 raw JSON 做简报和动作建议
 
+补充说明：
+
+- 主包里的 `*_raw` tools 默认不会暴露给普通 MCP 客户端
+- OpenClaw plugin 在内部启动 runtime 时会自动设置 `TAPTAP_MCP_ENABLE_RAW_TOOLS=true`
+- 因此 plugin 用户不需要手动打开这个开关
+
 ## 发布顺序
 
 当前建议的发布顺序是：

@@ -32,6 +32,12 @@
 - 对 OpenClaw 暴露 raw JSON 工具
 - 同时内置 `taptap-dc-ops-brief` skill，让模型自己做简报解读
 
+说明：
+
+- 主包里的 `*_raw` tools 默认不会暴露给普通 MCP 客户端
+- 只有设置 `TAPTAP_MCP_ENABLE_RAW_TOOLS=true` 时才会注册
+- OpenClaw plugin 会自动打开这个开关，因此插件用户不需要额外配置
+
 详见：
 
 - [OpenClaw Plugin 说明](docs/OPENCLAW_PLUGIN.md)

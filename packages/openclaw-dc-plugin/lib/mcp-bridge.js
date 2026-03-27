@@ -97,6 +97,7 @@ export class TapTapMcpBridge {
       ...process.env,
       TAPTAP_MCP_TRANSPORT: 'stdio',
       TAPTAP_MCP_ENV: this.config.environment || 'production',
+      TAPTAP_MCP_ENABLE_RAW_TOOLS: 'true',
     };
 
     if (this.config.workspaceRoot) {
