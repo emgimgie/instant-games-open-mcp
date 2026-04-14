@@ -20,6 +20,8 @@
 
 import cryptoJS from 'crypto-js';
 import crypto from 'node:crypto';
+import path from 'node:path';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { logger } from '../utils/logger.js';
 import { EnvConfig } from '../utils/env.js';
 
@@ -79,11 +81,15 @@ async function loadNativeModule(): Promise<NativeSignerModule | null> {
 
   // Native module loading path
   // Bundle mode: dist/server.js → dist/native/index.js
-  // All artifacts are in dist/ directory for easy distribution
-  const importPath = './native/index.js';
+  // Dev mode: src/core/network/nativeSigner.ts → native/index.js
+  const isBundle = typeof __VERSION__ !== 'undefined';
+  const relativePath = isBundle ? './native/index.js' : '../../../native/index.js';
+  const nativePath = path.resolve(path.dirname(fileURLToPath(import.meta.url)), relativePath);
+  const importUrl = pathToFileURL(nativePath).href;
 
   try {
-    const native = (await import(importPath)) as NativeSignerModule;
+    // 使用 import(importUrl) 进行加载
+    const native = (await import(importUrl)) as NativeSignerModule;
 
     // Verify the module works
     native.verifyIntegrity();
@@ -95,7 +101,7 @@ async function loadNativeModule(): Promise<NativeSignerModule | null> {
     return nativeModule;
   } catch (error) {
     const errorMsg = error instanceof Error ? error.message : String(error);
-    loadError = new Error(`${importPath}: ${errorMsg}`);
+    loadError = new Error(`${nativePath}: ${errorMsg}`);
     await logger.info(`⚠️  Native signer not available: ${errorMsg}`);
     await logger.info('   Set TAPTAP_MCP_CLIENT_ID and TAPTAP_MCP_CLIENT_SECRET');
   }
